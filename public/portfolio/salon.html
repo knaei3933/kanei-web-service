@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アトリエアオ | 雑誌で見るようなスタイルを叶える美容室</title>
+<meta name="description" content="アトリエアオは、トレンドを取り入れたスタイルと、一人ひとりに合わせた丁寧なカウンセリングが自慢の美容室です。ネット予約24時間受付。">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --c-primary:#a31455;--c-accent:#db2777;--c-accent2:#ec4899;
+  --c-soft:#fce7f3;--c-light:#fdf2f8;--c-dark:#1e1023;--c-text:#4a3441;
+  --c-muted:#94829a;--c-border:#f0d6e2;--c-white:#fff;
+  --serif:'Cormorant Garamond','Times New Roman',serif;
+  --sans:'Helvetica Neue','Hiragino Sans','Yu Gothic',sans-serif;
+  --shadow:0 20px 60px -15px rgba(163,20,85,.25);
+  --shadow-sm:0 4px 20px -5px rgba(163,20,85,.15);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);color:var(--c-text);background:var(--c-white);line-height:1.8;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{text-decoration:none;color:inherit}
+section{padding:100px 0}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.sec-label{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--c-accent);font-weight:700;margin-bottom:12px}
+.sec-title{font-family:var(--serif);font-size:42px;font-weight:600;color:var(--c-dark);line-height:1.3;margin-bottom:16px}
+.sec-title .accent{color:var(--c-primary)}
+.sec-sub{font-size:16px;color:var(--c-muted);margin-bottom:60px;max-width:600px}
+.text-center{text-align:center}
+.text-center .sec-sub{margin-left:auto;margin-right:auto}
+/* ==================== NAVBAR ==================== */
+nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--c-border);transition:var(--shadow-sm)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:var(--serif);font-size:28px;font-weight:700;color:var(--c-primary);letter-spacing:1px}
+.nav-logo span{color:var(--c-dark)}
+.nav-links{display:flex;gap:32px;align-items:center}
+.nav-links a{font-size:13px;font-weight:600;color:var(--c-text);transition:color .3s}
+.nav-links a:hover{color:var(--c-primary)}
+.nav-cta{background:var(--c-primary);color:#fff!important;padding:12px 28px;border-radius:30px;font-size:13px!important;transition:background .3s,transform .3s}
+.nav-cta:hover{background:var(--c-accent);transform:translateY(-2px)}
+.nav-toggle{display:none;font-size:28px;background:none;border:none;color:var(--c-primary);cursor:pointer}
+/* ==================== HERO ==================== */
+.hero{display:grid;grid-template-columns:1fr 1fr;min-height:100vh;padding-top:72px}
+.hero-left{display:flex;flex-direction:column;justify-content:center;padding:60px 40px 60px 8%;background:var(--c-light)}
+.hero-left .sec-label{margin-bottom:24px}
+.hero-title{font-family:var(--serif);font-size:64px;font-weight:700;color:var(--c-dark);line-height:1.15;margin-bottom:24px}
+.hero-title .accent{color:var(--c-primary);font-style:italic}
+.hero-desc{font-size:16px;color:var(--c-text);margin-bottom:40px;max-width:440px;line-height:2}
+.hero-ctas{display:flex;gap:16px;flex-wrap:wrap}
+.btn-primary{background:var(--c-primary);color:#fff;padding:16px 40px;border-radius:40px;font-weight:700;font-size:15px;transition:all .35s}
+.btn-primary:hover{background:var(--c-accent);transform:translateY(-3px);box-shadow:var(--shadow)}
+.btn-secondary{border:2px solid var(--c-primary);color:var(--c-primary);padding:14px 38px;border-radius:40px;font-weight:700;font-size:15px;transition:all .35s}
+.btn-secondary:hover{background:var(--c-primary);color:#fff;transform:translateY(-3px)}
+.hero-right{position:relative;overflow:hidden}
+.hero-right img{width:100%;height:100%;object-fit:cover;filter:brightness(.95)}
+.hero-badge{position:absolute;bottom:40px;right:40px;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);padding:24px 32px;border-radius:16px;box-shadow:var(--shadow);text-align:center}
+.hero-badge .num{font-family:var(--serif);font-size:48px;font-weight:700;color:var(--c-primary);line-height:1}
+.hero-badge .lbl{font-size:12px;color:var(--c-muted);letter-spacing:2px;margin-top:4px}
+/* ==================== STYLISTS ==================== */
+#stylists{background:var(--c-white)}
+.stylist-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
+.stylist-card{text-align:center;transition:transform .4s}
+.stylist-card:hover{transform:translateY(-8px)}
+.stylist-portrait{width:220px;height:220px;border-radius:50%;overflow:hidden;margin:0 auto 24px;border:6px solid var(--c-light);box-shadow:var(--shadow)}
+.stylist-portrait img{width:100%;height:100%;object-fit:cover}
+.stylist-name{font-family:var(--serif);font-size:28px;font-weight:700;color:var(--c-dark);margin-bottom:4px}
+.stylist-name-en{font-size:11px;letter-spacing:3px;color:var(--c-accent);text-transform:uppercase;margin-bottom:16px}
+.stylist-role{font-size:14px;color:var(--c-muted);margin-bottom:12px}
+.stylist-bio{font-size:14px;color:var(--c-text);line-height:1.9}
+/* ==================== PRICING ==================== */
+#pricing{background:var(--c-light)}
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
+.price-card{background:#fff;border-radius:20px;padding:48px 32px;text-align:center;transition:all .4s;box-shadow:var(--shadow-sm);border:1px solid var(--c-border)}
+.price-card:hover{transform:translateY(-10px);box-shadow:var(--shadow);border-color:var(--c-accent)}
+.price-card .price-label{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--c-dark);margin-bottom:8px}
+.price-card .price-en{font-size:13px;color:var(--c-muted);letter-spacing:2px}
+.price-card .price-amount{font-family:var(--serif);font-size:52px;font-weight:700;color:var(--c-primary);margin:20px 0 8px}
+.price-card .price-unit{font-size:14px;font-weight:600;color:var(--c-primary)}
+.price-card .price-desc{font-size:14px;color:var(--c-text);margin-top:16px;line-height:1.8}
+.price-card .price-time{display:inline-block;margin-top:12px;font-size:12px;color:var(--c-muted);background:var(--c-light);padding:4px 16px;border-radius:20px}
+/* ==================== GALLERY ==================== */
+#gallery{background:var(--c-white)}
+.gallery-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.gallery-item{position:relative;border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow-sm)}
+.gallery-item img{width:100%;height:480px;object-fit:cover;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.gallery-item:hover img{transform:scale(1.08)}
+.gallery-overlay{position:absolute;bottom:0;left:0;right:0;padding:32px 28px 24px;background:linear-gradient(transparent,rgba(30,16,35,.8));color:#fff;opacity:0;transform:translateY(20px);transition:all .4s}
+.gallery-item:hover .gallery-overlay{opacity:1;transform:translateY(0)}
+.gallery-overlay .g-title{font-family:var(--serif);font-size:24px;font-weight:600;margin-bottom:4px}
+.gallery-overlay .g-sub{font-size:13px;opacity:.85}
+/* ==================== VOICES ==================== */
+#voices{background:var(--c-light)}
+.voice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
+.voice-card{background:#fff;border-radius:20px;padding:36px 32px;box-shadow:var(--shadow-sm);transition:transform .4s;position:relative}
+.voice-card:hover{transform:translateY(-6px)}
+.voice-stars{color:var(--c-accent);font-size:18px;letter-spacing:2px;margin-bottom:20px}
+.voice-text{font-size:15px;color:var(--c-text);line-height:2;margin-bottom:28px}
+.voice-author{display:flex;align-items:center;gap:16px;padding-top:20px;border-top:1px solid var(--c-border)}
+.voice-avatar{width:52px;height:52px;border-radius:50%;background:var(--c-soft);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:22px;font-weight:700;color:var(--c-primary);flex-shrink:0}
+.voice-name{font-size:15px;font-weight:700;color:var(--c-dark)}
+.voice-meta{font-size:12px;color:var(--c-muted)}
+/* ==================== FOOTER ==================== */
+footer{background:var(--c-dark);color:#d4c4d0;padding:80px 0 40px}
+.footer-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-bottom:60px}
+.shop-info h3{font-family:var(--serif);font-size:32px;color:#fff;margin-bottom:24px}
+.shop-info .info-row{display:flex;gap:12px;margin-bottom:16px;font-size:14px}
+.shop-info .info-label{color:var(--c-accent2);font-weight:600;min-width:80px;font-size:13px}
+.shop-map{background:var(--c-light);border-radius:16px;height:100%;min-height:280px;display:flex;align-items:center;justify-content:center;flex-direction:column;background-image:linear-gradient(135deg,#fdf2f8 0%,#fce7f3 100%)}
+.shop-map .map-pin{font-size:48px;color:var(--c-primary);margin-bottom:8px}
+.shop-map .map-text{font-size:14px;color:var(--c-muted)}
+.footer-bottom{text-align:center;padding-top:40px;border-top:1px solid rgba(255,255,255,.1);font-size:13px;color:var(--c-muted)}
+/* ==================== RESPONSIVE ==================== */
+@media(max-width:768px){
+  .nav-links{display:none}
+  .nav-toggle{display:block}
+  .hero{grid-template-columns:1fr;min-height:auto}
+  .hero-left{padding:60px 24px}
+  .hero-title{font-size:40px}
+  .hero-right{height:400px}
+  .hero-badge{bottom:20px;right:20px;padding:16px 24px}
+  .hero-badge .num{font-size:32px}
+  .sec-title{font-size:32px}
+  .stylist-grid,.price-grid,.voice-grid{grid-template-columns:1fr;gap:24px}
+  .gallery-grid{grid-template-columns:1fr}
+  .gallery-item img{height:320px}
+  .footer-grid{grid-template-columns:1fr;gap:32px}
+  section{padding:60px 0}
+}
+</style>
+</head>
+<body>
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">Atelier <span>AO</span></div>
+    <div class="nav-links">
+      <a href="#stylists">スタイリスト</a>
+      <a href="#pricing">メニュー</a>
+      <a href="#gallery">ギャラリー</a>
+      <a href="#voices">お客様の声</a>
+      <a href="#access">アクセス</a>
+      <a href="#" class="nav-cta">予約する</a>
+    </div>
+    <button class="nav-toggle" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'">≡</button>
+  </div>
+</nav>
+<!-- HERO -->
+<section class="hero" style="padding-top:72px">
+  <div class="hero-left">
+    <div class="sec-label">Beauty & Hair Design</div>
+    <h1 class="hero-title">あなたの<span class="accent">美しさ</span>を<br>形にする場所</h1>
+    <p class="hero-desc">一人ひとりの骨格・髪質・ライフスタイルに寄り添い、薬指が触れるような繊細な施術で、毎日が楽しくなるヘアスタイルを叶えます。</p>
+    <div class="hero-ctas">
+      <a href="#" class="btn-primary">無料カウンセリング予約</a>
+      <a href="#pricing" class="btn-secondary">メニューを見る</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <img src="/generated/photos-real/salon-gpt.jpg" alt="美容室アトリエアオの洗練されたヘアデザイン" loading="eager" decoding="async">
+    <div class="hero-badge">
+      <div class="num">15</div>
+      <div class="lbl">YEARS OF ART</div>
+    </div>
+  </div>
+</section>
+<!-- STYLISTS -->
+<section id="stylists">
+  <div class="wrap">
+    <div class="text-center">
+      <div class="sec-label">Our Stylists</div>
+      <h2 class="sec-title">あなたの<span class="accent">魅力</span>を引き出す<br>プロフェッショナル</h2>
+      <p class="sec-sub">それぞれが得意なスタイルを持ち、お客様のイメージを的確にカタチにします。厳しい技術研修を経たスタイリスト陣です。</p>
+    </div>
+    <div class="stylist-grid">
+      <div class="stylist-card">
+        <div class="stylist-portrait">
+          <img src="/generated/photos-real/salon-about.jpg" alt="オーナースタイリスト 青木美咲" loading="lazy" decoding="async">
+        </div>
+        <h3 class="stylist-name">青木 美咲</h3>
+        <div class="stylist-name-en">Misaki Aoki</div>
+        <div class="stylist-role">オーナースタイリスト / 創業者</div>
+        <p class="stylist-bio">銀座の有名サロンで15年経験後、独立。骨格補正カットを得意とし、歩くたびに揺れる自然なスタイルが評判です。</p>
+      </div>
+      <div class="stylist-card">
+        <div class="stylist-portrait" style="background:linear-gradient(135deg,#fdf2f8,#fce7f3)">
+          <img src="/generated/photos-real/salon-gallery1.jpg" alt="スタイリスト 高橋楓" loading="lazy" decoding="async" style="object-position:center top">
+        </div>
+        <h3 class="stylist-name">高橋 楓</h3>
+        <div class="stylist-name-en">Kaede Takahashi</div>
+        <div class="stylist-role">トップスタイリスト</div>
+        <p class="stylist-bio">カラー専門歴8年。外国人風ハイライトやハイトーンカラーを数多く手掛け、髪を傷めない薬剤選びが得意です。</p>
+      </div>
+      <div class="stylist-card">
+        <div class="stylist-portrait" style="background:linear-gradient(135deg,#fdf2f8,#fce7f3)">
+          <img src="/generated/photos-real/salon-gallery2.jpg" alt="スタイリスト 佐藤凛" loading="lazy" decoding="async" style="object-position:center top">
+        </div>
+        <h3 class="stylist-name">佐藤 凛</h3>
+        <div class="stylist-name-en">Rin Sato</div>
+        <div class="stylist-role">スタイリスト</div>
+        <p class="stylist-bio">パーマスタイリストとして多数のメディア掲載経験あり。一人ひとりの指の動きまで計算したスタイリングを提案します。</p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- PRICING -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="text-center">
+      <div class="sec-label">Menu & Price</div>
+      <h2 class="sec-title">わかりやすい<span class="accent">料金</span></h2>
+      <p class="sec-sub">追加料金なしの安心価格。カウンセリング無料で、ご希望のスタイルと予算に合わせてご提案いたします。</p>
+    </div>
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="price-label">Cut</div>
+        <div class="price-en">カット</div>
+        <div class="price-amount">5,500</div>
+        <div class="price-unit">円（税込）</div>
+        <p class="price-desc">カウンセリング＋シャンプー＋ブロー込み。顔型や骨格に合わせたオリジナルスタイルを。</p>
+        <span class="price-time">約60分</span>
+      </div>
+      <div class="price-card">
+        <div class="price-label">Color</div>
+        <div class="price-en">カラー</div>
+        <div class="price-amount">8,800</div>
+        <div class="price-unit">円（税込）</div>
+        <p class="price-desc">ファッションカラー・白髪染め対応。髪と地肌に優しい薬剤を選び、色持ちも長持ちします。</p>
+        <span class="price-time">約90分</span>
+      </div>
+      <div class="price-card">
+        <div class="price-label">Perm</div>
+        <div class="price-en">パーマ</div>
+        <div class="price-amount">7,700</div>
+        <div class="price-unit">円（税込）</div>
+        <p class="price-desc">エアリー感のある自然なパーマから、しっかりかけたカールまで。スタイリングしやすさ重視です。</p>
+        <span class="price-time">約120分</span>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="wrap">
+    <div class="text-center">
+      <div class="sec-label">Gallery</div>
+      <h2 class="sec-title">作品<span class="accent">ギャラリー</span></h2>
+      <p class="sec-sub">日々の施術から生まれた、お客様一人ひとりのストーリー。ホバーで詳細が表示されます。</p>
+    </div>
+    <div class="gallery-grid">
+      <div class="gallery-item">
+        <img src="/generated/photos-real/salon-gallery1.jpg" alt="スタイリストが丁寧にカットをしている様子" loading="lazy" decoding="async">
+        <div class="gallery-overlay">
+          <div class="g-title">Precision Cut</div>
+          <div class="g-sub">骨格に沿ったカット技法で、自然な動きを生み出します</div>
+        </div>
+      </div>
+      <div class="gallery-item">
+        <img src="/generated/photos-real/salon-gallery2.jpg" alt="ヘアスタイリングのビフォーアフター" loading="lazy" decoding="async">
+        <div class="gallery-overlay">
+          <div class="g-title">Before & After</div>
+          <div class="g-sub">カラー＋パーマの組み合わせで、印象がガラリと変わります</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- VOICES -->
+<section id="voices">
+  <div class="wrap">
+    <div class="text-center">
+      <div class="sec-label">Testimonials</div>
+      <h2 class="sec-title">お客様の<span class="accent">声</span></h2>
+      <p class="sec-sub">アトリエアオをご利用いただいたお客様からのリアルな声をご紹介します。</p>
+    </div>
+    <div class="voice-grid">
+      <div class="voice-card">
+        <div class="voice-stars">★★★★★</div>
+        <p class="voice-text">初めての来店でしたが、丁寧なカウンセリングで自分に似合うスタイルが分かりました。帰宅後も自分で再現しやすくて嬉しいです。</p>
+        <div class="voice-author">
+          <div class="voice-avatar">K</div>
+          <div>
+            <div class="voice-name">K.Mさん</div>
+            <div class="voice-meta">30代・会社員</div>
+          </div>
+        </div>
+      </div>
+      <div class="voice-card">
+        <div class="voice-stars">★★★★★</div>
+        <p class="voice-text">今まで色々なサロンに行きましたが、ここが一番納得できる仕上がりです。カラーの色持ちも良く、次回の予約が楽しみです。</p>
+        <div class="voice-author">
+          <div class="voice-avatar">T</div>
+          <div>
+            <div class="voice-name">T.Sさん</div>
+            <div class="voice-meta">40代・自営業</div>
+          </div>
+        </div>
+      </div>
+      <div class="voice-card">
+        <div class="voice-stars">★★★★★</div>
+        <p class="voice-text">パーマをかけてもらいましたが、想像以上に自然で綺麗にかかりました。スタイリングの相談にも親身に乗ってくれました。</p>
+        <div class="voice-author">
+          <div class="voice-avatar">H</div>
+          <div>
+            <div class="voice-name">H.Yさん</div>
+            <div class="voice-meta">20代・大学生</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- FOOTER -->
+<footer id="access">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="shop-info">
+        <h3>Atelier AO</h3>
+        <div class="info-row"><span class="info-label">住所</span>東京都渋谷区神南1-2-3 B1F</div>
+        <div class="info-row"><span class="info-label">TEL</span>03-1234-5678</div>
+        <div class="info-row"><span class="info-label">営業時間</span>10:00〜20:00（最終受付19:00）</div>
+        <div class="info-row"><span class="info-label">定休日</span>毎週火曜日・第3水曜日</div>
+        <div class="info-row"><span class="info-label">最寄駅</span>JR渋谷駅 八崎口より徒歩5分</div>
+      </div>
+      <div class="shop-map">
+        <div class="map-pin">◉</div>
+        <div class="map-text">Google Map エリア</div>
+        <div class="map-text" style="font-size:12px;margin-top:4px">渋谷駅 徒歩5分</div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2024 Atelier AO. All Rights Reserved.
+    </div>
+  </div>
+</footer>
+</body>
+</html>

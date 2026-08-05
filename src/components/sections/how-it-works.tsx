@@ -8,28 +8,28 @@ const steps = [
   {
     icon: MessageSquare,
     title: "ヒアリング",
-    description: "会社案内のテキストや写真をお送りいただくだけ。特にご用意いただかなくても、弊社がヒアリングシートで案内します。",
+    description: "会社案内、既存資料、写真、メモ書きだけでも大丈夫です。何から始めればよいか分からなくても、順番に整理してご案内します。",
     color: "from-blue-500 to-blue-600",
     step: "01",
   },
   {
     icon: FileCode2,
-    title: "デザイン・制作",
-    description: "ヒアリング内容をもとに、Next.jsでプロフェッショナルなデザインを制作。初稿を7営業日以内にお届けします。",
+    title: "構成・デザイン提案",
+    description: "業種や目的に合わせて、見せる順番・導線・完成イメージを整理したうえで初稿をご提示します。",
     color: "from-emerald-500 to-emerald-600",
     step: "02",
   },
   {
     icon: Rocket,
-    title: "公開・運営開始",
-    description: "ご確認後、Vercelへデプロイ。独自ドメインの設定も弊社で対応します。公開後も継続的な更新・保守をサポート。",
+    title: "公開",
+    description: "ご確認後、公開サーバーへ反映し、独自ドメインや基本設定まで整えます。公開時点でそのまま使える状態にします。",
     color: "from-purple-500 to-purple-600",
     step: "03",
   },
   {
     icon: HeartHandshake,
-    title: "長期パートナー",
-    description: "月額10,000円で更新・保守・サーバー代すべて込み。テキスト変更や画像差し替えも無料で対応。いつでもお気軽にご相談ください。",
+    title: "更新・保守サポート",
+    description: "公開後もお知らせ更新、画像差し替え、軽微修正などを相談しやすい形でサポートします。",
     color: "from-orange-500 to-orange-600",
     step: "04",
   },
@@ -37,16 +37,16 @@ const steps = [
 
 export default function HowItWorks({ className }: { className?: string }) {
   return (
-    <Section className={`bg-muted/30 ${className ?? ""}`}>
+    <Section id="how-it-works" className={`bg-muted/30 ${className ?? ""}`}>
       <div className="mx-auto max-w-container">
         <div className="mb-16 text-center">
           <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
-            かんたん4ステップ
+            ご相談から公開まで、負担の少ない4ステップ
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            お客様はテキストと写真を用意するだけ。
+            難しい専門知識は不要です。
             <br />
-            あとはすべて私たちにお任せください。
+            まずは資料とご希望を共有いただければ、進め方はこちらで整えます。
           </p>
         </div>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -59,7 +59,6 @@ export default function HowItWorks({ className }: { className?: string }) {
               transition={{ duration: 0.4, delay: index * 0.1 }}
               className="relative"
             >
-              {/* Connector line */}
               {index < steps.length - 1 && (
                 <div className="absolute left-8 top-12 hidden h-[calc(100%-2rem)] w-0.5 bg-border lg:block" />
               )}

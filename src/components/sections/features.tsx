@@ -1,57 +1,52 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { GalleryHorizontalEnd, Pencil, BarChart3, Smartphone, ShieldCheck, Lock } from "lucide-react";
+import {
+  Eye,
+  ShieldCheck,
+  FolderGit2,
+  HeartHandshake,
+} from "lucide-react";
 import { Section } from "../ui/section";
 
 const features = [
   {
-    icon: GalleryHorizontalEnd,
-    title: "業種別テンプレート",
-    description: "製造業・建設業・飲食業・サービス業など、業種に最適化されたデザインをご用意。プロのデザイナーが監修したクオリティです。",
+    icon: Eye,
+    title: "完成イメージを先に確認できる",
+    description:
+      "業種ごとの完成例を見ながら相談できるため、『実際にどんなサイトになるのか分からない』という不安を減らせます。",
     color: "text-blue-600",
     bg: "bg-blue-50",
   },
   {
-    icon: Pencil,
-    title: "自由にカスタマイズ",
-    description: "テキスト・画像・レイアウト、すべて変更可能。Next.jsで構築しているため、SaaSのような制限がありません。",
+    icon: ShieldCheck,
+    title: "中小企業でも信頼感が伝わる構成",
+    description:
+      "会社概要、実績、沿革、アクセス、問い合わせ導線まで整理し、初見でも“ちゃんとした会社”に見える見せ方を設計します。",
     color: "text-emerald-600",
     bg: "bg-emerald-50",
   },
   {
-    icon: BarChart3,
-    title: "Google Analytics連携",
-    description: "アクセス解析も標準装備。お客様のGoogleアカウントに連携するだけ。日々の訪問者数を自分で確認できます。",
+    icon: FolderGit2,
+    title: "ソースコード納品で将来も安心",
+    description:
+      "公開後も自社資産として保有できる前提で整えるため、解約や移行が必要になっても進めやすい状態を維持できます。",
     color: "text-purple-600",
     bg: "bg-purple-50",
   },
   {
-    icon: Smartphone,
-    title: "スマホ完全対応",
-    description: "レスポンシブデザインでスマートフォンからも美しく表示。検索順位にも有利です。",
+    icon: HeartHandshake,
+    title: "更新・保守まで任せやすい",
+    description:
+      "公開して終わりではなく、お知らせ更新、画像差し替え、軽微修正まで継続しやすい運用前提で提供します。",
     color: "text-orange-600",
     bg: "bg-orange-50",
-  },
-  {
-    icon: ShieldCheck,
-    title: "SSL・バックアップ付き",
-    description: "Vercelによる自動HTTPS + Supabase自動バックアップ。セキュリティと安全性はお任せください。",
-    color: "text-rose-600",
-    bg: "bg-rose-50",
-  },
-  {
-    icon: Lock,
-    title: "データはすべてお客様のもの",
-    description: "お問い合わせデータも、アクセスログも、すべてお客様の所有。解約時には完全にデータをお引き渡しします。",
-    color: "text-cyan-600",
-    bg: "bg-cyan-50",
   },
 ];
 
 const container = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.1 } },
+  show: { transition: { staggerChildren: 0.08 } },
 };
 
 const item = {
@@ -61,14 +56,15 @@ const item = {
 
 export default function Features({ className }: { className?: string }) {
   return (
-    <Section className={className}>
+    <Section id="features" className={className}>
       <div className="mx-auto max-w-container">
         <div className="mb-16 text-center">
           <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
-            すべて込みの月額サービス
+            金井のホームページ制作が選ばれる理由
           </h2>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            制作からサーバー、更新、保守まで。追加費用なしでプロフェッショナルなホームページをお届けします。
+          <p className="mx-auto max-w-3xl text-lg leading-relaxed text-muted-foreground">
+            価格の安さだけではなく、完成形の見せ方、公開後の運用、将来の移行まで含めて、
+            長く使いやすいホームページとして整えます。
           </p>
         </div>
         <motion.div
@@ -76,23 +72,19 @@ export default function Features({ className }: { className?: string }) {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-6 md:grid-cols-2 xl:grid-cols-4"
         >
           {features.map((feature) => (
             <motion.div
               key={feature.title}
               variants={item}
-              className="group rounded-2xl border bg-card p-6 transition-all hover:shadow-lg"
+              className="rounded-3xl border bg-card p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
             >
-              <div
-                className={`mb-4 inline-flex rounded-xl p-3 ${feature.bg}`}
-              >
+              <div className={`mb-4 inline-flex rounded-2xl p-3 ${feature.bg}`}>
                 <feature.icon className={`h-6 w-6 ${feature.color}`} />
               </div>
-              <h3 className="mb-2 text-lg font-semibold">{feature.title}</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {feature.description}
-              </p>
+              <h3 className="mb-3 text-lg font-semibold leading-tight">{feature.title}</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
             </motion.div>
           ))}
         </motion.div>

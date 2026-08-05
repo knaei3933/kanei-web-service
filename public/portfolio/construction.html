@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>東央建設株式会社 | 建築工事・リフォーム・地域密着の総合建設会社</title>
+<meta name="description" content="地域密着40年の総合建設会社。新築・増改築・リフォームから公共工事まで。完成引渡しまで安心の5段階サポート。無料現地調査・見積もり。">
+<style>
+:root{
+  --primary:#1c1917;
+  --accent:#57534e;
+  --brown:#78350f;
+  --light:#f5f5f4;
+  --text:#292524;
+  --muted:#78716c;
+  --white:#ffffff;
+  --border:#d6d3d1;
+  --gold:#b45309;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif;color:var(--text);line-height:1.8;background:var(--white)}
+img{max-width:100%;height:auto;display:block}
+a{text-decoration:none;color:inherit}
+ul{list-style:none}
+
+/* Parallax hero */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.hero-bg{position:absolute;inset:0;width:100%;height:120%;object-fit:cover;z-index:-2}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(28,25,23,.85),rgba(87,83,78,.55),rgba(28,25,23,.75));z-index:-1}
+.hero-content{max-width:900px;padding:0 24px}
+.hero-eyebrow{display:inline-block;color:#fbbf24;font-size:13px;font-weight:600;letter-spacing:.25em;margin-bottom:28px;padding:10px 28px;border:1px solid rgba(251,191,36,.4);border-radius:2px}
+.hero-title{color:#fff;font-size:clamp(34px,6vw,64px);font-weight:800;line-height:1.25;margin-bottom:24px;letter-spacing:.02em}
+.hero-title em{font-style:normal;color:#fbbf24;display:block;font-size:.55em;font-weight:500;margin-top:12px;letter-spacing:.1em}
+.hero-text{color:rgba(255,255,255,.9);font-size:17px;max-width:640px;margin:0 auto 40px}
+.hero-cta{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+.btn-solid{display:inline-block;background:var(--gold);color:#fff;padding:18px 48px;font-size:15px;font-weight:700;border-radius:2px;transition:all .2s;border:none;cursor:pointer;letter-spacing:.08em}
+.btn-solid:hover{background:#92400e;transform:translateY(-2px)}
+.btn-ghost{display:inline-block;background:transparent;color:#fff;padding:18px 48px;font-size:15px;font-weight:600;border:2px solid rgba(255,255,255,.5);border-radius:2px;transition:all .2s}
+.btn-ghost:hover{border-color:#fff;background:rgba(255,255,255,.1)}
+
+/* Fixed top bar */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(28,25,23,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
+.topbar-inner{max-width:1280px;margin:0 auto;padding:0 32px;height:68px;display:flex;align-items:center;justify-content:space-between}
+.topbar-logo{color:#fff;font-size:20px;font-weight:800;letter-spacing:.04em}
+.topbar-nav{display:flex;gap:32px;align-items:center}
+.topbar-nav a{color:rgba(255,255,255,.85);font-size:14px;transition:color .2s}
+.topbar-nav a:hover{color:#fbbf24}
+.topbar-tel{color:#fbbf24;font-weight:700;font-size:15px;border-left:1px solid rgba(255,255,255,.15);padding-left:24px}
+
+.section{padding:96px 32px}
+.container{max-width:1280px;margin:0 auto}
+.section-label{display:inline-block;color:var(--gold);font-size:13px;font-weight:700;letter-spacing:.2em;margin-bottom:16px}
+.section-heading{font-size:clamp(28px,4vw,42px);font-weight:800;color:var(--primary);margin-bottom:20px;line-height:1.35}
+.section-lead{font-size:16px;color:var(--muted);max-width:720px;margin-bottom:56px}
+
+/* Project showcase */
+.showcase{display:grid;grid-template-columns:1.4fr 1fr;gap:0;background:var(--light);border-radius:8px;overflow:hidden;box-shadow:0 12px 48px rgba(28,25,23,.12)}
+.showcase-img img{width:100%;height:100%;min-height:480px;object-fit:cover}
+.showcase-detail{padding:56px 48px}
+.showcase-detail h3{font-size:24px;font-weight:700;color:var(--primary);margin-bottom:8px}
+.showcase-detail .sub{color:var(--gold);font-size:14px;font-weight:600;margin-bottom:28px;letter-spacing:.05em}
+.detail-table{width:100%;margin-bottom:28px}
+.detail-table tr{border-bottom:1px solid var(--border)}
+.detail-table th{width:40%;padding:14px 0;font-size:13px;color:var(--muted);font-weight:600;text-align:left;vertical-align:top}
+.detail-table td{padding:14px 0;font-size:15px;font-weight:600;color:var(--text)}
+.showcase-note{font-size:14px;color:var(--muted);padding:20px;background:#fff;border-left:4px solid var(--gold);border-radius:0 4px 4px 0}
+
+/* Process timeline */
+.process-section{background:var(--primary);color:#fff}
+.process-section .section-heading{color:#fff}
+.process-section .section-lead{color:rgba(255,255,255,.65)}
+.timeline{display:grid;grid-template-columns:repeat(5,1fr);gap:24px;position:relative}
+.timeline::before{content:'';position:absolute;top:32px;left:10%;right:10%;height:2px;background:rgba(255,255,255,.15)}
+.step{text-align:center;position:relative}
+.step-num{width:64px;height:64px;border-radius:50%;background:var(--gold);color:#fff;font-size:26px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;position:relative;z-index:1;box-shadow:0 0 0 6px var(--primary)}
+.step h4{font-size:17px;font-weight:700;color:#fff;margin-bottom:12px}
+.step p{font-size:13px;color:rgba(255,255,255,.7);line-height:1.7;padding:0 8px}
+
+/* Company split */
+.company-split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.company-photo img{width:100%;height:500px;object-fit:cover;border-radius:8px;box-shadow:0 16px 48px rgba(28,25,23,.12)}
+.company-data{width:100%;border-collapse:collapse}
+.company-data tr{border-bottom:1px solid var(--border)}
+.company-data th{width:35%;padding:16px 20px;background:var(--light);color:var(--primary);font-weight:700;font-size:14px;text-align:left}
+.company-data td{padding:16px 20px;font-size:15px}
+
+/* Area + Contact */
+.contact-area{background:var(--light)}
+.contact-wrap{display:grid;grid-template-columns:1fr 1.2fr;gap:48px}
+.area-map{background:#fff;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.area-map-fake{height:280px;background:linear-gradient(135deg,#d6d3d1,#a8a29e);display:flex;align-items:center;justify-content:center;position:relative}
+.area-map-fake::after{content:'🗺️ 対応エリア';color:#fff;font-size:22px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,.3)}
+.area-info{padding:32px}
+.area-info h3{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:16px}
+.area-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.area-list span{display:inline-block;background:var(--light);color:var(--primary);font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid var(--border)}
+.area-note{font-size:14px;color:var(--muted)}
+
+.contact-form-box{background:#fff;border-radius:8px;padding:40px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(28,25,23,.06)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-field{margin-bottom:20px}
+.form-field label{display:block;font-size:13px;font-weight:600;color:var(--primary);margin-bottom:6px}
+.form-field input,.form-field textarea,.form-field select{width:100%;padding:12px 14px;background:var(--light);border:1px solid var(--border);border-radius:4px;font-size:15px;font-family:inherit;color:var(--text)}
+.form-field input:focus,.form-field textarea:focus{outline:none;border-color:var(--gold);background:#fff}
+.form-field textarea{resize:vertical;min-height:100px}
+.req{color:#dc2626}
+
+footer{background:#0c0a09;color:rgba(255,255,255,.7);padding:64px 32px 32px}
+.footer-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:40px}
+.footer-brand{color:#fff;font-size:22px;font-weight:800;margin-bottom:16px}
+.footer-contact div{font-size:14px;line-height:2}
+.footer-contact strong{color:#fbbf24}
+.footer-col h4{color:#fff;font-size:14px;font-weight:700;margin-bottom:18px;letter-spacing:.05em}
+.footer-col ul li{margin-bottom:10px}
+.footer-col ul li a{color:rgba(255,255,255,.6);font-size:13px;transition:color .2s}
+.footer-col ul li a:hover{color:#fbbf24}
+.footer-copy{text-align:center;padding-top:24px;border-top:1px solid rgba(255,255,255,.08);font-size:12px;color:rgba(255,255,255,.4)}
+
+@media(max-width:768px){
+  .topbar-nav{display:none}
+  .topbar-tel{font-size:13px;padding-left:12px}
+  .hero{min-height:80vh}
+  .section{padding:64px 20px}
+  .showcase,.contact-wrap,.company-split{grid-template-columns:1fr;gap:32px}
+  .showcase-detail{padding:32px 24px}
+  .timeline{grid-template-columns:1fr;gap:32px}
+  .timeline::before{display:none}
+  .step-num{margin-bottom:16px}
+  .footer-inner{grid-template-columns:1fr 1fr;gap:32px}
+  .form-row{grid-template-columns:1fr}
+  .company-photo img{height:300px}
+  .area-map-fake{height:200px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a href="#" class="topbar-logo">東央建設株式会社</a>
+    <nav class="topbar-nav">
+      <a href="#work">施工事例</a>
+      <a href="#process">施工の流れ</a>
+      <a href="#company">会社情報</a>
+      <a href="#contact">お問い合わせ</a>
+    </nav>
+    <div class="topbar-tel">☎ 0120-123-456</div>
+  </div>
+</div>
+
+<section class="hero" id="top">
+  <img src="/generated/photos-real/construction-gallery1.jpg" alt="東央建設の建設現場" class="hero-bg" loading="eager" decoding="async">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <span class="hero-eyebrow">地域密着 創業1978年</span>
+    <h1 class="hero-title">街をつくる。<br>信頼を、つくる。<em>東央建設株式会社</em></h1>
+    <p class="hero-text">新築工事から増改築、公共工事まで。お客様の想いを形にする、地域密着の総合建設会社です。完成まで安心の5ステップサポート。</p>
+    <div class="hero-cta">
+      <a href="#contact" class="btn-solid">無料見積もり依頼</a>
+      <a href="#work" class="btn-ghost">施工事例を見る</a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="work">
+  <div class="container">
+    <span class="section-label">FEATURED PROJECT</span>
+    <h2 class="section-heading">お客様の想いを形にした、<br>最新の施工事例</h2>
+    <p class="section-lead">地域の気候や風土を理解した職人集団が、一つひとつ丁寧に施工。ご予算やご要望に合わせた最適なプランをご提案します。</p>
+
+    <div class="showcase">
+      <div class="showcase-img">
+        <img src="/generated/photos-real/construction-gallery2.jpg" alt="完成した建物の外観" loading="lazy" decoding="async">
+      </div>
+      <div class="showcase-detail">
+        <h3>〇〇ハイツ新築工事</h3>
+        <div class="sub">令和5年度 施工実績</div>
+        <table class="detail-table">
+          <tr><th>物件名</th><td>〇〇ハイツ（共同住宅）</td></tr>
+          <tr><th>工期</th><td>令和5年4月 〜 令和6年1月</td></tr>
+          <tr><th>工事内容</th><td>RC造 4階建 新築工事</td></tr>
+          <tr><th>延床面積</th><td>1,248.5㎡</td></tr>
+          <tr><th>施工金額</th><td>2億8,000万円</td></tr>
+        </table>
+        <p class="showcase-note">「地域に愛される、長く住み続けられる建物」をテーマに、耐震性・断熱性に優れた次世代規格対応の共同住宅を完成。近隣住民への配慮を徹底した工程管理が評価されました。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section process-section" id="process">
+  <div class="container">
+    <span class="section-label">OUR PROCESS</span>
+    <h2 class="section-heading">安心の5ステップ。<br>お問い合わせから完成まで</h2>
+    <p class="section-lead">初めての方でも安心してご依頼いただけるよう、分かりやすく丁寧なプロセスでサポートします。</p>
+
+    <div class="timeline">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h4>お問い合わせ</h4>
+        <p>お電話やフォームでご相談を。まずはお話を伺います。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h4>現地調査</h4>
+        <p>現地に伺い、土地の状況やご要望を詳細に確認します。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h4>お見積り</h4>
+        <p>調査結果をもとに、明細を含めたお見積りをご提示します。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h4>着工</h4>
+        <p>熟練の職人による施工。工程表に沿って計画的に進行します。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <h4>完成引渡し</h4>
+        <p>最終確認後、お客様へお引き渡し。アフターフォローも安心。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="company">
+  <div class="container">
+    <div class="company-split">
+      <div class="company-photo">
+        <img src="/generated/photos-real/construction-about.jpg" alt="東央建設のオフィスビル" loading="lazy" decoding="async">
+      </div>
+      <div class="company-info">
+        <span class="section-label">COMPANY</span>
+        <h2 class="section-heading">40年以上、地域の建設を支え続けて</h2>
+        <p class="section-lead" style="margin-bottom:32px">1978年の創業以来、この地域で建築工事を手掛けてまいりました。地域の気候風土を知り尽くした職人たちが、お客様の満足を第一に施工を行っています。</p>
+        <table class="company-data">
+          <tr><th>社名</th><td>東央建設株式会社</td></tr>
+          <tr><th>創業</th><td>1978年（昭和53年）</td></tr>
+          <tr><th>資本金</th><td>5,000万円</td></tr>
+          <tr><th>所在地</th><td>〇〇県〇〇市中央3-1-5</td></tr>
+          <tr><th>代表者</th><td>代表取締役　佐藤　一郎</td></tr>
+          <tr><th>従業員</th><td>48名（うち職人34名）</td></tr>
+          <tr><th>許可番号</th><td>国土交通大臣許可 第12345号</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section contact-area" id="contact">
+  <div class="container">
+    <span class="section-label">CONTACT</span>
+    <h2 class="section-heading">お気軽にお問い合わせください</h2>
+    <p class="section-lead">無料現地調査・無料見積もり実施中。まずはお電話またはフォームよりご連絡ください。</p>
+
+    <div class="contact-wrap">
+      <div class="area-map">
+        <div class="area-map-fake"></div>
+        <div class="area-info">
+          <h3>対応エリア</h3>
+          <div class="area-list">
+            <span>〇〇市</span>
+            <span>〇〇市</span>
+            <span>〇〇町</span>
+            <span>〇〇村</span>
+            <span>〇〇市</span>
+            <span>〇〇町</span>
+          </div>
+          <p class="area-note">上記エリア以外でもご相談可能です。お気軽にお問い合わせください。</p>
+        </div>
+      </div>
+
+      <form class="contact-form-box" onsubmit="event.preventDefault();alert('送信されました（デモ）');">
+        <div class="form-row">
+          <div class="form-field">
+            <label for="cname">お名前 <span class="req">*</span></label>
+            <input type="text" id="cname" placeholder="山田 太郎" required>
+          </div>
+          <div class="form-field">
+            <label for="cphone">電話番号 <span class="req">*</span></label>
+            <input type="tel" id="cphone" placeholder="090-1234-5678" required>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="cemail">メールアドレス</label>
+          <input type="email" id="cemail" placeholder="yamada@example.com">
+        </div>
+        <div class="form-field">
+          <label for="ctype">ご相談内容 <span class="req">*</span></label>
+          <select id="ctype" required>
+            <option value="">選択してください</option>
+            <option>新築工事</option>
+            <option>増改築・リフォーム</option>
+            <option>公共工事</option>
+            <option>修繕工事</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="cmsg">お問い合わせ詳細</label>
+          <textarea id="cmsg" placeholder="工事のご予定、建物の状況などをお知らせください。"></textarea>
+        </div>
+        <button type="submit" class="btn-solid" style="width:100%">この内容で送信する</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">東央建設株式会社</div>
+      <div class="footer-contact">
+        <div><strong>TEL</strong>　0120-123-456（フリーダイヤル）</div>
+        <div><strong>FAX</strong>　042-987-6543</div>
+        <div><strong>MAIL</strong>　info@to-o-construction.co.jp</div>
+        <div>営業時間 9:00〜18:00（定休日：日・祝）</div>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>サービス</h4>
+      <ul>
+        <li><a href="#work">新築工事</a></li>
+        <li><a href="#work">増改築・リフォーム</a></li>
+        <li><a href="#work">公共工事</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>会社情報</h4>
+      <ul>
+        <li><a href="#company">会社概要</a></li>
+        <li><a href="#process">施工の流れ</a></li>
+        <li><a href="#contact">対応エリア</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>お問い合わせ</h4>
+      <ul>
+        <li><a href="#contact">無料見積もり</a></li>
+        <li><a href="tel:0120123456">0120-123-456</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-copy">
+    © 2025 東央建設株式会社. All Rights Reserved.
+  </div>
+</footer>
+
+</body>
+</html>

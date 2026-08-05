@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" fill="none">
+
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.14"/>
+    </filter>
+    <filter id="blur"><feGaussianBlur stdDeviation="42"/></filter>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="#eef2ff" stop-opacity="0.92"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <circle cx="135" cy="120" r="170" fill="rgba(255,255,255,0.12)" filter="url(#blur)"/>
+  <circle cx="1030" cy="170" r="210" fill="rgba(99,102,241,0.16)" filter="url(#blur)"/>
+  <circle cx="960" cy="760" r="240" fill="rgba(16,185,129,0.12)" filter="url(#blur)"/>
+  <g filter="url(#shadow)">
+    <rect x="94" y="86" width="1012" height="728" rx="36" fill="rgba(15,23,42,0.40)" stroke="rgba(255,255,255,0.12)"/>
+    <rect x="94" y="86" width="1012" height="58" rx="36" fill="rgba(255,255,255,0.08)"/>
+    <circle cx="132" cy="115" r="7" fill="#ff5f57"/>
+    <circle cx="156" cy="115" r="7" fill="#febc2e"/>
+    <circle cx="180" cy="115" r="7" fill="#28c840"/>
+    <rect x="226" y="102" width="352" height="26" rx="13" fill="rgba(255,255,255,0.08)"/>
+    <rect x="946" y="102" width="108" height="26" rx="13" fill="rgba(255,255,255,0.10)"/>
+  </g>
+  <g filter="url(#soft)">
+    <rect x="132" y="170" width="936" height="612" rx="30" fill="url(#panel)"/>
+  </g>
+  <g>
+    <rect x="160" y="198" width="880" height="76" rx="22" fill="rgba(255,255,255,0.9)" stroke="rgba(15,23,42,0.06)"/>
+    <text x="190" y="245" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="900" fill="#0f172a">Manufacturing Portfolio</text>
+    <text x="190" y="265" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="700" fill="rgba(15,23,42,0.45)">Precision metal / CNC / Assembly</text>
+    <g font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="700" fill="rgba(15,23,42,0.72)">
+      <text x="640" y="245">About</text><text x="708" y="245">Products</text><text x="758" y="245">Equipment</text><text x="806" y="245">Cases</text><text x="860" y="245">Contact</text>
+    </g>
+    <rect x="956" y="212" width="54" height="34" rx="17" fill="#2563eb"/>
+    <text x="968" y="234" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="800" fill="#fff">CTA</text>
+  </g>
+  <g>
+    <rect x="160" y="304" width="422" height="436" rx="30" fill="url(#hero)"/>
+    <circle cx="240" cy="390" r="96" fill="rgba(255,255,255,0.08)"/>
+    <circle cx="386" cy="410" r="142" fill="rgba(255,255,255,0.06)"/>
+    <rect x="198" y="342" width="130" height="28" rx="14" fill="rgba(255,255,255,0.14)"/>
+    <text x="216" y="361" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="800" fill="#dbeafe">ADVANCED FABRICATION</text>
+    <text x="198" y="445" font-family="Inter, system-ui, sans-serif" font-size="40" font-weight="900" fill="#fff">Factory Site</text>
+    <text x="198" y="484" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="rgba(255,255,255,0.86)">CNC / Sheet Metal / Welding / Assembly</text>
+    <rect x="198" y="520" width="162" height="46" rx="23" fill="#fff"/>
+    <text x="232" y="549" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="800" fill="#0f172a">Request Catalog</text>
+    <rect x="372" y="520" width="126" height="46" rx="23" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.22)"/>
+    <text x="400" y="549" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="#fff">View Cases</text>
+    <g stroke="rgba(255,255,255,0.2)" stroke-width="2">
+      <line x1="200" y1="606" x2="512" y2="606"/>
+      <line x1="200" y1="648" x2="512" y2="648" opacity="0.5"/>
+    </g>
+    <g fill="#fff" font-family="Inter, system-ui, sans-serif">
+      <rect x="198" y="624" width="90" height="76" rx="18" fill="rgba(255,255,255,0.12)"/>
+      <rect x="300" y="624" width="90" height="76" rx="18" fill="rgba(255,255,255,0.12)"/>
+      <rect x="402" y="624" width="90" height="76" rx="18" fill="rgba(255,255,255,0.12)"/>
+      <text x="218" y="657" font-size="22" font-weight="900">24h</text><text x="212" y="678" font-size="11" font-weight="700" fill="rgba(255,255,255,0.78)">Ready</text>
+      <text x="324" y="657" font-size="22" font-weight="900">ISO</text><text x="320" y="678" font-size="11" font-weight="700" fill="rgba(255,255,255,0.78)">Quality</text>
+      <text x="430" y="657" font-size="22" font-weight="900">OEM</text><text x="426" y="678" font-size="11" font-weight="700" fill="rgba(255,255,255,0.78)">OEM</text>
+    </g>
+  </g>
+  <g>
+    <rect x="608" y="304" width="412" height="196" rx="26" fill="rgba(255,255,255,0.96)" stroke="rgba(15,23,42,0.06)"/>
+    <text x="638" y="344" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="800" fill="#0f172a">Live Metrics</text>
+    <text x="638" y="366" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="700" fill="rgba(15,23,42,0.46)">Live production metrics</text>
+    <g font-family="Inter, system-ui, sans-serif" fill="#0f172a">
+      <rect x="638" y="388" width="118" height="78" rx="18" fill="rgba(15,23,42,0.04)"/>
+      <rect x="768" y="388" width="118" height="78" rx="18" fill="rgba(15,23,42,0.04)"/>
+      <rect x="898" y="388" width="96" height="78" rx="18" fill="rgba(15,23,42,0.04)"/>
+      <text x="656" y="422" font-size="24" font-weight="900">99%</text><text x="656" y="444" font-size="10" font-weight="700" fill="rgba(15,23,42,0.5)">Yield</text>
+      <text x="787" y="422" font-size="24" font-weight="900">+32%</text><text x="787" y="444" font-size="10" font-weight="700" fill="rgba(15,23,42,0.5)">Leads</text>
+      <text x="915" y="422" font-size="24" font-weight="900">24h</text><text x="918" y="444" font-size="10" font-weight="700" fill="rgba(15,23,42,0.5)">Ready</text>
+    </g>
+  </g>
+  <g>
+    <rect x="608" y="522" width="412" height="218" rx="26" fill="rgba(255,255,255,0.96)" stroke="rgba(15,23,42,0.06)"/>
+    <text x="638" y="560" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="800" fill="#0f172a">Production Line</text>
+    <g transform="translate(638 584)">
+      <rect x="0" y="0" width="150" height="112" rx="20" fill="rgba(37,99,235,0.08)"/>
+      <rect x="168" y="0" width="150" height="112" rx="20" fill="rgba(16,185,129,0.08)"/>
+      <rect x="336" y="0" width="70" height="112" rx="20" fill="rgba(99,102,241,0.08)"/>
+      <circle cx="54" cy="52" r="20" fill="#2563eb" opacity="0.88"/>
+      <rect x="82" y="32" width="42" height="10" rx="5" fill="rgba(15,23,42,0.14)"/>
+      <rect x="82" y="50" width="58" height="10" rx="5" fill="rgba(15,23,42,0.10)"/>
+      <circle cx="222" cy="52" r="20" fill="#10b981" opacity="0.88"/>
+      <rect x="250" y="32" width="42" height="10" rx="5" fill="rgba(15,23,42,0.14)"/>
+      <rect x="250" y="50" width="58" height="10" rx="5" fill="rgba(15,23,42,0.10)"/>
+      <rect x="360" y="28" width="24" height="58" rx="12" fill="#6366f1" opacity="0.88"/>
+    </g>
+  </g>
+</svg>

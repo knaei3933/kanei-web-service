@@ -1,5 +1,4 @@
 import { Mail, Phone } from "lucide-react";
-import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -56,7 +55,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-12 border-t pt-8 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} 金井貿易株式会社 All rights reserved.
+          &copy; {new Date().getFullYear()} 金井貿易株式会社　無断転載を禁じます。
         </div>
       </div>
     </footer>

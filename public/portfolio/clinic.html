@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>みどり整骨院 | あなたの痛みに寄り添う丁寧な施術</title>
+<meta name="description" content="みどり整骨院は、腰痛・肩こり・捻挫などの症状に対応する整骨院です。経験豊富な施術者が一人ひとりの症状に合わせた丁寧な施術を提供します。">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --c-primary:#065f46;--c-accent:#059669;--c-accent2:#10b981;
+  --c-soft:#d1fae5;--c-light:#ecfdf5;--c-dark:#064e3b;
+  --c-text:#374151;--c-muted:#6b7280;--c-border:#d1d5db;
+  --c-white:#fff;--c-card-bg:#f0fdf4;
+  --shadow:0 20px 50px -15px rgba(6,95,70,.2);
+  --shadow-sm:0 4px 20px -5px rgba(6,95,70,.12);
+  --radius:16px;
+  --sans:'Hiragino Maru Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);color:var(--c-text);background:var(--c-white);line-height:1.9}
+img{max-width:100%;display:block}
+a{text-decoration:none;color:inherit}
+section{padding:90px 0}
+.wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+.sec-label{display:inline-block;background:var(--c-light);color:var(--c-primary);font-size:13px;font-weight:700;padding:6px 20px;border-radius:20px;margin-bottom:20px}
+.sec-title{font-size:36px;font-weight:800;color:var(--c-dark);line-height:1.4;margin-bottom:16px}
+.sec-title .accent{color:var(--c-accent)}
+.sec-sub{font-size:16px;color:var(--c-muted);margin-bottom:56px;max-width:600px}
+.text-center{text-align:center}
+.text-center .sec-sub{margin:0 auto 56px}
+/* NAVBAR */
+nav{position:fixed;top:0;left:0;width:100%;z-index:1000;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);border-bottom:2px solid var(--c-light)}
+.nav-inner{max-width:1140px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{display:flex;align-items:center;gap:10px}
+.nav-logo .leaf{width:38px;height:38px;background:var(--c-primary);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:bold}
+.nav-logo-text{font-size:20px;font-weight:800;color:var(--c-dark)}
+.nav-logo-text small{font-size:11px;color:var(--c-accent);font-weight:600;display:block}
+.nav-links{display:flex;gap:28px;align-items:center}
+.nav-links a{font-size:14px;font-weight:600;color:var(--c-text);transition:color .3s}
+.nav-links a:hover{color:var(--c-accent)}
+.nav-cta{background:var(--c-primary);color:#fff!important;padding:12px 26px;border-radius:30px;font-size:14px!important;transition:all .3s}
+.nav-cta:hover{background:var(--c-accent);transform:translateY(-2px)}
+.nav-toggle{display:none;font-size:26px;background:none;border:none;color:var(--c-primary);cursor:pointer}
+/* HERO */
+.hero{padding-top:72px}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);background:var(--c-primary);color:#fff}
+.hero-stat{text-align:center;padding:28px 20px;border-right:1px solid rgba(255,255,255,.15)}
+.hero-stat:last-child{border-right:none}
+.hero-stat .stat-num{font-size:34px;font-weight:800;line-height:1.2}
+.hero-stat .stat-num small{font-size:16px}
+.hero-stat .stat-label{font-size:13px;opacity:.85;margin-top:4px}
+.hero-main{position:relative;height:520px;overflow:hidden}
+.hero-main img{width:100%;height:100%;object-fit:cover}
+.hero-main::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,rgba(6,78,59,.82) 0%,rgba(6,78,59,.4) 60%,transparent 100%)}
+.hero-content{position:absolute;top:50%;left:0;transform:translateY(-50%);padding:0 8%;z-index:2;color:#fff}
+.hero-content h1{font-size:48px;font-weight:800;line-height:1.4;margin-bottom:20px}
+.hero-content h1 .accent{color:var(--c-accent2)}
+.hero-content p{font-size:17px;max-width:480px;margin-bottom:32px;opacity:.92}
+.btn-primary{display:inline-block;background:var(--c-accent);color:#fff;padding:16px 42px;border-radius:40px;font-weight:700;font-size:16px;transition:all .3s;box-shadow:0 8px 25px -5px rgba(16,185,129,.5)}
+.btn-primary:hover{background:var(--c-accent2);transform:translateY(-3px)}
+/* SYMPTOMS */
+#symptoms{background:var(--c-white)}
+.symptom-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.symptom-card{background:var(--c-card-bg);border-radius:var(--radius);padding:36px 28px;transition:all .4s;border:2px solid transparent}
+.symptom-card:hover{transform:translateY(-6px);border-color:var(--c-accent);box-shadow:var(--shadow)}
+.symptom-icon{width:80px;height:80px;border-radius:20px;margin-bottom:20px;display:flex;align-items:center;justify-content:center}
+.symptom-icon.s1{background:linear-gradient(135deg,#a7f3d0,#6ee7b7)}
+.symptom-icon.s2{background:linear-gradient(135deg,#bfdbfe,#93c5fd)}
+.symptom-icon.s3{background:linear-gradient(135deg,#fde68a,#fcd34d)}
+.symptom-icon.s4{background:linear-gradient(135deg,#fbcfe8,#f9a8d4)}
+.symptom-icon.s5{background:linear-gradient(135deg,#c7d2fe,#a5b4fc)}
+.symptom-icon.s6{background:linear-gradient(135deg,#fed7aa,#fdba74)}
+.symptom-icon span{font-size:32px;color:#fff;font-weight:800}
+.symptom-card h3{font-size:20px;font-weight:800;color:var(--c-dark);margin-bottom:10px}
+.symptom-card p{font-size:14px;color:var(--c-text);line-height:1.8}
+/* FLOW */
+#flow{background:var(--c-light)}
+.flow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;position:relative}
+.flow-step{text-align:center;position:relative;padding:0 12px}
+.flow-step .step-num{width:64px;height:64px;background:var(--c-primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;margin:0 auto 24px;position:relative;z-index:2}
+.flow-step .step-num::after{content:'';position:absolute;top:50%;left:64px;width:calc(100% - 32px);height:3px;background:var(--c-accent);z-index:-1}
+.flow-step:last-child .step-num::after{display:none}
+.flow-step h3{font-size:22px;font-weight:800;color:var(--c-dark);margin-bottom:12px}
+.flow-step p{font-size:14px;color:var(--c-text);line-height:1.9;max-width:300px;margin:0 auto}
+.flow-step .step-time{display:inline-block;margin-top:16px;background:#fff;color:var(--c-primary);font-size:13px;font-weight:700;padding:4px 18px;border-radius:20px}
+/* ROOM */
+#room{background:var(--c-white)}
+.room-pano{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+.room-img{border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);position:relative}
+.room-img img{width:100%;height:360px;object-fit:cover;transition:transform .5s}
+.room-img:hover img{transform:scale(1.05)}
+.room-img .room-cap{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(6,78,59,.85));color:#fff;padding:24px 20px 18px;font-size:15px;font-weight:700}
+.room-ext{display:grid;grid-template-columns:1fr 1.4fr;gap:24px;align-items:center;background:var(--c-card-bg);border-radius:var(--radius);padding:32px}
+.room-ext-img{border-radius:12px;overflow:hidden}
+.room-ext-img img{width:100%;height:240px;object-fit:cover}
+.room-ext-text h3{font-size:24px;font-weight:800;color:var(--c-dark);margin-bottom:12px}
+.room-ext-text p{font-size:15px;color:var(--c-text);line-height:1.9}
+.room-ext-text ul{list-style:none;margin-top:16px}
+.room-ext-text li{font-size:14px;color:var(--c-text);padding:6px 0;padding-left:24px;position:relative}
+.room-ext-text li::before{content:'✓';position:absolute;left:0;color:var(--c-accent);font-weight:800}
+/* ACCESS */
+#access{background:var(--c-light)}
+.access-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:40px;align-items:start}
+.access-info h3{font-size:24px;font-weight:800;color:var(--c-dark);margin-bottom:24px}
+.access-table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:24px}
+.access-table th,.access-table td{padding:16px 20px;border-bottom:1px solid var(--c-border);font-size:15px;text-align:left}
+.access-table th{background:var(--c-card-bg);color:var(--c-primary);width:120px;font-weight:700;vertical-align:top}
+.access-table tr:last-child th,.access-table tr:last-child td{border-bottom:none}
+.price-table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm)}
+.price-table th,.price-table td{padding:14px 18px;border-bottom:1px solid var(--c-border);font-size:15px}
+.price-table th{background:var(--c-primary);color:#fff;font-weight:700}
+.price-table td:last-child{text-align:right;font-weight:700;color:var(--c-primary)}
+.price-table tr:last-child td{border-bottom:none}
+.access-img{border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.access-img img{width:100%;height:280px;object-fit:cover}
+.access-img .img-cap{padding:14px 18px;background:#fff;font-size:14px;font-weight:700;color:var(--c-dark)}
+/* FOOTER */
+footer{background:var(--c-dark);color:#c7f0db;padding:70px 0 32px}
+.footer-info{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:48px}
+.footer-brand h3{font-size:24px;font-weight:800;color:#fff;margin-bottom:16px}
+.footer-brand p{font-size:14px;opacity:.8;margin-bottom:8px}
+.footer-hours h3{font-size:18px;font-weight:800;color:#fff;margin-bottom:16px}
+.footer-hours ul{list-style:none}
+.footer-hours li{font-size:14px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.footer-hours li span{display:inline-block;width:80px;font-weight:700;color:var(--c-accent2)}
+.footer-bottom{text-align:center;padding-top:32px;border-top:1px solid rgba(255,255,255,.1);font-size:13px;opacity:.7}
+/* RESPONSIVE */
+@media(max-width:768px){
+  .nav-links{display:none}
+  .nav-toggle{display:block}
+  .hero-stats{grid-template-columns:1fr}
+  .hero-stat{border-right:none;border-bottom:1px solid rgba(255,255,255,.15);padding:20px}
+  .hero-stat:last-child{border-bottom:none}
+  .hero-main{height:auto}
+  .hero-main img{height:500px}
+  .hero-content{position:relative;top:0;transform:none;padding:48px 24px}
+  .hero-content h1{font-size:32px}
+  .hero-content p{font-size:15px}
+  .sec-title{font-size:28px}
+  .symptom-grid{grid-template-columns:1fr}
+  .flow-grid{grid-template-columns:1fr;gap:48px}
+  .flow-step .step-num::after{display:none}
+  .room-pano{grid-template-columns:1fr}
+  .room-img img{height:280px}
+  .room-ext{grid-template-columns:1fr}
+  .access-grid{grid-template-columns:1fr}
+  .footer-info{grid-template-columns:1fr}
+  section{padding:56px 0}
+}
+</style>
+</head>
+<body>
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <div class="leaf">+</div>
+      <div class="nav-logo-text">みどり整骨院<small>自費・保険対応</small></div>
+    </div>
+    <div class="nav-links">
+      <a href="#symptoms">症状別案内</a>
+      <a href="#flow">施術の流れ</a>
+      <a href="#room">施術室</a>
+      <a href="#access">アクセス・料金</a>
+      <a href="#access" class="nav-cta">ご予約はこちら</a>
+    </div>
+    <button class="nav-toggle" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'">≡</button>
+  </div>
+</nav>
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="stat-num">12,000<small>件超</small></div>
+      <div class="stat-label">施術実績</div>
+    </div>
+    <div class="hero-stat">
+      <div class="stat-num">無料</div>
+      <div class="stat-label">初診・相談</div>
+    </div>
+    <div class="hero-stat">
+      <div class="stat-num">対応</div>
+      <div class="stat-label">保険取り扱い</div>
+    </div>
+  </div>
+  <div class="hero-main">
+    <img src="/generated/photos-real/clinic-gpt.jpg" alt="みどり整骨院の施術風景" loading="eager" decoding="async">
+    <div class="hero-content">
+      <h1>お体の<span class="accent">悩み</span>、<br>まずはご相談ください</h1>
+      <p>腰痛・肩こり・捻挫など、どんな些細な痛みでも構いません。経験豊富な施術者が、ていねいにお話を伺います。</p>
+      <a href="#access" class="btn-primary">無料相談を予約する</a>
+    </div>
+  </div>
+</header>
+<!-- SYMPTOMS -->
+<section id="symptoms">
+  <div class="wrap">
+    <div class="text-center">
+      <span class="sec-label">症状別案内</span>
+      <h2 class="sec-title">こんな<span class="accent">お悩み</span>ありませんか？</h2>
+      <p class="sec-sub">どのような症状でも、まずはご相談ください。保険適応・自費施術のどちらにも対応しています。</p>
+    </div>
+    <div class="symptom-grid">
+      <div class="symptom-card">
+        <div class="symptom-icon s1"><span>腰</span></div>
+        <h3>腰痛</h3>
+        <p>慢性的な腰痛や急なぎっくり腰まで。姿勢や生活習慣の分析から根本的な原因にアプローチします。</p>
+      </div>
+      <div class="symptom-card">
+        <div class="symptom-icon s2"><span>肩</span></div>
+        <h3>肩こり</h3>
+        <p>長時間のデスクワークやスマートフォンの使いすぎで酷使した肩周りを、血行促進でリラックスさせます。</p>
+      </div>
+      <div class="symptom-card">
+        <div class="symptom-icon s3"><span>膝</span></div>
+        <h3>膝痛</h3>
+        <p>加齢や運動不足による膝の痛みに。関節周囲の筋肉の緊張を和らげ、可動域の改善をはかります。</p>
+      </div>
+      <div class="symptom-card">
+        <div class="symptom-icon s4"><span>捻</span></div>
+        <h3>捻挫</h3>
+        <p>足首の捻挫をはじめとする怪我にはRICE処理後の適切な施術で、早期回復と再発防止をサポートします。</p>
+      </div>
+      <div class="symptom-card">
+        <div class="symptom-icon s5"><span>鞭</span></div>
+        <h3>むちうち</h3>
+        <p>交通事故後のむちうち症状（首の痛み・頭痛・めまい等）に対応。保険適応で継続的な施術が可能です。</p>
+      </div>
+      <div class="symptom-card">
+        <div class="symptom-icon s6"><span>運</span></div>
+        <h3>スポーツ傷害</h3>
+        <p>ランナー膝・テニス肘・野球肩など、競技特性に応じたアプローチで早期の競技復帰をめざします。</p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- FLOW -->
+<section id="flow">
+  <div class="wrap">
+    <div class="text-center">
+      <span class="sec-label">施術の流れ</span>
+      <h2 class="sec-title">わかりやすい<span class="accent">3ステップ</span></h2>
+      <p class="sec-sub">初めての方も安心。以下の流れで丁寧に施術を進めていきます。</p>
+    </div>
+    <div class="flow-grid">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <h3>カウンセリング</h3>
+        <p>現在の症状・日常生活・痛みの強さなどを丁寧にお伺いします。無理な施術は一切行いません。</p>
+        <span class="step-time">約15分</span>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <h3>検査・施術</h3>
+        <p>姿勢分析や動作確認で原因を特定し、筋肉・関節への施術を心身ともにリラックスした状態で行います。</p>
+        <span class="step-time">約30分</span>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <h3>アフターケア</h3>
+        <p>施術後の経過をご説明し、ご自宅でできるストレッチや予防法を指導。次回までの過ごし方もアドバイスします。</p>
+        <span class="step-time">約10分</span>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ROOM -->
+<section id="room">
+  <div class="wrap">
+    <div class="text-center">
+      <span class="sec-label">施術室ご案内</span>
+      <h2 class="sec-title">安心の<span class="accent">施術空間</span></h2>
+      <p class="sec-sub">清潔で落ち着いた空間で、リラックスしてお施術を受けていただけます。</p>
+    </div>
+    <div class="room-pano">
+      <div class="room-img">
+        <img src="/generated/photos-real/clinic-gallery1.jpg" alt="みどり整骨院の施術室" loading="lazy" decoding="async">
+        <div class="room-cap">個室制の施術ベッド</div>
+      </div>
+      <div class="room-img">
+        <img src="/generated/photos-real/clinic-gallery2.jpg" alt="施術風景" loading="lazy" decoding="async">
+        <div class="room-cap">丁寧な手技による施術</div>
+      </div>
+    </div>
+    <div class="room-ext">
+      <div class="room-ext-img">
+        <img src="/generated/photos-real/clinic-about.jpg" alt="みどり整骨院の外観" loading="lazy" decoding="async">
+      </div>
+      <div class="room-ext-text">
+        <h3>地域に愛されるクリニック</h3>
+        <p>駅から徒歩3分の好立地。駐車場も完備しており、お車でのご来院も可能です。</p>
+        <ul>
+          <li>完全個室でプライバシーを保護</li>
+          <li>男女別の施術スペース</li>
+          <li>車椅子・ベビーカー対応バリアフリー</li>
+          <li>専用駐車場3台完備</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ACCESS -->
+<section id="access">
+  <div class="wrap">
+    <div class="text-center">
+      <span class="sec-label">アクセス・料金</span>
+      <h2 class="sec-title">お気軽に<span class="accent">ご来院</span>ください</h2>
+      <p class="sec-sub">初診の方は無料でご相談いただけます。お電話またはWebからご予約ください。</p>
+    </div>
+    <div class="access-grid">
+      <div class="access-info">
+        <h3>診療時間・料金</h3>
+        <table class="access-table">
+          <tr><th>診療時間</th><td>月〜土 9:00〜19:00</td></tr>
+          <tr><th>休診日</th><td>毎週日曜日・祝日・第1・第3土曜</td></tr>
+          <tr><th>TEL</th><td>03-9876-5432</td></tr>
+          <tr><th>住所</th><td>東京都世田谷区緑町3-1-2 メゾン緑1F</td></tr>
+          <tr><th>最寄駅</th><td>小田急線「成城学園前駅」北口より徒歩3分</td></tr>
+          <tr><th>駐車場</th><td>専用駐車場3台完備（無料）</td></tr>
+        </table>
+        <table class="price-table">
+          <tr><th>施術内容</th><th>料金（税込）</th></tr>
+          <tr><td>初診料（相談のみ）</td><td>無料</td></tr>
+          <tr><td>保険施術</td><td>1,500円〜</td></tr>
+          <tr><td>自費施術（基本コース）</td><td>3,300円〜</td></tr>
+          <tr><td>自費施術（特別コース）</td><td>5,500円〜</td></tr>
+        </table>
+      </div>
+      <div class="access-img">
+        <img src="/generated/photos-real/clinic-about.jpg" alt="みどり整骨院の外観写真" loading="lazy" decoding="async">
+        <div class="img-cap">みどり整骨院 外観</div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="footer-info">
+      <div class="footer-brand">
+        <h3>みどり整骨院</h3>
+        <p>住所：東京都世田谷区緑町3-1-2 メゾン緑1F</p>
+        <p>TEL：03-9876-5432</p>
+        <p>最寄駅：小田急線「成城学園前駅」北口より徒歩3分</p>
+        <p>駐車場：専用3台完備（無料）</p>
+      </div>
+      <div class="footer-hours">
+        <h3>診療時間</h3>
+        <ul>
+          <li><span>月〜金</span>9:00〜19:00</li>
+          <li><span>土曜</span>9:00〜17:00（第1・第3除く）</li>
+          <li><span>日・祝</span>休診</li>
+          <li><span>予約</span>電話・Web受付</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2024 みどり整骨院. All Rights Reserved.
+    </div>
+  </div>
+</footer>
+</body>
+</html>

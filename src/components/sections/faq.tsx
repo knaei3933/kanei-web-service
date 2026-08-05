@@ -14,32 +14,42 @@ const faqItems: FAQItem[] = [
   {
     question: "初期費用はいくらですか？",
     answer:
-      "初期費用は0円です。ドメイン取得費（年間約1,500円）のみお客様負担となります。月額10,000円でホームページの制作・運営・保守をすべて含みます。",
+      "初期費用は0円です。お客様にご負担いただくのは、独自ドメイン取得費用（年間約1,500円前後）と、必要な追加機能がある場合の個別見積もりのみです。",
   },
   {
-    question: "ソースコードの所有権はどうなりますか？",
+    question: "何を準備すれば始められますか？",
     answer:
-      "すべてお客様のものです。Gitリポジトリごとお渡ししますので、いつでも他のサーバーに移行可能です。WixやSTUDIOのようなプラットフォーム依存はありません。",
+      "会社案内、既存パンフレット、写真、メモ書きだけでも大丈夫です。文章が整っていなくても、見せ方や構成はこちらで整理します。",
   },
   {
-    question: "デザインの変更はできますか？",
+    question: "どんな業種でも対応できますか？",
     answer:
-      "はい。テキスト変更・画像差し替えはお客様ご自身で簡単にできます。より大きな変更も月額プランに含まれており、追加料金なしで対応いたします。",
+      "製造業、建設業、飲食業、美容室、整骨院、士業、IT・コンサルなど、中小企業向けのホームページに幅広く対応できます。業種ごとに重視すべき情報を整理して構成します。",
   },
   {
-    question: "解約時はどうなりますか？",
+    question: "完成イメージは事前に確認できますか？",
     answer:
-      "いつでも解約可能です。解約後もソースコード・データはすべてお客様のものとしてお引き渡しします。他のサーバーで引き続き運営できます。",
+      "はい。業種別の完成例を見ながらご相談いただけます。『実際にどんな見え方になるのか分からない』という状態のまま進めることはありません。",
   },
   {
-    question: "どんな技術を使っていますか？",
+    question: "更新は自分でできますか？",
     answer:
-      "Node.js（Next.js）をベースに、Vercelによる高速配信、Supabaseによるフォーム・データ管理、Google Analyticsによるアクセス解析を提供します。いずれも現代的で安定した技術スタックです。",
+      "簡単な変更はお客様自身でも可能ですし、難しい部分は当社が対応します。お知らせ追加や画像差し替えなど、公開後も相談しやすい形で運用できます。",
   },
   {
-    question: "スマートフォンに対応していますか？",
+    question: "解約したら何も残りませんか？",
     answer:
-      "はい。すべてのページがレスポンシブデザインで制作されており、スマートフォン・タブレット・PCのすべてに最適化されています。",
+      "いいえ。サイトのデータやソースコードはお客様の資産として扱います。移行が必要な場合も進めやすいように整理してお渡しします。",
+  },
+  {
+    question: "検索対策は含まれますか？",
+    answer:
+      "はい。タイトル設計、見出し構造、スマホ対応、基本的な表示速度、業種や地名の整理など、検索に向けた土台は最初から整えます。",
+  },
+  {
+    question: "納期はどれくらいですか？",
+    answer:
+      "内容が固まっていれば、初稿は7営業日前後でご提示できます。ページ数が多い場合や多言語対応が必要な場合は、内容に応じて別途調整します。",
   },
 ];
 
@@ -47,29 +57,24 @@ export default function FAQ({ className }: { className?: string }) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <Section className={cn("bg-muted/30", className)}>
-      <div className="mx-auto max-w-3xl">
+    <Section id="faq" className={cn("bg-muted/30", className)}>
+      <div className="mx-auto max-w-4xl">
         <div className="mb-12 text-center">
           <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
             よくあるご質問
           </h2>
           <p className="text-muted-foreground">
-            お客様からよくいただくご質問にお答えします
+            初めてホームページを依頼する方が気になりやすい点を、先に分かりやすく整理しています。
           </p>
         </div>
         <div className="space-y-3">
           {faqItems.map((item, index) => (
-            <div
-              key={index}
-              className="rounded-2xl border bg-card transition-all"
-            >
+            <div key={index} className="rounded-2xl border bg-card transition-all">
               <button
-                onClick={() =>
-                  setOpenIndex(openIndex === index ? null : index)
-                }
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
                 className="flex w-full items-center justify-between px-6 py-5 text-left"
               >
-                <span className="pr-4 font-medium">{item.question}</span>
+                <span className="pr-4 font-medium leading-relaxed">{item.question}</span>
                 <ChevronDown
                   className={cn(
                     "h-5 w-5 shrink-0 text-muted-foreground transition-transform",
@@ -78,7 +83,7 @@ export default function FAQ({ className }: { className?: string }) {
                 />
               </button>
               {openIndex === index && (
-                <div className="border-t px-6 pb-5 pt-4 text-muted-foreground">
+                <div className="border-t px-6 pb-5 pt-4 text-sm leading-relaxed text-muted-foreground">
                   {item.answer}
                 </div>
               )}

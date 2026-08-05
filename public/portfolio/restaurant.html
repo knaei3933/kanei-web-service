@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>青葉ダイニング | 心を込めてお届けする 一皿の幸せ</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Hiragino Kaku Gothic Pro','メイリオ',Meiryo,sans-serif;color:#3a2818;background:#fff7ed;line-height:1.7}
+img{max-width:100%;display:block}
+a{text-decoration:none}
+.section{padding:5rem 1.5rem}
+.container{max-width:1100px;margin:0 auto}
+
+/* ===== Hero ===== */
+.hero{position:relative;min-height:92vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:url('/generated/real-photo-set/restaurant-real.jpg') center/cover no-repeat}
+.hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(20,8,0,.55),rgba(20,8,0,.7))}
+.hero-inner{position:relative;z-index:1;color:#fff;padding:2rem}
+.hero h1{font-size:clamp(2rem,6vw,3.8rem);line-height:1.35;margin-bottom:.5rem;font-weight:800;text-shadow:0 2px 20px rgba(0,0,0,.6)}
+.hero .sub{font-size:clamp(1rem,2.4vw,1.4rem);opacity:.95;margin-bottom:2rem}
+.hours-badge{display:inline-flex;align-items:center;gap:.6rem;background:rgba(234,88,12,.92);color:#fff;padding:.7rem 1.6rem;border-radius:50px;font-size:1.05rem;font-weight:700;box-shadow:0 4px 20px rgba(234,88,12,.4);margin-bottom:2rem}
+.hours-badge::before{content:'🕒';font-size:1.2rem}
+.btn-reserve{display:inline-block;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;padding:1rem 3rem;border-radius:50px;font-size:1.2rem;font-weight:700;box-shadow:0 6px 30px rgba(249,115,22,.5);transition:transform .2s,box-shadow .2s}
+.btn-reserve:hover{transform:translateY(-3px);box-shadow:0 10px 40px rgba(249,115,22,.65)}
+
+/* ===== Chef ===== */
+.chef{background:#fff7ed}
+.chef-grid{display:flex;align-items:center;gap:3rem;flex-wrap:wrap;justify-content:center}
+.chef-photo{width:280px;height:280px;border-radius:50%;overflow:hidden;border:6px solid #fff;box-shadow:0 8px 40px rgba(234,88,12,.2);flex-shrink:0}
+.chef-photo img{width:100%;height:100%;object-fit:cover}
+.chef-text{flex:1;min-width:300px;max-width:500px;text-align:left}
+.chef-text .label{color:#ea580c;font-weight:700;letter-spacing:.1em;font-size:.85rem;margin-bottom:.5rem}
+.chef-text h2{font-size:clamp(1.6rem,4vw,2.4rem);color:#3a2818;margin-bottom:1rem}
+.chef-text p{color:#6b4c3b;font-size:1.05rem;margin-bottom:1.2rem}
+.chef-text .sig{font-family:serif;font-style:italic;font-size:1.15rem;color:#ea580c;font-weight:700}
+
+/* ===== Menu ===== */
+.menu{background:#fff}
+.menu-head{text-align:center;margin-bottom:3rem}
+.menu-head .label{color:#ea580c;font-weight:700;letter-spacing:.1em;font-size:.85rem}
+.menu-head h2{font-size:clamp(1.8rem,4vw,2.6rem);color:#3a2818;margin-top:.3rem}
+.menu-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.mcard{background:#fff7ed;border-radius:1.2rem;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .25s}
+.mcard:hover{transform:translateY(-6px)}
+.mcard-img{height:200px;overflow:hidden;position:relative}
+.mcard-img img{width:100%;height:100%;object-fit:cover}
+.mcard-tag{position:absolute;top:1rem;left:1rem;background:#ea580c;color:#fff;font-size:.8rem;font-weight:700;padding:.3rem .9rem;border-radius:30px}
+.mcard-body{padding:1.5rem}
+.mcard-body h3{font-size:1.3rem;color:#3a2818;margin-bottom:.5rem}
+.mcard-body .price{font-size:1.5rem;font-weight:800;color:#ea580c;margin-bottom:.8rem}
+.mcard-body p{color:#6b4c3b;font-size:.95rem}
+
+/* ===== Gallery ===== */
+.gallery{background:#fff7ed}
+.gallery-head{text-align:center;margin-bottom:3rem}
+.gallery-head .label{color:#ea580c;font-weight:700;letter-spacing:.1em;font-size:.85rem}
+.gallery-head h2{font-size:clamp(1.8rem,4vw,2.6rem);color:#3a2818;margin-top:.3rem}
+.gallery-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.gitem{position:relative;border-radius:1rem;overflow:hidden;height:380px;box-shadow:0 6px 25px rgba(0,0,0,.1)}
+.gitem img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.gitem:hover img{transform:scale(1.08)}
+.gitem .cap{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(20,8,0,.85));color:#fff;padding:1.5rem;opacity:0;transform:translateY(20px);transition:opacity .35s,transform .35s}
+.gitem:hover .cap{opacity:1;transform:translateY(0)}
+.gitem .cap h4{font-size:1.2rem;margin-bottom:.3rem}
+.gitem .cap p{font-size:.9rem;opacity:.9}
+
+/* ===== Access ===== */
+.access{background:#fff}
+.access-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:stretch}
+.access-info h3{font-size:1.5rem;color:#3a2818;margin-bottom:1.5rem}
+.access-info dl{border-top:1px solid #fed7aa}
+.access-info dt{font-weight:700;color:#6b4c3b;padding:.8rem 0 .3rem;border-bottom:1px solid #ffedd5;font-size:.9rem}
+.access-info dd{padding-bottom:.8rem;border-bottom:1px solid #ffedd5;color:#3a2818;font-size:1.05rem}
+.access-info dd:last-of-type{border-bottom:none}
+.access-map{background:linear-gradient(135deg,#fde68a,#fed7aa);border-radius:1rem;min-height:300px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.access-map::before{content:'';position:absolute;inset:0;background:
+  repeating-linear-gradient(0deg,transparent,transparent 38px,rgba(234,88,12,.1) 38px,rgba(234,88,12,.1) 39px),
+  repeating-linear-gradient(90deg,transparent,transparent 38px,rgba(234,88,12,.1) 38px,rgba(234,88,12,.1) 39px)}
+.access-map .pin{position:relative;z-index:1;text-align:center;color:#ea580c}
+.access-map .pin span{font-size:3rem;display:block}
+.access-map .pin p{font-weight:700;margin-top:.5rem;font-size:1rem;color:#3a2818}
+
+/* ===== Footer ===== */
+footer{background:#3a2818;color:#fed7aa;padding:3rem 1.5rem 2rem}
+.footer-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:2rem}
+.footer-grid h4{color:#fff;font-size:1.1rem;margin-bottom:1rem}
+.footer-grid p{font-size:.95rem;line-height:1.9}
+.footer-sns{display:flex;gap:.8rem;margin-top:1rem}
+.footer-sns a{width:40px;height:40px;background:#ea580c;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem}
+.footer-bottom{text-align:center;padding-top:2rem;margin-top:2rem;border-top:1px solid #5a3e2a;font-size:.85rem;opacity:.7}
+
+/* ===== Responsive ===== */
+@media(max-width:768px){
+  .menu-cards{grid-template-columns:1fr}
+  .gallery-grid{grid-template-columns:1fr}
+  .access-grid{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr}
+  .chef-grid{flex-direction:column;text-align:center}
+  .chef-text{text-align:center}
+  .gitem{height:260px}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Hero ===== -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-inner">
+    <span class="hours-badge">月〜土 11:30 - 22:00 (L.O. 21:00)</span>
+    <h1>心を込めてお届けする<br>一皿の幸せ</h1>
+    <p class="sub">季節の食材と職人の技が織りなす、あたたかい時間</p>
+    <a href="#" class="btn-reserve">予約する</a>
+  </div>
+</section>
+
+<!-- ===== Chef Greeting ===== -->
+<section class="section chef">
+  <div class="container">
+    <div class="chef-grid">
+      <div class="chef-photo">
+        <img src="/generated/photos-real/restaurant-about.jpg" alt="シェフが調理する様子" loading="lazy" decoding="async">
+      </div>
+      <div class="chef-text">
+        <p class="label">CHEF'S GREETING</p>
+        <h2>素材と向き合い、<br>お客様の笑顔を作る</h2>
+        <p>青葉ダイニングの料理はすべて手作り。地元の新鮮野菜と厳選したお肉・魚を仕入れ、その日の状態に合わせて調理しております。</p>
+        <p>何気ない日常の食事が、特別な時間になりますように。心を込めておもてなしいたします。</p>
+        <p class="sig">— 料理人 青葉太郎</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Menu ===== -->
+<section class="section menu">
+  <div class="container">
+    <div class="menu-head">
+      <p class="label">MENU</p>
+      <h2>こだわりのメニュー</h2>
+    </div>
+    <div class="menu-cards">
+      <div class="mcard">
+        <div class="mcard-img">
+          <img src="/generated/photos-real/restaurant-gallery1.jpg" alt="ランチセットの盛り付け" loading="lazy" decoding="async">
+          <span class="mcard-tag">LUNCH</span>
+        </div>
+        <div class="mcard-body">
+          <h3>ランチセット</h3>
+          <p class="price">¥1,100〜</p>
+          <p>メイン料理・ご飯・味噌汁・小鉢付きの日替わりランチ。平日限定の満足セットです。</p>
+        </div>
+      </div>
+      <div class="mcard">
+        <div class="mcard-img">
+          <img src="/generated/photos-real/restaurant-gallery2.jpg" alt="ディナーのカウンター席" loading="lazy" decoding="async">
+          <span class="mcard-tag">DINNER</span>
+        </div>
+        <div class="mcard-body">
+          <h3>ディナー単品</h3>
+          <p class="price">¥880〜</p>
+          <p>季節の食材を使った一品料理。お酒と一緒にゆったりとお楽しみいただけます。</p>
+        </div>
+      </div>
+      <div class="mcard">
+        <div class="mcard-img">
+          <img src="/generated/photos-real/restaurant-about.jpg" alt="手作りドリンク" loading="lazy" decoding="async">
+          <span class="mcard-tag">DRINK</span>
+        </div>
+        <div class="mcard-body">
+          <h3>ドリンク</h3>
+          <p class="price">¥380〜</p>
+          <p>国産酒・焼酎・ワイン・ソフトドリンクまで豊富にご用意。手作りサワーも人気です。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Gallery ===== -->
+<section class="section gallery">
+  <div class="container">
+    <div class="gallery-head">
+      <p class="label">GALLERY</p>
+      <h2>店内のご案内</h2>
+    </div>
+    <div class="gallery-grid">
+      <div class="gitem">
+        <img src="/generated/photos-real/restaurant-gallery1.jpg" alt="季節の料理盛り付け" loading="lazy" decoding="async">
+        <div class="cap">
+          <h4>季節の盛り付け</h4>
+          <p>旬の食材を美しく仕上げた一品。目でも味わうおもてなし。</p>
+        </div>
+      </div>
+      <div class="gitem">
+        <img src="/generated/photos-real/restaurant-gallery2.jpg" alt="カウンター席の夜景" loading="lazy" decoding="async">
+        <div class="cap">
+          <h4>落ち着いたカウンター席</h4>
+          <p>目の前で調理を見ながら食事を楽しめる、大人の空間。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Access ===== -->
+<section class="section access">
+  <div class="container">
+    <div class="access-grid">
+      <div class="access-info">
+        <h3>店舗情報</h3>
+        <dl>
+          <dt>住所</dt>
+          <dd>〒123-4567 東京都世田谷区青葉台1-2-3</dd>
+          <dt>電話番号</dt>
+          <dd>03-1234-5678</dd>
+          <dt>営業時間</dt>
+          <dd>月〜土 11:30 - 22:00 (L.O. 21:00)</dd>
+          <dt>定休日</dt>
+          <dd>日曜日・祝日</dd>
+          <dt>席数</dt>
+          <dd>32席（カウンター8席・テーブル24席）</dd>
+          <dt>駐車場</dt>
+          <dd>無料駐車場 5台完備</dd>
+        </dl>
+      </div>
+      <div class="access-map">
+        <div class="pin">
+          <span>📍</span>
+          <p>青葉ダイニング<br>世田谷区青葉台</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Footer ===== -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <h4>青葉ダイニング</h4>
+      <p>心を込めてお届けする、一皿の幸せ。<br>地元に愛されるあたたかい食事処。</p>
+      <div class="footer-sns">
+        <a href="#" aria-label="Instagram">IG</a>
+        <a href="#" aria-label="Facebook">FB</a>
+        <a href="#" aria-label="Twitter">X</a>
+      </div>
+    </div>
+    <div>
+      <h4>お問い合わせ</h4>
+      <p>TEL: 03-1234-5678<br>mail@aoba-dining.jp<br>月〜土 11:30-22:00</p>
+    </div>
+    <div>
+      <h4>アクセス</h4>
+      <p>世田谷区青葉台1-2-3<br>小田急線「青葉台」<br>徒歩5分</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    © 2025 青葉ダイニング All Rights Reserved.
+  </div>
+</footer>
+
+</body>
+</html>
