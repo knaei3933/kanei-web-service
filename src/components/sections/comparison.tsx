@@ -1,66 +1,169 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Download } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Star,
+  ShieldCheck,
+  Wallet,
+  Headphones,
+} from "lucide-react";
 import { Section } from "../ui/section";
 import { Button } from "../ui/button";
 
-const comparisons = [
+/* ------------------------------------------------------------------ */
+/*  型定義                                                              */
+/* ------------------------------------------------------------------ */
+
+type Rating = 1 | 2 | 3 | 4 | 5;
+
+type Cell = {
+  text: string;
+  rating: Rating;
+};
+
+type ComparisonRow = {
+  label: string;
+  ours: Cell;
+  nocode: Cell;
+  agency: Cell;
+};
+
+/* ------------------------------------------------------------------ */
+/*  データ                                                              */
+/* ------------------------------------------------------------------ */
+
+const comparisons: ComparisonRow[] = [
   {
     label: "初期費用",
-    ours: "0円",
-    oursNote: "制作・設計を含めて初期請求なし",
-    nocode: "数万円前後",
-    nocodeNote: "テンプレ調整や設定代行で増えやすい",
-    agency: "30万〜100万円以上",
-    agencyNote: "構成・デザイン・構築で大きく変動",
+    ours: { text: "0円（制作・設計込み）", rating: 5 },
+    nocode: { text: "数万円前後（調整で追加費用発生）", rating: 3 },
+    agency: { text: "30万〜100万円以上（デザイン次第で大幅変動）", rating: 1 },
   },
   {
     label: "月額費用",
-    ours: "10,000円〜",
-    oursNote: "保守・更新・サーバー込み",
-    nocode: "2,000〜20,000円",
-    nocodeNote: "機能追加ごとに上がりやすい",
-    agency: "保守費 + サーバー代",
-    agencyNote: "更新代行で毎月コスト化しやすい",
+    ours: { text: "10,000円〜（保守・更新・サーバー込み）", rating: 4 },
+    nocode: { text: "2,000〜20,000円（機能追加で上がる）", rating: 3 },
+    agency: { text: "保守費 + サーバー代（更新代行で毎月コスト化）", rating: 2 },
   },
   {
     label: "完成形の見えやすさ",
-    ours: "事前に確認しやすい",
-    oursNote: "業種別の完成例を見ながら相談できる",
-    nocode: "自分で組み立てる前提",
-    nocodeNote: "公開後の姿を想像しにくいことがある",
-    agency: "会社次第",
-    agencyNote: "提案内容の解像度に差が出やすい",
+    ours: { text: "事前に確認しやすい（業種別サンプルあり）", rating: 5 },
+    nocode: { text: "自分で組み立てる前提（公開後を想像しにくい）", rating: 2 },
+    agency: { text: "会社次第（提案の解像度に差が出る）", rating: 3 },
   },
   {
     label: "更新のしやすさ",
-    ours: "依頼だけでも運用可能",
-    oursNote: "軽微修正や更新相談がしやすい",
-    nocode: "自分で操作",
-    nocodeNote: "慣れるまで時間がかかることが多い",
-    agency: "依頼ベース",
-    agencyNote: "小さな修正でも都度相談になりやすい",
+    ours: { text: "依頼だけでも運用可能（軽微修正も相談しやすい）", rating: 5 },
+    nocode: { text: "自分で操作（慣れるまで時間がかかる）", rating: 2 },
+    agency: { text: "依頼ベース（小修正も都度相談になりやすい）", rating: 3 },
   },
   {
     label: "所有権・移行",
-    ours: "お客様の資産",
-    oursNote: "ソースコード納品・移行しやすさ前提",
-    nocode: "プラットフォーム依存",
-    nocodeNote: "持ち出しや再現に制約が出やすい",
-    agency: "契約次第",
-    agencyNote: "管理方法が会社ごとに異なる",
+    ours: { text: "お客様の資産（ソースコード納品・移行しやすい）", rating: 5 },
+    nocode: { text: "プラットフォーム依存（データ持ち出しに制約）", rating: 1 },
+    agency: { text: "契約次第（管理方法が会社ごとに異なる）", rating: 3 },
   },
   {
     label: "公開後の相談しやすさ",
-    ours: "継続前提で相談しやすい",
-    oursNote: "運用・改善まで見据えて対応",
-    nocode: "基本は自己解決",
-    nocodeNote: "学習コストを自分で負担しやすい",
-    agency: "会社により差が大きい",
-    agencyNote: "担当変更でやり取りが重くなる場合もある",
+    ours: { text: "継続前提で相談しやすい（運用・改善まで対応）", rating: 5 },
+    nocode: { text: "基本は自己解決（学習コストを自己負担）", rating: 2 },
+    agency: { text: "会社により差が大きい（担当変更で品質変動）", rating: 3 },
   },
 ];
+
+const columnMeta = [
+  {
+    key: "ours" as const,
+    title: "金井の月額制作",
+    icon: CheckCircle2,
+    headerClass: "bg-blue-600 text-white",
+    cellBg: "bg-blue-50/60",
+  },
+  {
+    key: "nocode" as const,
+    title: "ノーコード / 自作系",
+    icon: AlertTriangle,
+    headerClass: "bg-slate-100 text-slate-700",
+    cellBg: "",
+  },
+  {
+    key: "agency" as const,
+    title: "一般的な制作会社",
+    icon: XCircle,
+    headerClass: "bg-slate-100 text-slate-700",
+    cellBg: "",
+  },
+];
+
+const insights = [
+  {
+    icon: AlertTriangle,
+    title: "ノーコードの落とし穴",
+    text: "安く始められるが、運用の手間が社内にのしかかる。",
+    accent: "text-amber-600",
+    ring: "ring-amber-200",
+  },
+  {
+    icon: Wallet,
+    title: "制作会社の悩み",
+    text: "初期費用が高く、公開後の小修整も費用に。",
+    accent: "text-red-500",
+    ring: "ring-red-200",
+  },
+  {
+    icon: ShieldCheck,
+    title: "金井の強み",
+    text: "初期費用ゼロ、更新もお任せ、ソースコードも納品。",
+    accent: "text-blue-700",
+    ring: "ring-blue-200",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/*  ヘルパー                                                            */
+/* ------------------------------------------------------------------ */
+
+function ratingTone(r: Rating) {
+  if (r >= 4)
+    return {
+      badge: "bg-green-50 text-green-700 ring-1 ring-green-200",
+      star: "text-green-500",
+    };
+  if (r === 3)
+    return {
+      badge: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+      star: "text-amber-500",
+    };
+  return {
+    badge: "bg-red-50 text-red-600 ring-1 ring-red-200",
+    star: "text-red-500",
+  };
+}
+
+function Stars({ rating }: { rating: Rating }) {
+  const tone = ratingTone(rating);
+  return (
+    <div className={`flex items-center justify-center gap-0.5 ${tone.star}`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          className={`h-4 w-4 ${
+            i < rating ? "fill-current" : "fill-none opacity-40"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  メイン                                                              */
+/* ------------------------------------------------------------------ */
 
 export default function Comparison() {
   return (
@@ -80,35 +183,60 @@ export default function Comparison() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="overflow-x-auto rounded-3xl border bg-card shadow-sm"
+          className="overflow-x-auto rounded-2xl border bg-card shadow-sm"
         >
           <table className="w-full min-w-[980px] border-collapse text-left">
             <thead>
-              <tr className="border-b bg-slate-50">
-                <th className="px-5 py-4 text-sm font-semibold">比較項目</th>
-                <th className="px-5 py-4 text-center text-sm font-semibold text-blue-700">金井の月額制作</th>
-                <th className="px-5 py-4 text-center text-sm font-semibold">ノーコード / 自作系</th>
-                <th className="px-5 py-4 text-center text-sm font-semibold">一般的な制作会社</th>
+              <tr>
+                <th className="bg-slate-50 px-5 py-4 text-sm font-semibold">
+                  比較項目
+                </th>
+                {columnMeta.map((col) => {
+                  const Icon = col.icon;
+                  return (
+                    <th
+                      key={col.key}
+                      className={`px-5 py-4 text-center text-sm font-semibold ${col.headerClass}`}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Icon className="h-4 w-4" />
+                        {col.title}
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               {comparisons.map((row, index) => (
-                <tr key={row.label} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/40"}>
-                  <td className="px-5 py-5 align-top">
+                <tr
+                  key={row.label}
+                  className={index % 2 === 0 ? "bg-white" : "bg-slate-50/40"}
+                >
+                  <td className="px-5 py-5 align-middle">
                     <div className="font-semibold">{row.label}</div>
                   </td>
-                  <td className="px-5 py-5 align-top text-center">
-                    <div className="font-semibold text-blue-700">{row.ours}</div>
-                    <div className="mt-2 text-xs leading-relaxed text-muted-foreground">{row.oursNote}</div>
-                  </td>
-                  <td className="px-5 py-5 align-top text-center">
-                    <div className="font-semibold">{row.nocode}</div>
-                    <div className="mt-2 text-xs leading-relaxed text-muted-foreground">{row.nocodeNote}</div>
-                  </td>
-                  <td className="px-5 py-5 align-top text-center">
-                    <div className="font-semibold">{row.agency}</div>
-                    <div className="mt-2 text-xs leading-relaxed text-muted-foreground">{row.agencyNote}</div>
-                  </td>
+                  {columnMeta.map((col) => {
+                    const cell = row[col.key];
+                    const tone = ratingTone(cell.rating);
+                    const Icon = col.icon;
+                    return (
+                      <td
+                        key={col.key}
+                        className={`px-5 py-5 align-middle text-center ${col.cellBg}`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <Stars rating={cell.rating} />
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${tone.badge}`}
+                          >
+                            <Icon className="h-3 w-3" />
+                            {cell.text}
+                          </span>
+                        </div>
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
@@ -116,21 +244,34 @@ export default function Comparison() {
         </motion.div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {[
-            ["例1", "ノーコード系は月額を抑えやすい反面、調整や更新の手間を社内で抱えやすくなります。"],
-            ["例2", "一般的な制作会社は完成度が高い一方、初期費用が大きく、公開後の軽微更新も積み上がりやすい傾向があります。"],
-            ["例3", "金井の月額制作は、初期負担を抑えながら、完成形・更新・移行の安心感を両立しやすい設計です。"],
-          ].map(([title, text]) => (
-            <div key={title} className="rounded-2xl border bg-card p-5 shadow-sm">
-              <div className="text-sm font-semibold text-blue-700">{title}</div>
-              <div className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</div>
-            </div>
-          ))}
+          {insights.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.title}
+                className={`rounded-2xl border bg-card p-5 shadow-sm ring-1 ${item.ring}`}
+              >
+                <div
+                  className={`flex items-center gap-2 text-sm font-bold ${item.accent}`}
+                >
+                  <Icon className="h-5 w-5" />
+                  {item.title}
+                </div>
+                <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {item.text}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </Section>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  CTA                                                                */
+/* ------------------------------------------------------------------ */
 
 export function CTA() {
   return (
@@ -146,15 +287,13 @@ export function CTA() {
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Button asChild size="lg">
-            <a href="mailto:info@kanei-trade.co.jp?subject=%E3%83%9B%E3%83%BC%E3%83%A0%E3%83%9A%E3%83%BC%E3%82%B8%E5%88%B6%E4%BD%9C%E3%81%AE%E3%81%94%E7%9B%B8%E8%AB%87">
-              無料相談をする
+            <Link href="/consult">
+              無料で提案を依頼する
               <ArrowRight className="ml-1 h-4 w-4" />
-            </a>
+            </Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <a href="#showcase">
-              制作事例を見る
-            </a>
+            <Link href="#showcase">制作事例を見る</Link>
           </Button>
         </div>
         <div className="mt-4 text-sm text-muted-foreground">
