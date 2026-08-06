@@ -113,7 +113,7 @@ const industries: Industry[] = [
     heroTitle: "DXで事業を加速させる",
     heroSub: "実践的なIT戦略コンサルティング",
     ctaText: "無料相談",
-    cards: ["DX推進支援", "システム開発"],
+    cards: ["DX推進支援", "システム開発", "クラウド移行"],
     cardLabel: "サービス",
   },
 ];
@@ -301,6 +301,7 @@ function BrowserMockup() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: direction * -40 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
+              style={{ aspectRatio: "16/10" }}
             >
               <MiniHomepage industry={industry} />
             </motion.div>
