@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -120,7 +120,7 @@ const industries: Industry[] = [
 
 function MiniHomepage({ industry }: { industry: Industry }) {
   return (
-    <div className="flex flex-col">
+    <div className="flex h-full flex-col">
       {/* Mini Navbar */}
       <div className={`flex h-6 items-center justify-between px-2 ${industry.navBg} ${industry.navText}`}>
         <span className="text-[9px] font-bold tracking-tight">
@@ -136,7 +136,7 @@ function MiniHomepage({ industry }: { industry: Industry }) {
       </div>
 
       {/* Mini Hero */}
-      <div className="relative h-32 overflow-hidden sm:h-36">
+      <div className="relative flex-1 overflow-hidden">
         <img
           src={industry.heroImg}
           alt={`${industry.name}のホームページ例`}
@@ -192,6 +192,23 @@ function MiniHomepage({ industry }: { industry: Industry }) {
 function BrowserMockup() {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setDirection(1);
+      setCurrent((prev) => (prev + 1) % industries.length);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    startTimer();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const paginate = (dir: number) => {
     setDirection(dir);
@@ -201,17 +218,19 @@ function BrowserMockup() {
       if (next >= industries.length) return 0;
       return next;
     });
+    startTimer(); // リセット
   };
 
   const goTo = (index: number) => {
     setDirection(index > current ? 1 : -1);
     setCurrent(index);
+    startTimer(); // リセット
   };
 
   const industry = industries[current];
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-blue-950/15">
+    <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-blue-950/15">
       {/* Browser Chrome */}
       <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
         <span className="h-3 w-3 rounded-full bg-red-400" />
@@ -273,7 +292,7 @@ function BrowserMockup() {
         rel="noopener noreferrer"
         className="group block"
       >
-        <div className="relative overflow-hidden">
+        <div className="relative flex-1 overflow-hidden">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={current}
@@ -322,7 +341,7 @@ export default function Hero() {
         <div className="absolute right-[-8rem] top-24 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl" />
       </div>
 
-      <div className="mx-auto grid max-w-container gap-12 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
+      <div className="mx-auto grid max-w-container gap-12 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:py-24">
         <div className="space-y-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -422,6 +441,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 30, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.15 }}
+          className="h-full"
         >
           <BrowserMockup />
         </motion.div>
