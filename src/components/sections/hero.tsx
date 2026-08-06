@@ -1,12 +1,14 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
   PhoneCall,
   Smartphone,
   SearchCheck,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   Sparkles,
   ExternalLink,
@@ -14,53 +16,200 @@ import {
 import { Section } from "../ui/section";
 import { Button } from "../ui/button";
 
-type DemoSite = {
+type Industry = {
   name: string;
+  industryLabel: string;
   href: string;
-  image: string;
-  accent: string;
+  navBg: string;
+  navText: string;
+  heroImg: string;
+  heroOverlay: string;
+  heroTitle: string;
+  heroSub: string;
+  ctaText: string;
+  cards: string[];
+  cardLabel: string;
 };
 
-const demoSites: DemoSite[] = [
+const industries: Industry[] = [
   {
-    name: "製造業",
+    name: "青峰精機",
+    industryLabel: "製造業",
     href: "/portfolio/factory.html",
-    image: "/generated/photos-real/factory-gallery1.jpg",
-    accent: "from-blue-500/90 to-blue-700/90",
+    navBg: "bg-blue-800",
+    navText: "text-white",
+    heroImg: "/generated/photos-real/factory.jpg",
+    heroOverlay: "from-blue-950/80 to-blue-900/30",
+    heroTitle: "40年の実績と信頼",
+    heroSub: "精密部品の製造・一括請負",
+    ctaText: "詳しく見る",
+    cards: ["CNC旋盤加工", "品質管理", "ISO9001認証"],
+    cardLabel: "主な事業",
   },
   {
-    name: "建設業",
+    name: "東央建設",
+    industryLabel: "建設業",
     href: "/portfolio/construction.html",
-    image: "/generated/photos-real/construction-gallery2.jpg",
-    accent: "from-amber-500/90 to-orange-700/90",
+    navBg: "bg-amber-800",
+    navText: "text-white",
+    heroImg: "/generated/photos-real/construction-gallery2.jpg",
+    heroOverlay: "from-amber-950/80 to-amber-900/30",
+    heroTitle: "品質と信頼の建築",
+    heroSub: "安心の住宅・土木工事",
+    ctaText: "施工実績を見る",
+    cards: ["住宅建築", "土木工事", "リフォーム"],
+    cardLabel: "施工内容",
   },
   {
-    name: "飲食業",
+    name: "桜庭食堂",
+    industryLabel: "飲食業",
     href: "/portfolio/restaurant.html",
-    image: "/generated/photos-real/restaurant-gallery1.jpg",
-    accent: "from-rose-500/90 to-red-700/90",
+    navBg: "bg-orange-700",
+    navText: "text-white",
+    heroImg: "/generated/photos-real/restaurant-gallery1.jpg",
+    heroOverlay: "from-orange-950/80 to-red-900/30",
+    heroTitle: "旬の食材と真心料理",
+    heroSub: "地元で愛される和食処",
+    ctaText: "メニューを見る",
+    cards: ["ランチセット", "宴会コース", "季節料理"],
+    cardLabel: "人気メニュー",
   },
   {
-    name: "美容室",
+    name: "ルミエール",
+    industryLabel: "美容室",
     href: "/portfolio/salon.html",
-    image: "/generated/photos-real/salon-gallery1.jpg",
-    accent: "from-pink-400/90 to-fuchsia-600/90",
+    navBg: "bg-pink-600",
+    navText: "text-white",
+    heroImg: "/generated/photos-real/salon-gpt.jpg",
+    heroOverlay: "from-pink-950/80 to-fuchsia-900/30",
+    heroTitle: "あなたの魅力を引き出す",
+    heroSub: "上質なヘアサロンワーク",
+    ctaText: "予約する",
+    cards: ["カット", "カラー", "パーマ"],
+    cardLabel: "メニュー",
   },
   {
-    name: "整骨院",
+    name: "みらい整骨院",
+    industryLabel: "整骨院",
     href: "/portfolio/clinic.html",
-    image: "/generated/photos-real/clinic-gallery1.jpg",
-    accent: "from-emerald-500/90 to-teal-700/90",
+    navBg: "bg-emerald-700",
+    navText: "text-white",
+    heroImg: "/generated/photos-real/clinic-gallery1.jpg",
+    heroOverlay: "from-emerald-950/80 to-teal-900/30",
+    heroTitle: "痛みのない毎日へ",
+    heroSub: "地域密着の丁寧な施術",
+    ctaText: "診察予約",
+    cards: ["肩こり・腰痛", "スポーツ障害", "交通事故"],
+    cardLabel: "対応症状",
   },
   {
-    name: "ITコンサル",
+    name: "アクシア",
+    industryLabel: "ITコンサル",
     href: "/portfolio/consulting.html",
-    image: "/generated/photos-real/consulting-gallery1.jpg",
-    accent: "from-slate-600/90 to-slate-800/90",
+    navBg: "bg-slate-800",
+    navText: "text-white",
+    heroImg: "/generated/photos-real/consulting-gallery1.jpg",
+    heroOverlay: "from-slate-950/80 to-slate-800/30",
+    heroTitle: "DXで事業を加速させる",
+    heroSub: "実践的なIT戦略コンサルティング",
+    ctaText: "無料相談",
+    cards: ["DX推進支援", "システム開発"],
+    cardLabel: "サービス",
   },
 ];
 
+function MiniHomepage({ industry }: { industry: Industry }) {
+  return (
+    <div className="flex flex-col">
+      {/* Mini Navbar */}
+      <div className={`flex h-6 items-center justify-between px-2 ${industry.navBg} ${industry.navText}`}>
+        <span className="text-[9px] font-bold tracking-tight">
+          {industry.name}
+        </span>
+        <div className="flex items-center gap-2">
+          {["サービス", "実績", "問合せ"].map((item) => (
+            <span key={item} className="text-[8px] opacity-80">
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Mini Hero */}
+      <div className="relative h-32 overflow-hidden sm:h-36">
+        <img
+          src={industry.heroImg}
+          alt={`${industry.name}のホームページ例`}
+          className="h-full w-full object-cover"
+        />
+        <div
+          className={`absolute inset-0 bg-gradient-to-r ${industry.heroOverlay}`}
+        />
+        <div className="absolute left-2 top-1/2 -translate-y-1/2 space-y-0.5">
+          <p className="text-[8px] font-light text-white/70">
+            {industry.industryLabel}
+          </p>
+          <h3 className="text-xs font-bold leading-tight text-white drop-shadow-md sm:text-sm">
+            {industry.heroTitle}
+          </h3>
+          <p className="text-[9px] text-white/90 drop-shadow sm:text-[10px]">
+            {industry.heroSub}
+          </p>
+          <div className="mt-1 inline-flex items-center gap-0.5 rounded bg-white/90 px-1.5 py-0.5 text-[8px] font-semibold text-slate-800">
+            {industry.ctaText}
+            <ArrowRight className="h-2 w-2" />
+          </div>
+        </div>
+      </div>
+
+      {/* Mini Feature Cards */}
+      <div className="flex items-stretch gap-1.5 px-2 py-2">
+        <span className="hidden shrink-0 items-center text-[8px] font-medium text-slate-400 sm:flex">
+          {industry.cardLabel}
+        </span>
+        {industry.cards.map((card, idx) => (
+          <div
+            key={card}
+            className="flex-1 rounded border border-slate-200 bg-white px-1.5 py-1 shadow-sm"
+          >
+            <div className="mb-0.5 h-1 w-3 rounded-full bg-slate-300" style={{ opacity: 1 - idx * 0.15 }} />
+            <p className="text-[9px] font-medium text-slate-700">{card}</p>
+            <p className="mt-0.5 h-0.5 w-full rounded bg-slate-100" />
+          </div>
+        ))}
+      </div>
+
+      {/* Mini Footer */}
+      <div className="flex h-5 items-center justify-center border-t border-slate-100 bg-slate-50">
+        <p className="text-[7px] text-slate-400">
+          © {industry.name} All Rights Reserved.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function BrowserMockup() {
+  const [current, setCurrent] = useState(0);
+  const [direction, setDirection] = useState(0);
+
+  const paginate = (dir: number) => {
+    setDirection(dir);
+    setCurrent((prev) => {
+      const next = prev + dir;
+      if (next < 0) return industries.length - 1;
+      if (next >= industries.length) return 0;
+      return next;
+    });
+  };
+
+  const goTo = (index: number) => {
+    setDirection(index > current ? 1 : -1);
+    setCurrent(index);
+  };
+
+  const industry = industries[current];
+
   return (
     <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-blue-950/15">
       {/* Browser Chrome */}
@@ -68,64 +217,98 @@ function BrowserMockup() {
         <span className="h-3 w-3 rounded-full bg-red-400" />
         <span className="h-3 w-3 rounded-full bg-amber-400" />
         <span className="h-3 w-3 rounded-full bg-emerald-400" />
-        <div className="ml-4 h-7 flex-1 rounded-full border border-slate-200 bg-white" />
+        <div className="ml-4 flex h-7 flex-1 items-center rounded-full border border-slate-200 bg-white px-3">
+          <span className="text-[10px] text-slate-400">
+            https://{industry.name === "青峰精機" ? "seihou-seiki" : industry.name === "東央建設" ? "touou-kensetsu" : industry.name === "桜庭食堂" ? "sakuraba-shokudo" : industry.name === "ルミエール" ? "lumiere-hair" : industry.name === "みらい整骨院" ? "mirai-seikotsu" : "axia-consulting"}.example.com
+          </span>
+        </div>
         <div className="hidden rounded-full bg-slate-900 px-3 py-1 text-[10px] font-semibold text-white sm:block">
-          実際の完成イメージ
+          完成イメージ
         </div>
       </div>
 
-      {/* Main content: 6業種デモサイトギャラリー */}
-      <div className="p-4 sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-            <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-            制作イメージ（クリックで確認）
-          </div>
-          <div className="hidden items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-medium text-blue-700 sm:flex">
-            <ExternalLink className="h-3 w-3" />
-            デモサイト
-          </div>
+      {/* Industry Switcher Bar */}
+      <div className="flex items-center justify-between border-b border-slate-100 bg-white px-4 py-2">
+        <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400">
+          <Sparkles className="h-3 w-3 text-blue-500" />
+          業種別デザイン例
         </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => paginate(-1)}
+            className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:border-blue-400 hover:text-blue-500"
+            aria-label="前の業種"
+          >
+            <ArrowLeft className="h-3 w-3" />
+          </button>
+          {/* Dot navigation */}
+          <div className="flex items-center gap-1">
+            {industries.map((ind, idx) => (
+              <button
+                key={ind.name}
+                onClick={() => goTo(idx)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  idx === current
+                    ? "w-4 bg-blue-600"
+                    : "w-1.5 bg-slate-300 hover:bg-slate-400"
+                }`}
+                aria-label={`${ind.industryLabel}を見る`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => paginate(1)}
+            className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:border-blue-400 hover:text-blue-500"
+            aria-label="次の業種"
+          >
+            <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
-          {demoSites.map((site, index) => (
-            <motion.a
-              key={site.name}
-              href={site.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 + index * 0.08 }}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.98 }}
-              className="group relative block aspect-[4/3] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm"
+      {/* Mini Homepage Display (clickable) */}
+      <a
+        href={industry.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group block"
+      >
+        <div className="relative overflow-hidden">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={current}
+              custom={direction}
+              initial={{ opacity: 0, x: direction * 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -40 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             >
-              <img
-                src={site.image}
-                alt={`${site.name}のホームページ制作例`}
-                loading="lazy"
-                decoding="async"
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-              {/* 常時表示のグラデーション + ラベル */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-t ${site.accent} opacity-30 transition-opacity duration-300 group-hover:opacity-60`}
-              />
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-slate-950/80 via-slate-950/40 to-transparent px-3 pb-2.5 pt-6">
-                <span className="text-xs font-bold text-white drop-shadow sm:text-sm">
-                  {site.name}
-                </span>
-                <ExternalLink className="h-3.5 w-3.5 text-white/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              </div>
-            </motion.a>
-          ))}
-        </div>
+              <MiniHomepage industry={industry} />
+            </motion.div>
+          </AnimatePresence>
 
-        <div className="mt-4 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-400">
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-          すべての業種で実写画像を使用
+          {/* Hover overlay with external link hint */}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-blue-950/0 opacity-0 transition-all duration-300 group-hover:bg-blue-950/10 group-hover:opacity-100">
+            <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-lg">
+              <ExternalLink className="h-3.5 w-3.5" />
+              デモサイトを開く
+            </div>
+          </div>
         </div>
+      </a>
+
+      {/* Bottom info bar */}
+      <div className="flex items-center justify-center gap-1.5 border-t border-slate-100 bg-slate-50 py-2 text-center">
+        <span className="text-[11px] font-semibold text-slate-600">
+          {industry.industryLabel}
+        </span>
+        <span className="text-[11px] text-slate-300">/</span>
+        <span className="text-[11px] text-slate-400">
+          {current + 1} / {industries.length} 業種
+        </span>
+        <span className="text-[11px] text-slate-300">/</span>
+        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+        <span className="text-[11px] text-slate-400">実写使用</span>
       </div>
     </div>
   );
@@ -203,8 +386,8 @@ export default function Hero() {
             className="flex flex-wrap gap-4"
           >
             <Button asChild size="lg">
-              <a href="mailto:info@kanei-trade.co.jp?subject=%E3%83%9B%E3%83%BC%E3%83%A0%E3%83%9A%E3%83%BC%E3%82%B8%E5%88%B6%E4%BD%9C%E3%81%AE%E3%81%94%E7%9B%B8%E8%AB%87">
-                まずは無料相談
+              <a href="/consult">
+                無料で提案を依頼する
                 <ArrowRight className="ml-1 h-4 w-4" />
               </a>
             </Button>
