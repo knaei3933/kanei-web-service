@@ -29,12 +29,13 @@ Vercel / serverless では、書き込み可能な `/tmp` が**インスタン�
 | `execution-handoff.json` | 実行ハンドオフのメタデータ + コマンド | `approval-package.ts` |
 | `execution-prompt.md` | 実行ハンドオフのプロンプト本文 | `approval-package.ts` |
 
-> **添付ファイル（本体）の扱い**: 顧客がアップロードしたファイル本体は
-> このアダプタを経由**せず**、常に filesystem（ローカルは `data/`、本番は `/tmp`）
-> に保存します。本番ではインスタンス再利用で失われる可能性があります（エフェメラル）。
-> 一方、添付の **メタデータ**（ファイル名・サイズ・種別など）は `submission.json` /
-> `approval-package.json` に保持され、リレー経由で恒久保存されるため、
-> レビュー時には常に参照できます。本体の恒久保存は今後の課題です。
+> **添付ファイル（本体）の扱い**: 顧客がアップロードした添付ファイル本体
+> （画像・PDF 等・バイナリ）も、テキスト成果物と**同じアダプタ**経由で保存します。
+> 成果物とはキーを分け、`{submissionId}/files/{savedName}` に置きます。
+> そのため `relay` モードでは添付本体も HTTP リレー経由で**恒久保存**され、
+> インスタンスをまたいでレビュー時にダウンロードできます。
+> 添付の **メタデータ**（ファイル名・サイズ・MIME など）は引き続き
+> `submission.json` / `approval-package.json` に保持されます。
 
 ## 保存モードの解決（3 モード）
 
@@ -99,6 +100,24 @@ Relay プロバイダ（src/server/submission-storage/providers/relay.ts）
 - `submissionId` は `^[A-Za-z0-9._-]+$`、`fileName` は上記 6 種のいずれかです。
   それ以外は固定ルートが `400` で拒否します。
 
+### 添付ファイル（本体）の REST 契約
+
+添付ファイル本体（バイナリ）は成果物とは異なるパス `/files/{savedName}` を使い、
+`/api/submission-storage/[submissionId]/files/[savedName]` が同じく Bearer 認証で
+上流へ転送します。ボディは **バイナリ** として扱い、テキスト変換しません
+（`arrayBuffer` で透過転送）。
+
+| メソッド | パス | 動作 |
+| --- | --- | --- |
+| `GET` | `/{submissionId}/files/{savedName}` | バイナリ本文を返す。不在時は `404` |
+| `PUT` | `/{submissionId}/files/{savedName}` | ボディ（バイナリ）を保存して `2xx` |
+| `POST` | `/{submissionId}/files/{savedName}` | `PUT` と同等（書き込みの別名） |
+| `DELETE` | `/{submissionId}/files/{savedName}` | 削除して `2xx` |
+
+- `savedName` は consult route が生成する `NN-<sanitized>` 形式（多バイト文字を含む）。
+  パス区切り・制御文字・先頭ドットなどは固定ルートが `400` で拒否します。
+- `content-type` は PUT 時に受信したものを上流へ転送し、GET 時もそのまま返します。
+
 ## 固定公開ルートの単体確認
 
 `/api/submission-storage` 単体は、上流 URL が設定されていれば curl で検証できます。
@@ -159,3 +178,15 @@ curl -sS \
 > review ページ（`/review/[submissionId]`）は `readApprovalPackage` と
 > `readExecutionPromptMarkdown` を経由してアダプタから読むため、
 > モードが `relay` なら本番でも正しく表示・承認できます。
+
+## 添付ファイルのダウンロード（内部専用）
+
+review ページの添付ファイル一覧には、代表者向けのダウンロードリンクが出ます
+（内部専用・顧客非公開）。リンク先は `/api/consult/[submissionId]/attachments/[savedName]` で、
+ストレージプロキシ（Bearer 認証の `/api/submission-storage/.../files/...`）とは別ルートです。
+
+- ブラウザで開くことを想定し、**Bearer 認証は求めません**。認証モデルは review ページと同じ
+  「内部専用・公開リンクなし・`submissionId`（UUID 相当）で難測」方式です。
+- 本体はアダプタ（`readAttachment`）経由で読むため、`local` でも `relay` でも動きます。
+- `content-type` とダウンロード時のファイル名は `submission.json` のメタデータ
+  （`type` / `originalName`）から復元します。本体が見つからなければ `404` を返します。

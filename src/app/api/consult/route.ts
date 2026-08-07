@@ -1,5 +1,3 @@
-import { writeFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { assessConsultIntake } from "@/lib/consult-quality";
 import {
@@ -17,7 +15,7 @@ import {
 } from "@/server/mail";
 import {
   writeArtifact,
-  getSubmissionDir,
+  writeAttachment,
   getStorageMode,
   getStorageBase,
   submissionDisplayDir,
@@ -27,14 +25,15 @@ import {
 /**
  * 相談フォームの送信を受け付ける Route Handler。
  *
- * 成果物（submission.json / brief.json）と添付ファイルは consult-submissions/{id}/ 配下に保存:
- * - 成果物: src/server/submission-storage アダプタ経由。
- *     ・ローカル開発          : data/consult-submissions/（ファイルシステム）
- *     ・本番 + リレー設定あり  : 固定ルート(/api/submission-storage)→WSL リレーへ HTTP 恒久保存
- *     ・本番 + リレー未設定    : /tmp（一時・非恒久）
- * - 添付ファイル(本体): 常に filesystem（local は data/、本番は /tmp）。
- *     ※ 本番ではインスタンス再利用で消える可能性があるが、添付の「メタデータ」は
- *        submission.json / approval-package.json に保持されるのでレビュー時には参照できる。
+ * 成果物（submission.json / brief.json）と添付ファイル(本体)はいずれも
+ * src/server/submission-storage アダプタ経由で consult-submissions/{id}/ 配下に保存:
+ * - ローカル開発          : data/consult-submissions/（ファイルシステム）
+ * - 本番 + リレー設定あり  : 固定ルート(/api/submission-storage)→WSL リレーへ HTTP 恒久保存
+ *     ・成果物: {id}/<artifact>
+ *     ・添付(本体): {id}/files/<savedName>（バイナリも恒久保存）
+ * - 本番 + リレー未設定    : /tmp（一時・非恒久）
+ * 添付の「メタデータ」（ファイル名・サイズ・MIME 等）は submission.json /
+ * approval-package.json に保持され、アダプタ経由で恒久保存される。
  */
 
 // ファイルシステム（node:fs）と HTTP リレーを使うため Node ランタイムを明示
@@ -908,24 +907,8 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  // --- 保存先ディレクトリを準備 ---
+  // --- 保存キーを決定 ---
   const submissionId = createSubmissionId();
-  // 添付ファイル(本体)の保存ディレクトリ（成果物とは別・常に filesystem）
-  const submissionDir = getSubmissionDir(submissionId);
-  const filesDir = join(submissionDir, "files");
-
-  try {
-    await mkdir(filesDir, { recursive: true });
-  } catch {
-    return Response.json(
-      {
-        ok: false,
-        error:
-          "サーバーで保存領域を準備できませんでした。しばらくしてからもう一度お試しください。",
-      },
-      { status: 500 }
-    );
-  }
 
   // --- ファイルだけを収集して保存 ---
   // ※ "payload" フィールド以外で、値が File（Blob）のものをファイルとみなす
@@ -957,7 +940,13 @@ export async function POST(request: Request): Promise<Response> {
       const savedName = `${seq}-${safeName}`;
 
       const arrayBuffer = await file.arrayBuffer();
-      await writeFile(join(filesDir, savedName), Buffer.from(arrayBuffer));
+      // アダプタ経由で保存（local は filesystem、本番 relay はリレーへ恒久保存）
+      await writeAttachment(
+        submissionId,
+        savedName,
+        new Uint8Array(arrayBuffer),
+        file.type
+      );
 
       savedFiles.push({
         field,

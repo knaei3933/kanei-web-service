@@ -14,10 +14,13 @@
 /*    - 本番 + リレー設定あり                → relay     (HTTP リレー)   */
 /*    - 本番 + リレー未設定                  → ephemeral (/tmp・一時)    */
 /*                                                                      */
-/*  添付ファイル本体はこのアダプタを経由せず、常に filesystem の          */
-/*  getSubmissionDir() 配下（local または /tmp）に置く。エフェメラル     */
-/*  だが、添付の「メタデータ」は submission.json / approval-package.json  */
-/*  に保持されるのでレビュー時には参照できる（正直な設計）。             */
+/*  添付ファイル本体（バイナリ）もこのアダプタを経由する（writeAttachment */
+/*  / readAttachment）。テキスト成果物とは files/<savedName> キーで区別。   */
+/*  - local : filesystem の data/.../files/<savedName>                    */
+/*  - relay : HTTP リレー経由で files/<savedName> へ恒久保存              */
+/*  - ephemeral : filesystem の /tmp/.../files/<savedName>（一時）        */
+/*  添付の「メタデータ」も引き続き submission.json / approval-package.json  */
+/*  に保持されるので、レビュー時には常に参照できる。                      */
 /* ------------------------------------------------------------------ */
 
 import { join } from "node:path";
@@ -35,6 +38,7 @@ export {
   ARTIFACT_FILE_NAMES,
   isArtifactFileName,
   isSafeSubmissionId,
+  isSafeAttachmentName,
 } from "./types";
 export type {
   ArtifactFileName,
@@ -95,6 +99,34 @@ export async function artifactExists(
 }
 
 /* ------------------------------------------------------------------ */
+/*  公開API（添付ファイル・バイナリ）                                    */
+/* ------------------------------------------------------------------ */
+/*  添付ファイル本体（画像・PDF 等）の読み書き。                          */
+/*  テキスト成果物とは異なり files/<savedName> キーで扱う。                */
+/*  - local     : data/consult-submissions/<id>/files/<savedName>         */
+/*  - relay     : HTTP リレー経由で files/<savedName> へ恒久保存           */
+/*  - ephemeral : /tmp/consult-submissions/<id>/files/<savedName>（一時） */
+/* ------------------------------------------------------------------ */
+
+/** 添付ファイル（バイナリ）を書き込む（上書き）。リレー未設定等で書けないときは例外 */
+export async function writeAttachment(
+  submissionId: string,
+  savedName: string,
+  bytes: Uint8Array,
+  contentType: string
+): Promise<void> {
+  return resolveAdapter().writeAttachment(submissionId, savedName, bytes, contentType);
+}
+
+/** 添付ファイル（バイナリ）を読み込む。不在・失敗時は null */
+export async function readAttachment(
+  submissionId: string,
+  savedName: string
+): Promise<Uint8Array | null> {
+  return resolveAdapter().readAttachment(submissionId, savedName);
+}
+
+/* ------------------------------------------------------------------ */
 /*  パス・診断ヘルパ（表示・添付保存用）                                  */
 /* ------------------------------------------------------------------ */
 
@@ -147,4 +179,22 @@ export function submissionDisplayDir(submissionId: string): string {
     return join(EPHEMERAL_ROOT, submissionId);
   }
   return `${LOGICAL_ROOT}/${submissionId}`;
+}
+
+/**
+ * 添付ファイルの情報表示用パス（レビュー・内部確認用）。
+ * - local / relay : 論理相対パス data/consult-submissions/<id>/files/<savedName>
+ *   （relay では論理キー。物理バックエンドは getStorageBase/getStorageMode で別途示す）
+ * - ephemeral     : 実パス /tmp/consult-submissions/<id>/files/<savedName>（一時領域を明示）
+ *
+ * 保存先の実体（アダプタ経由）と一致する、正直で安定したパス。
+ */
+export function attachmentDisplayPath(
+  submissionId: string,
+  savedName: string
+): string {
+  if (resolveStorageMode() === "ephemeral") {
+    return join(EPHEMERAL_ROOT, submissionId, "files", savedName);
+  }
+  return `${LOGICAL_ROOT}/${submissionId}/files/${savedName}`;
 }

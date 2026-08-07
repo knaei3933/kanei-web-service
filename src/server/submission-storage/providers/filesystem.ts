@@ -19,7 +19,7 @@ import { readFile, writeFile, mkdir, access } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { SubmissionStorageAdapter, ArtifactFileName } from "../types";
-import { isSafeSubmissionId, isArtifactFileName } from "../types";
+import { isSafeSubmissionId, isArtifactFileName, isSafeAttachmentName } from "../types";
 
 /** ローカル開発用の成果物ルート（gitignore 済み・プロジェクト内） */
 const LOCAL_ROOT = join(process.cwd(), "data", "consult-submissions");
@@ -41,6 +41,11 @@ function realPath(submissionId: string, fileName: ArtifactFileName): string {
   return join(rootDir(), submissionId, fileName);
 }
 
+/** 添付ファイルの実パスを組み立てる（検証済み前提・files/ 配下） */
+function attachmentPath(submissionId: string, savedName: string): string {
+  return join(rootDir(), submissionId, "files", savedName);
+}
+
 /**
  * submissionId / fileName を検証する。
  * 不正な場合は例外を投げる（呼び出し側でパイプライン判断）。
@@ -51,6 +56,19 @@ function assertKey(submissionId: string, fileName: ArtifactFileName): void {
   }
   if (!isArtifactFileName(fileName)) {
     throw new Error(`許可されていない成果物ファイル名です: ${fileName}`);
+  }
+}
+
+/**
+ * submissionId / savedName を検証する（添付ファイル用）。
+ * 不正な場合は例外を投げる。
+ */
+function assertAttachmentKey(submissionId: string, savedName: string): void {
+  if (!isSafeSubmissionId(submissionId)) {
+    throw new Error(`不正な submissionId です: ${submissionId}`);
+  }
+  if (!isSafeAttachmentName(savedName)) {
+    throw new Error(`不正な添付ファイル名です: ${savedName}`);
   }
 }
 
@@ -82,6 +100,27 @@ export const filesystemStorage: SubmissionStorageAdapter = {
       return true;
     } catch {
       return false;
+    }
+  },
+
+  async writeAttachment(submissionId, savedName, bytes, contentType): Promise<void> {
+    assertAttachmentKey(submissionId, savedName);
+    // files/ ディレクトリを保証（冪等）
+    await mkdir(join(rootDir(), submissionId, "files"), { recursive: true });
+    await writeFile(attachmentPath(submissionId, savedName), bytes);
+    // ※ contentType は本プロバイダでは使わない。MIME は submission.json の
+    //    メタデータ（type）が管理する。relay プロバイダのみ content-type ヘッダーとして転送する。
+    void contentType;
+  },
+
+  async readAttachment(submissionId, savedName): Promise<Uint8Array | null> {
+    assertAttachmentKey(submissionId, savedName);
+    try {
+      // エンコーディング未指定 → Buffer（Uint8Array の部分型）をそのまま返す
+      return await readFile(attachmentPath(submissionId, savedName));
+    } catch {
+      // 不在・読み取り失敗は「無いもの」として扱う（テキスト成果物と同じ挙動）
+      return null;
     }
   },
 };

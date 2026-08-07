@@ -24,15 +24,15 @@
 export type StorageMode = "local" | "relay" | "ephemeral";
 
 /**
- * アダプタ経由で恒久保存する成果物のファイル名（固定セット）。
+ * アダプタ経由で恒久保存する「テキスト成果物」のファイル名（固定セット）。
  * これ以外のファイル名はアダプタでもプロキシルートでも拒否する
  * （パストラバーサル・意図しないファイルの上書きを防ぐため）。
  *
- * ※ 添付ファイル本体（files/ 以下）はこのセットには含まない。
- *    添付は常にローカル/一時領域（local または /tmp）に置き、
- *    再起動・インスタンス再利用で失われる可能性がある。
- *    ただし添付の「メタデータ」は submission.json /
- *    approval-package.json に保持されるので、レビュー時には参照できる。
+ * ※ 添付ファイル本体（バイナリ）はこのホワイトリストとは別経路で扱う。
+ *    専用の writeAttachment / readAttachment で files/<savedName> キーに
+ *    読み書きし、relay モードでは上流リレーへバイナリとして恒久保存する。
+ *    添付の「メタデータ」も引き続き submission.json /
+ *    approval-package.json に保持され、レビュー時には参照できる。
  */
 export const ARTIFACT_FILE_NAMES = [
   "submission.json",
@@ -63,14 +63,39 @@ export function isSafeSubmissionId(id: string): boolean {
 }
 
 /**
+ * 添付ファイルの保存名（savedName）として安全か。
+ * consult route の sanitizeFilename + 連番プレフィックス（"NN-..."）が生成する名前を想定。
+ *
+ * 許可: 多バイト文字（日本語を含む）・ドット（途中）・ハイフン等。
+ * 拒否: 空文字・長すぎる（255 超）・パス区切り（/ \）・制御文字・
+ *       カレント/親ディレクトリ参照（. ..）・先頭ドット（dotfile・トラバーサル抑止）。
+ *
+ * ※ savedName は常に files/ 配下に置かれるため、テキスト成果物の
+ *    ホワイトリスト（ARTIFACT_FILE_NAMES）との衝突は起きない。
+ */
+export function isSafeAttachmentName(name: string): boolean {
+  if (typeof name !== "string") return false;
+  if (name.length === 0 || name.length > 255) return false;
+  // パス区切り・制御文字(0x00-0x1F, 0x7F) を拒否
+  if (/[\/\\\x00-\x1f\x7f]/.test(name)) return false;
+  // カレント/親ディレクトリ参照そのもの・先頭ドットを拒否
+  if (name === "." || name === ".." || name.startsWith(".")) return false;
+  return true;
+}
+
+/**
  * 成果物ストレージアダプタが満たすべきインターフェース。
- * 成果物はすべて UTF-8 テキスト（JSON も Markdown も文字列）として扱う。
+ *
+ * 扱う対象は2種類:
+ *  - テキスト成果物（writeArtifact / readArtifact）: JSON・Markdown など UTF-8 文字列。
+ *  - バイナリ添付（writeAttachment / readAttachment）: 顧客アップロードの画像・PDF 等。
+ *    キーは files/<savedName>。relay では上流へ application/octet-stream で恒久保存する。
  */
 export interface SubmissionStorageAdapter {
   /** プロバイダ名（filesystem / relay） */
   readonly name: "filesystem" | "relay";
   /**
-   * 成果物を書き込む（上書き）。ディレクトリは自動で作る。
+   * テキスト成果物を書き込む（上書き）。ディレクトリは自動で作る。
    * リレー未設定などで書けない場合は例外を投げる（呼び出し側で判断）。
    */
   writeArtifact(
@@ -79,16 +104,39 @@ export interface SubmissionStorageAdapter {
     content: string
   ): Promise<void>;
   /**
-   * 成果物を読み込む。不在時・読み取り失敗時は null を返す
+   * テキスト成果物を読み込む。不在時・読み取り失敗時は null を返す
    * （ファイルシステム実装の「例外 → null」と同じ挙動に揃える）。
    */
   readArtifact(
     submissionId: string,
     fileName: ArtifactFileName
   ): Promise<string | null>;
-  /** 成果物が存在するか。 */
+  /** テキスト成果物が存在するか。 */
   artifactExists(
     submissionId: string,
     fileName: ArtifactFileName
   ): Promise<boolean>;
+  /**
+   * バイナリ添付を書き込む（上書き）。files/<savedName> に置く。
+   * ディレクトリは自動で作る。relay 未設定等で書けない場合は例外を投げる。
+   *
+   * contentType はアップロード時の MIME タイプ。relay プロバイダはこれを
+   * 上流へ content-type ヘッダーとして転送し、ダウンロード時に生かす。
+   * filesystem プロバイダは本体を raw バイナリで保存し、MIME は
+   * submission.json のメタデータ（type）が管理するため参照しない。
+   */
+  writeAttachment(
+    submissionId: string,
+    savedName: string,
+    bytes: Uint8Array,
+    contentType: string
+  ): Promise<void>;
+  /**
+   * バイナリ添付を読み込む。不在時・読み取り失敗時は null を返す
+   * （テキスト成果物と同じ挙動に揃える）。
+   */
+  readAttachment(
+    submissionId: string,
+    savedName: string
+  ): Promise<Uint8Array | null>;
 }

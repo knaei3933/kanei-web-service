@@ -462,6 +462,13 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                         <div className="text-xs text-muted-foreground">
                           {file.kind} / {file.sizeBytes.toLocaleString()} bytes
                         </div>
+                        <a
+                          href={`/api/consult/${pkg.submissionId}/attachments/${encodeURIComponent(file.savedName)}`}
+                          download
+                          className="mt-1 inline-block text-xs font-medium text-primary hover:underline"
+                        >
+                          ダウンロード（内部専用）
+                        </a>
                       </li>
                     ))}
                   </ul>
