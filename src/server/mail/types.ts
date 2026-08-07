@@ -37,7 +37,10 @@ export interface SendMailInput {
   /** 関連づける送信 ID（ログファイル名等に利用） */
   submissionId?: string;
   /** メールの役割ラベル（internal / customer）— ログの分類に使う */
-  purpose?: "internal-notification" | "customer-proposal";
+  purpose?:
+    | "internal-notification"
+    | "customer-proposal"
+    | "customer-followup";
 }
 
 /** 配送結果の状態 */
@@ -85,6 +88,12 @@ export interface InternalConsultNotificationInput {
   payload: Record<string, unknown>;
   /** 添付ファイル数 */
   fileCount?: number;
+  /** インテイク品質評価（要フォロー時に社内へ共有する） */
+  intakeQuality?: {
+    status: "ready" | "needs_followup";
+    score: number;
+    reasons: string[];
+  };
 }
 
 /** お客様向け提案メールの組み立てに必要な入力 */
@@ -99,6 +108,22 @@ export interface CustomerProposalEmailInput {
   proposalUrl: string;
   /** 受領 ID */
   submissionId: string;
+}
+
+/** お客様向けフォローアップ依頼メールの組み立てに必要な入力 */
+export interface CustomerFollowupEmailInput {
+  /** 宛先メールアドレス */
+  to: string;
+  /** 宛先のお名前（任意） */
+  customerName?: string;
+  /** 事業体名（表示に使う） */
+  companyName?: string;
+  /** 受領 ID */
+  submissionId: string;
+  /** お願いする追加入力項目（日本語） */
+  requestedItems: string[];
+  /** お客様への具体的な質問（日本語） */
+  followupQuestions: string[];
 }
 
 /** プロバイダ解決の診断情報（UI / ログ用） */

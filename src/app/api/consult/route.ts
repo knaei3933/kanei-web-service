@@ -4,10 +4,12 @@ import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import { buildDraftPayload, encodeDraft } from "@/lib/draft";
 import { buildProposalPayload, encodeProposal } from "@/lib/proposal";
+import { assessConsultIntake } from "@/lib/consult-quality";
 import {
   getMailConfigStatus,
   sendInternalConsultNotification,
   sendCustomerProposalEmail,
+  sendCustomerFollowupEmail,
   type MailResult,
 } from "@/server/mail";
 
@@ -1059,6 +1061,12 @@ export async function POST(request: Request): Promise<Response> {
     proposalUrl = null;
   }
 
+  // --- インテイク品質評価（サーバー側ゲート） ---
+  // 受け取った内容が「このまま提案作成に進めるか、追加ヒアリングが必要か」を
+  // 決定論的に判定する。LLM 不使用・同じ入力で同じ結果。
+  const intakeQuality = assessConsultIntake(parsedPayload, savedFiles.length);
+  const isReady = intakeQuality.status === "ready";
+
   // --- メール通知（社内通知 + お客様ご案内） ---
   // どちらも「送信失敗で例外を投げない」設計。status を見て UI に反映する。
   // 失敗・設定不足であってもパイプライン（送信成功）は止めない。
@@ -1069,7 +1077,8 @@ export async function POST(request: Request): Promise<Response> {
   const customerCompany =
     asString(payloadObject.companyName) || asString(payloadObject.enterpriseName);
 
-  // 社内通知：受領内容・保存先・提案 URL をまとめて送る
+  // 社内通知：受領内容・保存先・品質評価をまとめて送る。
+  // needs_followup のときは提案 URL を載せず、品質評価でフォロー要否を伝える。
   let internalMail: MailResult | null = null;
   try {
     internalMail = await sendInternalConsultNotification({
@@ -1077,29 +1086,48 @@ export async function POST(request: Request): Promise<Response> {
       storagePath: `${DISPLAY_ROOT}/${submissionId}`,
       storageMode: IS_SERVERLESS ? "serverless" : "local",
       briefGenerated,
-      proposalUrl: proposalUrl ?? undefined,
+      proposalUrl: isReady ? proposalUrl ?? undefined : undefined,
       payload: payloadObject,
       fileCount: savedFiles.length,
+      intakeQuality: {
+        status: intakeQuality.status,
+        score: intakeQuality.score,
+        reasons: intakeQuality.reasons,
+      },
     });
   } catch {
     internalMail = null;
   }
 
-  // お客様ご案内：提案ページのご案内メール。宛先不正時は status:error で返る
+  // お客様ご案内：ready なら提案ページのご案内メール、
+  // needs_followup なら提案メールを保留してフォローアップ依頼メールを送る。
   let customerMail: MailResult | null = null;
   try {
-    customerMail = await sendCustomerProposalEmail({
-      to: customerEmail,
-      customerName: customerName || undefined,
-      companyName: customerCompany || undefined,
-      proposalUrl: proposalUrl ?? "",
-      submissionId,
-    });
+    if (isReady) {
+      customerMail = await sendCustomerProposalEmail({
+        to: customerEmail,
+        customerName: customerName || undefined,
+        companyName: customerCompany || undefined,
+        proposalUrl: proposalUrl ?? "",
+        submissionId,
+      });
+    } else {
+      customerMail = await sendCustomerFollowupEmail({
+        to: customerEmail,
+        customerName: customerName || undefined,
+        companyName: customerCompany || undefined,
+        submissionId,
+        requestedItems: intakeQuality.requestedItems,
+        followupQuestions: intakeQuality.followupQuestions,
+      });
+    }
   } catch {
     customerMail = null;
   }
 
   // --- 成功レスポンス ---
+  // needs_followup のときは提案/ドラフトの導線を「通常の成功成果物」として
+  // 公開しない（フロントで追加情報依頼の案内に切り替えるため null にする）。
   return Response.json({
     ok: true,
     submissionId,
@@ -1110,10 +1138,12 @@ export async function POST(request: Request): Promise<Response> {
     briefGenerated,
     /** ブリーフの保存先（生成失敗時は null） */
     briefPath,
-    /** お客様別の初稿プレビュー URL（絶対 URL）。生成失敗時は null */
-    draftUrl,
-    /** お客様別の構成提案 URL（絶対 URL）。生成失敗時は null */
-    proposalUrl,
+    /** お客様別の初稿プレビュー URL。ready のみ公開・それ以外は null */
+    draftUrl: isReady ? draftUrl : null,
+    /** お客様別の構成提案 URL。ready のみ公開・それ以外は null */
+    proposalUrl: isReady ? proposalUrl : null,
+    /** インテイク品質評価（status / score / reasons / 追加依頼項目） */
+    consultQuality: intakeQuality,
     /** メール送信の結果。実プロバイダの状態をそのまま返す（UI 反映用） */
     mail: {
       /**
@@ -1128,7 +1158,7 @@ export async function POST(request: Request): Promise<Response> {
       providerReason: mailConfig.reason,
       /** 社内通知の結果（送信エラーでも null にならない） */
       internal: internalMail,
-      /** お客様ご案内メールの結果（宛先不正時は status:error） */
+      /** お客様メールの結果（ready=提案メール / needs_followup=フォローアップメール） */
       customer: customerMail,
     },
     /** 保存モード（"local" | "serverless"）— 検証・確認用 */

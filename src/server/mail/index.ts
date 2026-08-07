@@ -22,8 +22,10 @@ import { relayProvider, isRelayConfigured } from "./providers/relay";
 import {
   buildInternalNotificationMail,
   buildCustomerProposalMail,
+  buildCustomerFollowupMail,
 } from "./templates";
 import type {
+  CustomerFollowupEmailInput,
   CustomerProposalEmailInput,
   InternalConsultNotificationInput,
   MailConfigStatus,
@@ -182,8 +184,45 @@ export async function sendCustomerProposalEmail(
   }
 }
 
+/**
+ * 相談内容が不足していたとき、お客様へ追加情報をお願いするフォローアップメールを
+ * 送る（または記録する）。宛先アドレスが不正な場合は送信せず status:"error" を返す。
+ * 提案メールとは違い、提案ページ URL は載せない。
+ */
+export async function sendCustomerFollowupEmail(
+  input: CustomerFollowupEmailInput
+): Promise<MailResult> {
+  const provider = resolveMailProvider();
+
+  // 宛先が無効なら送信しない（パイプラインは止めない）
+  if (!isValidEmail(input.to)) {
+    return {
+      provider: provider.name,
+      accepted: [],
+      messageId: null,
+      status: "error",
+      error: "お客様メールアドレスが不正なため、フォローアップメールを送信できませんでした。",
+    };
+  }
+
+  try {
+    const replyTo = process.env.MAIL_REPLY_TO;
+    const mail = buildCustomerFollowupMail(input);
+    return await deliverWithFallback({ ...mail, replyTo }, provider);
+  } catch (err) {
+    return {
+      provider: provider.name,
+      accepted: [input.to],
+      messageId: null,
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 // 型の再エクスポート（呼び出し側の利便性）
 export type {
+  CustomerFollowupEmailInput,
   CustomerProposalEmailInput,
   InternalConsultNotificationInput,
   MailConfigStatus,

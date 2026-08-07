@@ -11,6 +11,7 @@
 /* ------------------------------------------------------------------ */
 
 import type {
+  CustomerFollowupEmailInput,
   CustomerProposalEmailInput,
   InternalConsultNotificationInput,
   SendMailInput,
@@ -118,6 +119,21 @@ export function buildInternalNotificationMail(
   lines.push(`添付ファイル数: ${input.fileCount ?? 0}`);
   lines.push(`ブリーフ生成: ${input.briefGenerated ? "成功" : "未生成"}`);
   lines.push(`提案 URL: ${input.proposalUrl ?? "未生成"}`);
+  if (input.intakeQuality) {
+    lines.push("");
+    lines.push("▼ インテイク品質評価");
+    lines.push(
+      `ステータス: ${
+        input.intakeQuality.status === "needs_followup"
+          ? "要フォロー（提案保留）"
+          : "ready（提案生成可）"
+      }`
+    );
+    lines.push(`スコア: ${input.intakeQuality.score}`);
+    if (input.intakeQuality.reasons.length > 0) {
+      lines.push(`理由:\n  - ${input.intakeQuality.reasons.join("\n  - ")}`);
+    }
+  }
   const text = lines.join("\n");
 
   // 軽量 HTML（インラインスタイル）
@@ -170,7 +186,21 @@ export function buildInternalNotificationMail(
     <tr><td style="padding:3px 12px 3px 0;color:#6b7280;">提案 URL</td><td>${
       input.proposalUrl ? escapeHtml(input.proposalUrl) : "未生成"
     }</td></tr>
-  </table>
+  </table>${
+    input.intakeQuality
+      ? `
+  <h3 style="font-size:15px;margin:20px 0 6px;border-left:4px solid ${
+    input.intakeQuality.status === "needs_followup" ? "#d97706" : "#2563eb"
+  };padding-left:8px;">インテイク品質評価</h3>
+  <p style="font-size:13px;line-height:1.7;color:#374151;">
+    ステータス: <b>${
+      input.intakeQuality.status === "needs_followup"
+        ? "要フォロー（提案保留）"
+        : "ready（提案生成可）"
+    }</b> ／ スコア: ${input.intakeQuality.score}
+  </p>${toListHtml(input.intakeQuality.reasons)}`
+      : ""
+  }
 </div>`;
 
   return {
@@ -256,5 +286,115 @@ export function buildCustomerProposalMail(
     html,
     submissionId: input.submissionId,
     purpose: "customer-proposal",
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  お客様向けフォローアップ依頼メール                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 相談内容が不足していたとき、お客様へ追加情報をお願いするメールを組み立てる。
+ * requestedItems / followupQuestions は assessConsultIntake の結果を使う。
+ * 提案ページの URL は載せない（まだ生成していないため）。
+ */
+export function buildCustomerFollowupMail(
+  input: CustomerFollowupEmailInput
+): SendMailInput {
+  const displayName = input.customerName || input.companyName || "ご依頼主様";
+  const companyNameLine = input.companyName ? `${input.companyName} 様\n\n` : "";
+  const subject = `【金井ホームページ制作】ご相談内容について追加でお伺いしたいことがございます — ${
+    input.companyName || "ご依頼主様"
+  }`;
+
+  const questions = (input.followupQuestions ?? []).filter((q) => q.trim().length > 0);
+  const items = (input.requestedItems ?? []).filter((i) => i.trim().length > 0);
+
+  const lines: string[] = [];
+  lines.push(`${displayName} 様`);
+  lines.push("");
+  lines.push(companyNameLine);
+  lines.push("この度は、ホームページ制作のご相談をいただきありがとうございます。");
+  lines.push("ご入力いただいた内容は無事に受け取りました。");
+  lines.push("");
+  lines.push(
+    "お客様に最適なご提案を用意するため、もう少しだけ詳しくお伺いしたいことがございます。"
+  );
+  lines.push(
+    "以下の点について、このメールにそのままご返信いただくか、箇条書きで教えていただけますでしょうか。"
+  );
+  lines.push("");
+  if (questions.length > 0) {
+    lines.push("【お伺いしたいこと】");
+    questions.forEach((q, i) => lines.push(`${i + 1}. ${q}`));
+    lines.push("");
+  } else if (items.length > 0) {
+    lines.push("【ご教示いただきたい項目】");
+    items.forEach((it) => lines.push(`・${it}`));
+    lines.push("");
+  }
+  lines.push(
+    "ご返答をいただき次第、お客様別の構成提案・お見積りをあらためてお届けいたします。"
+  );
+  lines.push("お手数をおかけして恐縮ですが、よろしくお願いいたします。");
+  lines.push("");
+  lines.push("金井ホームページ制作");
+  lines.push("Email: info@kanei-trade.co.jp");
+  lines.push(`お問い合わせ ID: ${input.submissionId}`);
+
+  const text = lines
+    .filter((line, i, arr) => !(line === "" && arr[i - 1] === "" && i > 1))
+    .join("\n");
+
+  const questionsHtml =
+    questions.length > 0
+      ? questions
+          .map(
+            (q, i) =>
+              `<li style="margin-bottom:8px;line-height:1.7;">${i + 1}. ${escapeHtml(
+                q
+              )}</li>`
+          )
+          .join("")
+      : items
+          .map(
+            (it) =>
+              `<li style="margin-bottom:6px;line-height:1.7;">${escapeHtml(it)}</li>`
+          )
+          .join("");
+
+  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Meiryo,sans-serif;color:#111827;max-width:600px;">
+  <p style="font-size:15px;">${escapeHtml(displayName)} 様</p>
+  <p style="font-size:14px;line-height:1.8;">
+    この度は、ホームページ制作のご相談をいただきありがとうございます。<br/>
+    ご入力いただいた内容は無事に受け取りました。
+  </p>
+  <p style="font-size:14px;line-height:1.8;">
+    お客様に最適なご提案を用意するため、もう少しだけ詳しくお伺いしたいことがございます。<br/>
+    以下の点について、このメールにそのままご返信いただくか、箇条書きで教えていただけますでしょうか。
+  </p>
+  <div style="margin:20px 0;padding:16px;border:1px solid #fcd34d;border-radius:12px;background:#fffbeb;">
+    <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#92400e;">お伺いしたいこと</p>
+    <ol style="margin:0;padding-left:20px;font-size:14px;color:#111827;">${questionsHtml}</ol>
+  </div>
+  <p style="font-size:14px;line-height:1.8;">
+    ご返答をいただき次第、お客様別の構成提案・お見積りをあらためてお届けいたします。<br/>
+    お手数をおかけして恐縮ですが、よろしくお願いいたします。
+  </p>
+  <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb;"/>
+  <p style="font-size:13px;color:#6b7280;line-height:1.7;">
+    金井ホームページ制作<br/>
+    Email: info@kanei-trade.co.jp<br/>
+    お問い合わせ ID: ${escapeHtml(input.submissionId)}
+  </p>
+</div>`;
+
+  return {
+    to: [{ address: input.to, name: input.customerName || undefined }],
+    subject,
+    text,
+    html,
+    submissionId: input.submissionId,
+    purpose: "customer-followup",
   };
 }

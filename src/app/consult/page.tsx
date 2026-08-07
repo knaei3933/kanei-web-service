@@ -317,6 +317,20 @@ interface MailSummary {
   customer: MailResultLite | null;
 }
 
+/** API から返るインテイク品質評価（完了画面を提案完成/追加情報依頼で切り替える） */
+interface ConsultQualityLite {
+  /** ready: 提案完成 / needs_followup: 追加情報依頼 */
+  status: "ready" | "needs_followup";
+  /** 0〜100 のスコア */
+  score: number;
+  /** 減点理由（社内確認用） */
+  reasons: string[];
+  /** お客様にお願いする追加入力項目 */
+  requestedItems: string[];
+  /** お客様への具体的な質問 */
+  followupQuestions: string[];
+}
+
 /**
  * プロバイダ名から完了画面のバッジ（ラベル + 色）を安全に組み立てる。
  * 未知のプロバイダ名が来ても崩れないように default で受け止める。
@@ -986,6 +1000,10 @@ export default function ConsultPage() {
   /* 送信成功時に API から返ってきた、メール送信サマリ（実プロバイダ状態） */
   const [mail, setMail] = useState<MailSummary | null>(null);
 
+  /* 送信成功時に API から返ってきた、インテイク品質評価（完了画面の切替用） */
+  const [consultQuality, setConsultQuality] =
+    useState<ConsultQualityLite | null>(null);
+
   /* ---- 更新ヘルパ ---- */
   const update = <K extends keyof FormData>(key: K, value: FormData[K]) =>
     setData((prev) => ({ ...prev, [key]: value }));
@@ -1243,6 +1261,17 @@ export default function ConsultPage() {
         setMail(null);
       }
 
+      if (
+        result &&
+        result.consultQuality &&
+        typeof result.consultQuality === "object" &&
+        typeof (result.consultQuality as { status?: unknown }).status === "string"
+      ) {
+        setConsultQuality(result.consultQuality as ConsultQualityLite);
+      } else {
+        setConsultQuality(null);
+      }
+
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -1260,6 +1289,8 @@ export default function ConsultPage() {
   /*  完了画面                                                          */
   /* ---------------------------------------------------------------- */
   if (submitted) {
+    const requiresFollowup = consultQuality?.status === "needs_followup";
+
     // メール送信結果の表示用ディテール（実プロバイダ状態から組み立てる）
     const internalDetail = mail?.internal
       ? mail.internal.status === "sent"
@@ -1270,39 +1301,95 @@ export default function ConsultPage() {
       : "通知の結果を取得できませんでした。";
     const customerDetail = mail?.customer
       ? mail.customer.status === "sent"
-        ? `ご案内メールをお送りしました${
-            mail.customer.accepted[0] ? `（${mail.customer.accepted[0]}）` : ""
-          }。`
+        ? requiresFollowup
+          ? `追加情報のお願いメールをお送りしました${
+              mail.customer.accepted[0] ? `（${mail.customer.accepted[0]}）` : ""
+            }。`
+          : `ご案内メールをお送りしました${
+              mail.customer.accepted[0] ? `（${mail.customer.accepted[0]}）` : ""
+            }。`
         : mail.customer.status === "logged"
-          ? "ご案内メールをシステムへ記録しました（テスト環境のため実配送はしていません）。"
-          : mail.customer.error ?? "ご案内メールを送信できませんでした。"
-      : "ご案内メールの結果を取得できませんでした。";
+          ? requiresFollowup
+            ? "追加情報のお願いメールをシステムへ記録しました（テスト環境のため実配送はしていません）。"
+            : "ご案内メールをシステムへ記録しました（テスト環境のため実配送はしていません）。"
+          : mail.customer.error ??
+            (requiresFollowup
+              ? "追加情報のお願いメールを送信できませんでした。"
+              : "ご案内メールを送信できませんでした。")
+      : requiresFollowup
+        ? "追加情報のお願いメール結果を取得できませんでした。"
+        : "ご案内メールの結果を取得できませんでした。";
 
     return (
       <div className="min-h-[70vh] bg-white">
         <div className="mx-auto max-w-3xl px-4 py-16 sm:py-24">
           <div className="rounded-3xl border border-border bg-white p-8 text-center shadow-sm sm:p-12">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
-              <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+            <div
+              className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full ${
+                requiresFollowup ? "bg-amber-100" : "bg-emerald-100"
+              }`}
+            >
+              <CheckCircle2
+                className={`h-12 w-12 ${requiresFollowup ? "text-amber-600" : "text-emerald-600"}`}
+              />
             </div>
             <h1 className="mb-4 text-2xl font-bold text-foreground sm:text-3xl">
-              お申し込みありがとうございます
+              {requiresFollowup ? "追加情報をお願いしています" : "お申し込みありがとうございます"}
             </h1>
             <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-muted-foreground">
-              2営業日以内に、ご希望に合わせたお見積りをご提案いたします。
-              <br />
-              ご入力いただいたメールアドレスへご連絡いたしますので、
-              しばらくお待ちください。
+              {requiresFollowup ? (
+                <>
+                  ご入力内容は受け付けましたが、このままでは精度の高いご提案を作るための情報が不足しています。
+                  <br />
+                  ご入力いただいたメールアドレスへ追加情報のお願いをお送りしましたので、ご確認をお願いいたします。
+                </>
+              ) : (
+                <>
+                  2営業日以内に、ご希望に合わせたお見積りをご提案いたします。
+                  <br />
+                  ご入力いただいたメールアドレスへご連絡いたしますので、しばらくお待ちください。
+                </>
+              )}
             </p>
 
-            {/* お客様別の構成提案導線（API から proposalUrl が返ったときだけ表示） */}
-            {proposalUrl && (
+            {requiresFollowup && consultQuality && (
+              <div className="mx-auto mb-8 max-w-xl rounded-3xl border border-amber-200 bg-amber-50/80 p-6 text-left shadow-sm sm:p-8">
+                <div className="flex items-center gap-2 text-amber-700">
+                  <AlertCircle className="h-5 w-5 shrink-0" />
+                  <span className="text-sm font-bold">追加で確認したい内容</span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-amber-900/80">
+                  より的確なご提案にするため、下記の内容をメールでご返信ください。
+                </p>
+                {consultQuality.requestedItems.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs font-bold text-amber-900">お願いしたい項目</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-amber-900/80">
+                      {consultQuality.requestedItems.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {consultQuality.followupQuestions.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs font-bold text-amber-900">ご返信いただきたい内容</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-amber-900/80">
+                      {consultQuality.followupQuestions.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* お客様別の構成提案導線（ready かつ API から proposalUrl が返ったときだけ表示） */}
+            {!requiresFollowup && proposalUrl && (
               <div className="mx-auto mb-6 max-w-xl rounded-3xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/[0.03] p-6 text-left shadow-sm sm:p-8">
                 <div className="flex items-center gap-2 text-primary">
                   <Layers className="h-5 w-5 shrink-0" />
-                  <span className="text-sm font-bold">
-                    あなた専用の構成提案が完成しました
-                  </span>
+                  <span className="text-sm font-bold">あなた専用の構成提案が完成しました</span>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   ご入力内容と金井の実績カタログをもとに、ホームページの構成案を自動作成しました。
@@ -1323,14 +1410,12 @@ export default function ConsultPage() {
               </div>
             )}
 
-            {/* お客様別の初稿プレビュー導線（API から draftUrl が返ったときだけ表示） */}
-            {draftUrl && (
+            {/* お客様別の初稿プレビュー導線（ready かつ API から draftUrl が返ったときだけ表示） */}
+            {!requiresFollowup && draftUrl && (
               <div className="mx-auto mb-8 max-w-xl rounded-3xl border border-border bg-accent/40 p-6 text-left shadow-sm sm:p-8">
                 <div className="flex items-center gap-2 text-primary">
                   <Sparkles className="h-5 w-5 shrink-0" />
-                  <span className="text-sm font-bold">
-                    初稿ホームページも生成しました
-                  </span>
+                  <span className="text-sm font-bold">初稿ホームページも生成しました</span>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   ご入力内容をもとに、ホームページの初稿（ファーストドラフト）を自動生成しました。
@@ -1355,9 +1440,7 @@ export default function ConsultPage() {
             {mail && (
               <div className="mx-auto mb-8 max-w-xl rounded-3xl border border-border bg-white p-6 text-left shadow-sm sm:p-8">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="text-sm font-bold text-foreground">
-                    送信ステータス
-                  </span>
+                  <span className="text-sm font-bold text-foreground">送信ステータス</span>
                   {(() => {
                     const badge = providerBadge(mail.provider);
                     return (
@@ -1380,16 +1463,26 @@ export default function ConsultPage() {
                   />
                   <StatusRow
                     status={mail.customer?.status ?? "error"}
-                    label="ご案内メール（お客様へ）"
+                    label={requiresFollowup ? "追加情報のお願い（お客様へ）" : "ご案内メール（お客様へ）"}
                     detail={customerDetail}
                   />
                   <StatusRow
-                    status={proposalUrl ? "sent" : "error"}
-                    label="構成提案の生成"
+                    status={
+                      requiresFollowup
+                        ? mail.customer?.status === "error"
+                          ? "error"
+                          : mail.customer?.status ?? "sent"
+                        : proposalUrl
+                          ? "sent"
+                          : "error"
+                    }
+                    label={requiresFollowup ? "追加ヒアリング判定" : "構成提案の生成"}
                     detail={
-                      proposalUrl
-                        ? "構成提案ページを生成しました。上のボタンからご確認ください。"
-                        : "構成提案の生成に失敗しました。お手数ですが再送信をお願いします。"
+                      requiresFollowup
+                        ? "今回は追加情報の確認を優先するため、構成提案の自動生成は保留にしています。"
+                        : proposalUrl
+                          ? "構成提案ページを生成しました。上のボタンからご確認ください。"
+                          : "構成提案の生成に失敗しました。お手数ですが再送信をお願いします。"
                     }
                   />
                 </div>
