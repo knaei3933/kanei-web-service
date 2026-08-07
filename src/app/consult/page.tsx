@@ -18,10 +18,8 @@ import {
   FileText,
   Sparkles,
   Loader2,
-  ExternalLink,
   AlertCircle,
   Inbox,
-  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -991,11 +989,17 @@ export default function ConsultPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  /* 送信成功時に API から返ってきた、お客様別の初稿プレビュー URL */
-  const [draftUrl, setDraftUrl] = useState<string | null>(null);
+  /* 送信成功時に API から返ってきた、レビューゲートの状態。
+     Phase 1 では提案/ドラフトを自動生成せず、この状態で完了画面を分岐する。
+     needs_followup → 追加情報依頼 / awaiting_representative_approval → 内部レビュー中 */
+  const [reviewStatus, setReviewStatus] = useState<
+    "needs_followup" | "awaiting_representative_approval" | null
+  >(null);
 
-  /* 送信成功時に API から返ってきた、お客様別の構成提案 URL */
-  const [proposalUrl, setProposalUrl] = useState<string | null>(null);
+  /* 送信成功時に API から返ってきた、顧客向け表示状態 */
+  const [customerFacingStatus, setCustomerFacingStatus] = useState<
+    "followup_requested" | "under_internal_review" | null
+  >(null);
 
   /* 送信成功時に API から返ってきた、メール送信サマリ（実プロバイダ状態） */
   const [mail, setMail] = useState<MailSummary | null>(null);
@@ -1235,17 +1239,18 @@ export default function ConsultPage() {
       const result = await res.json().catch(() => null);
       console.log("=== Consult Submission Saved ===", result);
 
-      // お客様別の初稿プレビュー URL があれば保持（完了画面で開く導線に使う）
-      setDraftUrl(
-        result && typeof result.draftUrl === "string" && result.draftUrl.length > 0
-          ? result.draftUrl
+      // レビューゲートの状態を保持（完了画面の分岐に使う）。
+      // Phase 1 では提案/ドラフトは自動生成せず null 扱いなので読み捨てる。
+      const rs = result?.reviewStatus;
+      setReviewStatus(
+        rs === "needs_followup" || rs === "awaiting_representative_approval"
+          ? rs
           : null
       );
-
-      // お客様別の構成提案 URL を保持（提案 CTA に使う）
-      setProposalUrl(
-        result && typeof result.proposalUrl === "string" && result.proposalUrl.length > 0
-          ? result.proposalUrl
+      const cfs = result?.customerFacingStatus;
+      setCustomerFacingStatus(
+        cfs === "followup_requested" || cfs === "under_internal_review"
+          ? cfs
           : null
       );
 
@@ -1289,7 +1294,9 @@ export default function ConsultPage() {
   /*  完了画面                                                          */
   /* ---------------------------------------------------------------- */
   if (submitted) {
-    const requiresFollowup = consultQuality?.status === "needs_followup";
+    // Phase 1: 提案/ドラフトは自動生成せずレビューゲートで止める。
+    // needs_followup → 追加情報依頼 / awaiting_representative_approval → 内部レビュー中
+    const requiresFollowup = reviewStatus === "needs_followup";
 
     // メール送信結果の表示用ディテール（実プロバイダ状態から組み立てる）
     const internalDetail = mail?.internal
@@ -1334,7 +1341,7 @@ export default function ConsultPage() {
               />
             </div>
             <h1 className="mb-4 text-2xl font-bold text-foreground sm:text-3xl">
-              {requiresFollowup ? "追加情報をお願いしています" : "お申し込みありがとうございます"}
+              {requiresFollowup ? "追加情報をお願いしています" : "ご相談を受け付けました"}
             </h1>
             <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-muted-foreground">
               {requiresFollowup ? (
@@ -1345,9 +1352,9 @@ export default function ConsultPage() {
                 </>
               ) : (
                 <>
-                  2営業日以内に、ご希望に合わせたお見積りをご提案いたします。
+                  ご入力いただいた内容は無事に受け取りました。
                   <br />
-                  ご入力いただいたメールアドレスへご連絡いたしますので、しばらくお待ちください。
+                  担当者が社内で内容を確認したうえで、構成案や今後の進め方について改めてご連絡いたします。今しばらくお待ちください。
                 </>
               )}
             </p>
@@ -1381,58 +1388,6 @@ export default function ConsultPage() {
                     </ul>
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* お客様別の構成提案導線（ready かつ API から proposalUrl が返ったときだけ表示） */}
-            {!requiresFollowup && proposalUrl && (
-              <div className="mx-auto mb-6 max-w-xl rounded-3xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/[0.03] p-6 text-left shadow-sm sm:p-8">
-                <div className="flex items-center gap-2 text-primary">
-                  <Layers className="h-5 w-5 shrink-0" />
-                  <span className="text-sm font-bold">あなた専用の構成提案が完成しました</span>
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  ご入力内容と金井の実績カタログをもとに、ホームページの構成案を自動作成しました。
-                  推奨するページ構成・参考デザイン・ターゲット戦略を今すぐご確認いただけます。
-                </p>
-                <a
-                  href={proposalUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-lg transition-opacity hover:opacity-90 sm:w-auto"
-                >
-                  構成提案を見る
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                  ※ 構成提案は実績カタログとご相談内容からの自動生成です。実際の制作ではデザイン・原稿・写真をさらに整えます。
-                </p>
-              </div>
-            )}
-
-            {/* お客様別の初稿プレビュー導線（ready かつ API から draftUrl が返ったときだけ表示） */}
-            {!requiresFollowup && draftUrl && (
-              <div className="mx-auto mb-8 max-w-xl rounded-3xl border border-border bg-accent/40 p-6 text-left shadow-sm sm:p-8">
-                <div className="flex items-center gap-2 text-primary">
-                  <Sparkles className="h-5 w-5 shrink-0" />
-                  <span className="text-sm font-bold">初稿ホームページも生成しました</span>
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  ご入力内容をもとに、ホームページの初稿（ファーストドラフト）を自動生成しました。
-                  別画面でご確認いただけます。
-                </p>
-                <a
-                  href={draftUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-primary px-6 py-3 font-semibold text-primary transition-colors hover:bg-primary/5 sm:w-auto"
-                >
-                  作成した初稿を見る
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                  ※ 初稿はご相談内容からの自動生成です。
-                </p>
               </div>
             )}
 
@@ -1472,17 +1427,13 @@ export default function ConsultPage() {
                         ? mail.customer?.status === "error"
                           ? "error"
                           : mail.customer?.status ?? "sent"
-                        : proposalUrl
-                          ? "sent"
-                          : "error"
+                        : "sent"
                     }
-                    label={requiresFollowup ? "追加ヒアリング判定" : "構成提案の生成"}
+                    label={requiresFollowup ? "追加ヒアリング判定" : "社内レビュー状況"}
                     detail={
                       requiresFollowup
                         ? "今回は追加情報の確認を優先するため、構成提案の自動生成は保留にしています。"
-                        : proposalUrl
-                          ? "構成提案ページを生成しました。上のボタンからご確認ください。"
-                          : "構成提案の生成に失敗しました。お手数ですが再送信をお願いします。"
+                        : "ご相談内容は社内で確認中です。確認が整い次第、改めてご連絡いたします。"
                     }
                   />
                 </div>

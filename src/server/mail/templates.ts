@@ -13,6 +13,7 @@
 import type {
   CustomerFollowupEmailInput,
   CustomerProposalEmailInput,
+  CustomerReviewAcknowledgementEmailInput,
   InternalConsultNotificationInput,
   SendMailInput,
 } from "./types";
@@ -119,6 +120,7 @@ export function buildInternalNotificationMail(
   lines.push(`添付ファイル数: ${input.fileCount ?? 0}`);
   lines.push(`ブリーフ生成: ${input.briefGenerated ? "成功" : "未生成"}`);
   lines.push(`提案 URL: ${input.proposalUrl ?? "未生成"}`);
+  if (input.reviewUrl) lines.push(`レビュー URL: ${input.reviewUrl}`);
   if (input.intakeQuality) {
     lines.push("");
     lines.push("▼ インテイク品質評価");
@@ -185,7 +187,15 @@ export function buildInternalNotificationMail(
     }</td></tr>
     <tr><td style="padding:3px 12px 3px 0;color:#6b7280;">提案 URL</td><td>${
       input.proposalUrl ? escapeHtml(input.proposalUrl) : "未生成"
-    }</td></tr>
+    }</td></tr>${
+      input.reviewUrl
+        ? `<tr><td style="padding:3px 12px 3px 0;color:#6b7280;">レビュー URL</td><td><a href="${escapeHtml(
+            input.reviewUrl
+          )}" style="color:#2563eb;word-break:break-all;">${escapeHtml(
+            input.reviewUrl
+          )}</a></td></tr>`
+        : ""
+    }
   </table>${
     input.intakeQuality
       ? `
@@ -396,5 +406,91 @@ export function buildCustomerFollowupMail(
     html,
     submissionId: input.submissionId,
     purpose: "customer-followup",
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  お客様向け確認応答メール（内部レビュー中の案内）                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 相談内容が十分と判定され、社内レビューへ回ったときにお客様へ送る
+ * 「受け付けた・現在内部で検討中」を伝えるメールを組み立てる。
+ *
+ * 重要:
+ *   - 提案ページ URL は載せない（まだ承認・生成されていないため）。
+ *   - 「提案が完成しました」等の、完成を想起させる表現は使わない。
+ *   - 追加質問は載せない（それが必要な場合はフォローアップメールを使う）。
+ */
+export function buildCustomerReviewAcknowledgementMail(
+  input: CustomerReviewAcknowledgementEmailInput
+): SendMailInput {
+  const displayName = input.customerName || input.companyName || "ご依頼主様";
+  const companyNameLine = input.companyName ? `${input.companyName} 様\n\n` : "";
+  const subject = `【金井ホームページ制作】ご相談を受け付けました — ${
+    input.companyName || "ご依頼主様"
+  }`;
+
+  const lines: string[] = [];
+  lines.push(`${displayName} 様`);
+  lines.push("");
+  lines.push(companyNameLine);
+  lines.push("この度は、ホームページ制作のご相談をいただきありがとうございます。");
+  lines.push("ご入力いただいた内容は無事に受け取りました。");
+  lines.push("");
+  lines.push(
+    "いただいた内容をもとに、担当者が社内で確認を進めております。"
+  );
+  lines.push(
+    "確認が整い次第、構成案や今後の進め方について改めてご連絡させていただきます。"
+  );
+  lines.push("今しばらくお待ちくださいますようお願いいたします。");
+  lines.push("");
+  lines.push(
+    "なお、ご入力内容に追加・修正がございましたら、このメールにそのままご返信ください。"
+  );
+  lines.push("");
+  lines.push("引き続き、よろしくお願い申し上げます。");
+  lines.push("");
+  lines.push("金井ホームページ制作");
+  lines.push("Email: info@kanei-trade.co.jp");
+  lines.push(`お問い合わせ ID: ${input.submissionId}`);
+
+  const text = lines
+    .filter((line, i, arr) => !(line === "" && arr[i - 1] === "" && i > 1))
+    .join("\n");
+
+  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Meiryo,sans-serif;color:#111827;max-width:600px;">
+  <p style="font-size:15px;">${escapeHtml(displayName)} 様</p>
+  <p style="font-size:14px;line-height:1.8;">
+    この度は、ホームページ制作のご相談をいただきありがとうございます。<br/>
+    ご入力いただいた内容は無事に受け取りました。
+  </p>
+  <div style="margin:20px 0;padding:16px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;">
+    <p style="margin:0;font-size:14px;line-height:1.8;color:#1e3a8a;">
+      いただいた内容をもとに、担当者が社内で確認を進めております。<br/>
+      確認が整い次第、構成案や今後の進め方について改めてご連絡させていただきます。<br/>
+      今しばらくお待ちくださいますようお願いいたします。
+    </p>
+  </div>
+  <p style="font-size:14px;line-height:1.8;">
+    なお、ご入力内容に追加・修正がございましたら、このメールにそのままご返信ください。
+  </p>
+  <p style="font-size:14px;line-height:1.8;">引き続き、よろしくお願い申し上げます。</p>
+  <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb;"/>
+  <p style="font-size:13px;color:#6b7280;line-height:1.7;">
+    金井ホームページ制作<br/>
+    Email: info@kanei-trade.co.jp<br/>
+    お問い合わせ ID: ${escapeHtml(input.submissionId)}
+  </p>
+</div>`;
+
+  return {
+    to: [{ address: input.to, name: input.customerName || undefined }],
+    subject,
+    text,
+    html,
+    submissionId: input.submissionId,
+    purpose: "customer-review-acknowledgement",
   };
 }

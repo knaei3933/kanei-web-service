@@ -2,13 +2,17 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
-import { buildDraftPayload, encodeDraft } from "@/lib/draft";
-import { buildProposalPayload, encodeProposal } from "@/lib/proposal";
 import { assessConsultIntake } from "@/lib/consult-quality";
+import {
+  buildApprovalPackage,
+  writeApprovalPackage,
+  approvalPackagePathFor,
+  type ApprovalSavedFile,
+} from "@/lib/approval-package";
 import {
   getMailConfigStatus,
   sendInternalConsultNotification,
-  sendCustomerProposalEmail,
+  sendCustomerReviewAcknowledgementEmail,
   sendCustomerFollowupEmail,
   type MailResult,
 } from "@/server/mail";
@@ -1034,38 +1038,41 @@ export async function POST(request: Request): Promise<Response> {
     briefGenerated = false;
   }
 
-  // --- お客様別ドラフトプレビュー URL の生成 ---
-  // 送信内容から最小ペイロードを組み立てて base64url で URL に埋め込む。
-  // ディスク（brief/submission）に依存しないので、本番 serverless でも
-  // お客様がそのまま開いて初稿プレビューを確認できる。生成/エンコードに
-  // 失敗しても送信自体は成功扱いとし、結果を draftUrl で返す（null 可）。
-  let draftUrl: string | null = null;
-  try {
-    const draftPayload = buildDraftPayload(parsedPayload, submissionId);
-    const encoded = encodeDraft(draftPayload);
-    draftUrl = `${absoluteBaseUrl(request)}/draft?d=${encoded}`;
-  } catch {
-    draftUrl = null;
-  }
-
-  // --- お客様別の構成提案 URL の生成 ---
-  // 送信内容と Monet カタログから構成提案を組み立て、base64url で URL に埋め込む。
-  // ディスクに依存しないので serverless でもお客様がそのまま開ける。
-  // draft と同様、生成/エンコードに失敗しても送信自体は成功扱い（null 可）。
-  let proposalUrl: string | null = null;
-  try {
-    const proposalPayload = buildProposalPayload(parsedPayload, submissionId);
-    const encodedProposal = encodeProposal(proposalPayload);
-    proposalUrl = `${absoluteBaseUrl(request)}/proposal?p=${encodedProposal}`;
-  } catch {
-    proposalUrl = null;
-  }
-
   // --- インテイク品質評価（サーバー側ゲート） ---
   // 受け取った内容が「このまま提案作成に進めるか、追加ヒアリングが必要か」を
   // 決定論的に判定する。LLM 不使用・同じ入力で同じ結果。
   const intakeQuality = assessConsultIntake(parsedPayload, savedFiles.length);
   const isReady = intakeQuality.status === "ready";
+
+  // --- 内部レビュー URL の構築（社内のみ・顧客には出さない） ---
+  // 代表者が承認パッケージを確認するための内部ページへの絶対 URL。
+  // レスポンスの reviewUrl / 承認パッケージ / 社内通知メールにだけ載せ、
+  // お客様向けの確認応答メールには一切含めない（Phase 1 の分離ルール）。
+  const reviewUrl = `${absoluteBaseUrl(request)}/review/${submissionId}`;
+
+  // --- 承認パッケージ（approval-package.json）の生成・保存 ---
+  // 相談1件ごとの「社内レビュー用統制ドキュメント」。品質評価・要約・
+  // 参考サイト分析・素材分析・内部プロンプトチェーンプレビューをまとめ、
+  // 代表者の承認/却下を記録する。ここでパイプラインは「レビューゲート」で
+  // 止まり、自動生成は行わない（Phase 1 では post-approval 生成は非ゴール）。
+  const savedFilesForPackage: ApprovalSavedFile[] = savedFiles.map((f) => ({
+    originalName: f.originalName,
+    savedName: f.savedName,
+    sizeBytes: f.size,
+    type: f.type,
+  }));
+  const approvalPackage = buildApprovalPackage(
+    parsedPayload,
+    submissionId,
+    savedFilesForPackage,
+    intakeQuality,
+    { reviewUrl }
+  );
+  try {
+    await writeApprovalPackage(approvalPackage);
+  } catch {
+    // 承認パッケージの保存失敗 — 送信データは保存済みなので続行
+  }
 
   // --- メール通知（社内通知 + お客様ご案内） ---
   // どちらも「送信失敗で例外を投げない」設計。status を見て UI に反映する。
@@ -1086,7 +1093,10 @@ export async function POST(request: Request): Promise<Response> {
       storagePath: `${DISPLAY_ROOT}/${submissionId}`,
       storageMode: IS_SERVERLESS ? "serverless" : "local",
       briefGenerated,
-      proposalUrl: isReady ? proposalUrl ?? undefined : undefined,
+      // Phase 1 では提案 URL を社内通知に載せない（まだ生成しないため）
+      proposalUrl: undefined,
+      // 内部レビューページへの URL（社内のみ・代表者承認導線用）
+      reviewUrl,
       payload: payloadObject,
       fileCount: savedFiles.length,
       intakeQuality: {
@@ -1103,12 +1113,13 @@ export async function POST(request: Request): Promise<Response> {
   // needs_followup なら提案メールを保留してフォローアップ依頼メールを送る。
   let customerMail: MailResult | null = null;
   try {
+    // ready なら「確認応答（受領・内部検討中）」メールを送る。
+    // Phase 1 では提案ページはまだ生成しないため、提案 URL を載せない。
     if (isReady) {
-      customerMail = await sendCustomerProposalEmail({
+      customerMail = await sendCustomerReviewAcknowledgementEmail({
         to: customerEmail,
         customerName: customerName || undefined,
         companyName: customerCompany || undefined,
-        proposalUrl: proposalUrl ?? "",
         submissionId,
       });
     } else {
@@ -1126,8 +1137,9 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // --- 成功レスポンス ---
-  // needs_followup のときは提案/ドラフトの導線を「通常の成功成果物」として
-  // 公開しない（フロントで追加情報依頼の案内に切り替えるため null にする）。
+  // Phase 1 では提案/ドラフトを「通常の成功成果物」として顧客へ公開しない。
+  // パイプラインは承認パッケージ作成で止まり、顧客完了画面は
+  // reviewStatus / customerFacingStatus で分岐する。
   return Response.json({
     ok: true,
     submissionId,
@@ -1138,12 +1150,22 @@ export async function POST(request: Request): Promise<Response> {
     briefGenerated,
     /** ブリーフの保存先（生成失敗時は null） */
     briefPath,
-    /** お客様別の初稿プレビュー URL。ready のみ公開・それ以外は null */
-    draftUrl: isReady ? draftUrl : null,
-    /** お客様別の構成提案 URL。ready のみ公開・それ以外は null */
-    proposalUrl: isReady ? proposalUrl : null,
+    /** お客様別の初稿プレビュー URL（Phase 1 では常に null・承認後に生成） */
+    draftUrl: null,
+    /** お客様別の構成提案 URL（Phase 1 では常に null・承認後に生成） */
+    proposalUrl: null,
     /** インテイク品質評価（status / score / reasons / 追加依頼項目） */
     consultQuality: intakeQuality,
+    /** レビューゲートの状態（needs_followup | awaiting_representative_approval） */
+    reviewStatus: approvalPackage.status,
+    /** 承認パッケージの内部ステータス（パイプライン統制用） */
+    approvalStatus: approvalPackage.status,
+    /** 顧客向け表示状態（followup_requested | under_internal_review） */
+    customerFacingStatus: approvalPackage.customerFacingStatus,
+    /** 内部レビューページ URL（社内のみ・顧客には出さない） */
+    reviewUrl,
+    /** 承認パッケージ JSON の保存先パス（社内確認用） */
+    approvalPackagePath: approvalPackagePathFor(submissionId),
     /** メール送信の結果。実プロバイダの状態をそのまま返す（UI 反映用） */
     mail: {
       /**

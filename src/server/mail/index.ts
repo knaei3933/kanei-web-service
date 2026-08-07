@@ -23,10 +23,12 @@ import {
   buildInternalNotificationMail,
   buildCustomerProposalMail,
   buildCustomerFollowupMail,
+  buildCustomerReviewAcknowledgementMail,
 } from "./templates";
 import type {
   CustomerFollowupEmailInput,
   CustomerProposalEmailInput,
+  CustomerReviewAcknowledgementEmailInput,
   InternalConsultNotificationInput,
   MailConfigStatus,
   MailProvider,
@@ -220,10 +222,48 @@ export async function sendCustomerFollowupEmail(
   }
 }
 
+/**
+ * 相談内容が十分と判定され内部レビューへ回ったとき、お客様へ
+ * 「受け付けた・現在内部で検討中」を伝える確認応答メールを送る
+ * （または記録する）。宛先アドレスが不正な場合は送信せず status:"error" を返す。
+ * 提案ページ URL は載せない（まだ承認・生成されていないため）。
+ */
+export async function sendCustomerReviewAcknowledgementEmail(
+  input: CustomerReviewAcknowledgementEmailInput
+): Promise<MailResult> {
+  const provider = resolveMailProvider();
+
+  // 宛先が無効なら送信しない（パイプラインは止めない）
+  if (!isValidEmail(input.to)) {
+    return {
+      provider: provider.name,
+      accepted: [],
+      messageId: null,
+      status: "error",
+      error: "お客様メールアドレスが不正なため、確認応答メールを送信できませんでした。",
+    };
+  }
+
+  try {
+    const replyTo = process.env.MAIL_REPLY_TO;
+    const mail = buildCustomerReviewAcknowledgementMail(input);
+    return await deliverWithFallback({ ...mail, replyTo }, provider);
+  } catch (err) {
+    return {
+      provider: provider.name,
+      accepted: [input.to],
+      messageId: null,
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 // 型の再エクスポート（呼び出し側の利便性）
 export type {
   CustomerFollowupEmailInput,
   CustomerProposalEmailInput,
+  CustomerReviewAcknowledgementEmailInput,
   InternalConsultNotificationInput,
   MailConfigStatus,
   MailProviderName,

@@ -40,7 +40,8 @@ export interface SendMailInput {
   purpose?:
     | "internal-notification"
     | "customer-proposal"
-    | "customer-followup";
+    | "customer-followup"
+    | "customer-review-acknowledgement";
 }
 
 /** 配送結果の状態 */
@@ -84,6 +85,8 @@ export interface InternalConsultNotificationInput {
   briefGenerated?: boolean;
   /** 提案 URL（生成できていれば） */
   proposalUrl?: string | null;
+  /** 内部レビューページの URL（代表者承認導線用・社内のみ） */
+  reviewUrl?: string | null;
   /** 相談ペイロード（要約に使う） */
   payload: Record<string, unknown>;
   /** 添付ファイル数 */
@@ -124,6 +127,23 @@ export interface CustomerFollowupEmailInput {
   requestedItems: string[];
   /** お客様への具体的な質問（日本語） */
   followupQuestions: string[];
+}
+
+/**
+ * お客様向け「確認応答」メールの組み立てに必要な入力。
+ * 相談が十分と判定され内部レビューへ回ったとき、お客様へ
+ * 「受け付けた・現在内部で検討中」を伝えるために使う。
+ * 提案ページ URL は載せない（まだ承認・生成されていないため）。
+ */
+export interface CustomerReviewAcknowledgementEmailInput {
+  /** 宛先メールアドレス */
+  to: string;
+  /** 宛先のお名前（任意） */
+  customerName?: string;
+  /** 事業体名（表示に使う） */
+  companyName?: string;
+  /** 受領 ID */
+  submissionId: string;
 }
 
 /** プロバイダ解決の診断情報（UI / ログ用） */
