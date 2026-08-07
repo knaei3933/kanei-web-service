@@ -4,10 +4,14 @@
 /*  相談1件ごとに作られる「社内レビュー用の統制ドキュメント」。          */
 /*  このパッケージが、パイプラインが次の段階へ進んでよいかを決める。     */
 /*                                                                      */
-/*  Phase 1 の役割:                                                     */
-/*    - 顧客送信 → 品質評価 → 承認パッケージ作成 で止める                */
-/*    - 代表者がレビューページで内容を確認し、承認/却下する             */
-/*    - 自動生成エンジンは持たない（post-approval 自動生成は非ゴール）  */
+/*  Phase 2 の役割（承認ゲート付きパイプライン）:                       */
+/*    - 顧客送信 → 品質評価 → 承認パッケージ作成                        */
+/*    - 代表者がインテイクを承認すると、OMC 計画アーティファクトを      */
+/*      生成し、status を awaiting_plan_approval へ進める（第2ゲート）   */
+/*    - 計画を承認すると、実行ハンドオフ成果物（プロンプト/メタデータ/  */
+/*      Claude コマンド）を生成し、approved_for_execution へ進める       */
+/*    - Claude Code の実行は serverless では行わず、ローカルオペレータ   */
+/*      への「実行ハンドオフ」として成果物だけを生成する（正直な設計）   */
 /*                                                                      */
 /*  保存先:                                                              */
 /*    - ローカル開発: data/consult-submissions/<submissionId>/          */
@@ -26,16 +30,22 @@ import type { PromptStagePreview } from "./prompt-chain";
 import { buildPromptChainPreview } from "./prompt-chain";
 
 /** 承認パッケージのスキーマバージョン（下流ツールの互換性確認用） */
-export const APPROVAL_SCHEMA_VERSION = "1.0.0";
+export const APPROVAL_SCHEMA_VERSION = "1.1.0";
 
 /**
- * 承認パッケージの状態（Phase 1 で使う5状態）。
- * 将来の拡張（planning_in_progress 等）は Phase 1 では追加しない。
+ * 承認パッケージの状態。
+ *   - received / needs_followup / awaiting_representative_approval: 受領〜代表確認
+ *   - awaiting_plan_approval:          代表がインテイクを承認し、計画アーティファクト生成済み・第2ゲート待ち
+ *   - approved_for_execution:          計画を承認し、実行ハンドオフ生成済み（実行準備完了）
+ *   - approved_for_planning:           Phase 1 の旧状態（後方互換用・新規には出力しない）
+ *   - rejected:                        却下
  */
 export type ApprovalStatus =
   | "received"
   | "needs_followup"
   | "awaiting_representative_approval"
+  | "awaiting_plan_approval"
+  | "approved_for_execution"
   | "approved_for_planning"
   | "rejected";
 
@@ -107,6 +117,106 @@ export interface ApprovalDecision {
   memo: string | null;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Phase 2: OMC 計画アーティファクト + 計画承認 + 実行ハンドオフ        */
+/* ------------------------------------------------------------------ */
+
+/** 計画アーティファクトのスキーマバージョン */
+export const PLANNING_SCHEMA_VERSION = "1.0.0";
+
+/** 実行ハンドオフのスキーマバージョン */
+export const EXECUTION_HANDOFF_SCHEMA_VERSION = "1.0.0";
+
+/** 計画1ステージ分（OMC 計画アーティファクトの構成要素） */
+export interface PlanningStage {
+  /** ステージ識別子（機械処理用） */
+  id: string;
+  /** 表示名（日本語） */
+  title: string;
+  /** このステージの目的（日本語） */
+  objective: string;
+  /** このステージへの入力（日本語の箇条書き） */
+  inputs: string[];
+  /** このステージが出力する成果物（日本語の箇条書き） */
+  outputs: string[];
+  /** Claude Code 実行を伴うステージか */
+  involvesExecution: boolean;
+}
+
+/**
+ * OMC 計画アーティファクト。
+ * 代表者がインテイクを承認したときに【決定論的に】生成される（LLM 不使用）。
+ * 第2ゲート（計画承認）で代表者に提示し、承認されると実行ハンドオフへ受け継がれる。
+ */
+export interface PlanningArtifact {
+  schemaVersion: string;
+  submissionId: string;
+  generatedAt: string;
+  /** 生成方式（LLM 不使用・決定論的であることの明示） */
+  generatedBy: "deterministic-planner";
+  /** 計画の前提となるブリーフ要点（brief.json のヘッドライン・内部確認用） */
+  briefSnapshot: {
+    businessSummary: string;
+    targetUserSummary: string;
+    strengths: string[];
+    mustInclude: string[];
+    referenceUrls: string[];
+  };
+  /** 段階別の実行/生成計画 */
+  stages: PlanningStage[];
+  /** 厳密なステージ順序（stages の id を実行順に列挙） */
+  orderedStageIds: string[];
+  /** 実行前に満たすべき前提 */
+  prerequisites: string[];
+  /** 未解決のブロッカー（代表者・オペレータが確認すべき点） */
+  blockers: string[];
+  /** 計画策定の根拠メモ */
+  rationale: string[];
+}
+
+/** 計画承認（第2ゲート）の判定メタ。ApprovalDecision と同じ形。 */
+export interface PlanApprovalDecision {
+  representativeDecision: RepresentativeDecision;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  memo: string | null;
+}
+
+/**
+ * 実行ハンドオフ成果物（内部専用）。
+ * 計画を承認したときに生成する。serverless のリクエストハンドラからは
+ * Claude Code を実行せず、ローカルオペレータへ引き渡すための
+ * 「プロンプト・メタデータ・コマンド」だけを格納する。
+ *
+ * プロンプト本文（execution-prompt.md）は別ファイルのため、このオブジェクトには
+ * 含めない（レビューページは readExecutionPromptMarkdown で別途読み込む）。
+ */
+export interface ExecutionHandoff {
+  schemaVersion: string;
+  submissionId: string;
+  generatedAt: string;
+  /** 実行方式（serverless では実行せずローカルオペレータへ引き渡す） */
+  handoffMode: "local-operator";
+  /** 作業ディレクトリ（ローカル実行を想定） */
+  workingDirectory: string;
+  /** コピー実行用の Claude Code コマンドテキスト（内部専用・顧客非公開） */
+  claudeCommand: string;
+  /** 実行プロンプトファイルの表示パス（submission フォルダ内） */
+  promptFilePath: string;
+  /** ハンドオフメタデータファイルの表示パス */
+  metadataFilePath: string;
+  /** 計画アーティファクトファイルの表示パス */
+  planFilePath: string;
+  /** ブリーフファイルの表示パス */
+  briefFilePath: string;
+  /** 実行前に満たす前提 */
+  prerequisites: string[];
+  /** 重要事項（serverless 非実行・内部専用など） */
+  notices: string[];
+  /** ハンドオフ元の計画ステージ順序 */
+  plannedStageIds: string[];
+}
+
 /** 承認パッケージ本体 */
 export interface ApprovalPackage {
   schemaVersion: string;
@@ -128,8 +238,14 @@ export interface ApprovalPackage {
   materialsAnalysis: ApprovalMaterialsAnalysis;
   /** 内部向けプロンプトチェーンプレビュー（社内のみ） */
   promptChainPreview: PromptStagePreview[];
-  /** 代表者の判定 */
+  /** 代表者の判定（インテイク承認ゲート） */
   approval: ApprovalDecision;
+  /** OMC 計画アーティファクト（代表承認後に生成・未生成時は null） */
+  planningArtifact: PlanningArtifact | null;
+  /** 計画承認（第2ゲート）の判定 */
+  planApproval: PlanApprovalDecision;
+  /** 実行ハンドオフ（計画承認後に生成・内部専用・未生成時は null） */
+  executionHandoff: ExecutionHandoff | null;
 }
 
 /** buildApprovalPackage に渡す、保存済みファイルの軽量メタデータ */
@@ -160,6 +276,13 @@ const DISPLAY_ROOT = IS_SERVERLESS
   ? SUBMISSIONS_DIR
   : "data/consult-submissions";
 
+/**
+ * 実行ハンドオフで使う「ローカル実行」前提の表示ルート。
+ * serverless では Claude Code を実行しないため、ハンドオフのパス・コマンドは
+ * 常にローカルクローンを前提とした相対パスで表記する。
+ */
+const LOCAL_DISPLAY_ROOT = "data/consult-submissions";
+
 /** パス区切りを含まない安全な submissionId か（トラバーサル対策） */
 function isSafeSubmissionId(id: string): boolean {
   return typeof id === "string" && id.length > 0 && /^[A-Za-z0-9._-]+$/.test(id);
@@ -176,6 +299,26 @@ export function approvalPackagePathFor(submissionId: string): string {
 /** ディスク上の実パスを返す（読み書き用） */
 function approvalPackageRealPath(submissionId: string): string {
   return join(SUBMISSIONS_DIR, submissionId, "approval-package.json");
+}
+
+/** submission フォルダの実パス（読み書き用） */
+function submissionRealDir(submissionId: string): string {
+  return join(SUBMISSIONS_DIR, submissionId);
+}
+
+/** 計画アーティファクト（omc-plan.json）の表示用パス */
+export function planningArtifactPathFor(submissionId: string): string {
+  return `${DISPLAY_ROOT}/${submissionId}/omc-plan.json`;
+}
+
+/** 実行プロンプト（execution-prompt.md）の表示用パス */
+export function executionPromptPathFor(submissionId: string): string {
+  return `${DISPLAY_ROOT}/${submissionId}/execution-prompt.md`;
+}
+
+/** 実行ハンドオフ（execution-handoff.json）の表示用パス */
+export function executionHandoffPathFor(submissionId: string): string {
+  return `${DISPLAY_ROOT}/${submissionId}/execution-handoff.json`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -432,6 +575,15 @@ export function buildApprovalPackage(
       decidedBy: null,
       memo: null,
     },
+    // Phase 2: 計画アーティファクト・計画承認・実行ハンドオフは受領時点では未生成
+    planningArtifact: null,
+    planApproval: {
+      representativeDecision: null,
+      decidedAt: null,
+      decidedBy: null,
+      memo: null,
+    },
+    executionHandoff: null,
   };
 }
 
@@ -456,6 +608,89 @@ export async function writeApprovalPackage(
   );
 }
 
+/** 読み込んだ生 JSON から計画アーティファクトを正規化する。不在・形式不正時は null。 */
+function normalizePlanningArtifact(
+  raw: unknown,
+  submissionId: string
+): PlanningArtifact | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const o = asObject(raw);
+  const stagesRaw = Array.isArray(o.stages) ? o.stages : [];
+  const stages: PlanningStage[] = stagesRaw
+    .map((s) => asObject(s))
+    .map((s) => ({
+      id: asString(s.id),
+      title: asString(s.title),
+      objective: asString(s.objective),
+      inputs: asStringArray(s.inputs),
+      outputs: asStringArray(s.outputs),
+      involvesExecution: s.involvesExecution === true,
+    }))
+    .filter((s) => s.id.length > 0);
+  if (stages.length === 0) return null;
+
+  const bs = asObject(o.briefSnapshot);
+  const ordered = asStringArray(o.orderedStageIds);
+  return {
+    schemaVersion: asString(o.schemaVersion) || PLANNING_SCHEMA_VERSION,
+    submissionId: asString(o.submissionId) || submissionId,
+    generatedAt: asString(o.generatedAt),
+    generatedBy: "deterministic-planner",
+    briefSnapshot: {
+      businessSummary: asString(bs.businessSummary),
+      targetUserSummary: asString(bs.targetUserSummary),
+      strengths: asStringArray(bs.strengths),
+      mustInclude: asStringArray(bs.mustInclude),
+      referenceUrls: asStringArray(bs.referenceUrls),
+    },
+    stages,
+    orderedStageIds: ordered.length > 0 ? ordered : stages.map((s) => s.id),
+    prerequisites: asStringArray(o.prerequisites),
+    blockers: asStringArray(o.blockers),
+    rationale: asStringArray(o.rationale),
+  };
+}
+
+/** 読み込んだ生 JSON から計画承認（第2ゲート）判定を正規化する。 */
+function normalizePlanApproval(raw: unknown): PlanApprovalDecision {
+  const o = asObject(raw);
+  const d = asString(o.representativeDecision);
+  const decision: RepresentativeDecision =
+    d === "approve" || d === "reject" || d === "hold" ? d : null;
+  return {
+    representativeDecision: decision,
+    decidedAt: typeof o.decidedAt === "string" ? o.decidedAt : null,
+    decidedBy: typeof o.decidedBy === "string" ? o.decidedBy : null,
+    memo: typeof o.memo === "string" ? o.memo : null,
+  };
+}
+
+/** 読み込んだ生 JSON から実行ハンドオフを正規化する。不在・形式不正時は null。 */
+function normalizeExecutionHandoff(
+  raw: unknown,
+  submissionId: string
+): ExecutionHandoff | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const o = asObject(raw);
+  const cmd = asString(o.claudeCommand);
+  if (!cmd) return null;
+  return {
+    schemaVersion: asString(o.schemaVersion) || EXECUTION_HANDOFF_SCHEMA_VERSION,
+    submissionId: asString(o.submissionId) || submissionId,
+    generatedAt: asString(o.generatedAt),
+    handoffMode: "local-operator",
+    workingDirectory: asString(o.workingDirectory) || ".",
+    claudeCommand: cmd,
+    promptFilePath: asString(o.promptFilePath),
+    metadataFilePath: asString(o.metadataFilePath),
+    planFilePath: asString(o.planFilePath),
+    briefFilePath: asString(o.briefFilePath),
+    prerequisites: asStringArray(o.prerequisites),
+    notices: asStringArray(o.notices),
+    plannedStageIds: asStringArray(o.plannedStageIds),
+  };
+}
+
 /**
  * 読み込んだ生 JSON を ApprovalPackage の形へ正規化する。
  * 信頼できない入力（古い形式・手編集）でも安全に扱えるように、
@@ -474,6 +709,8 @@ function normalizeApprovalPackage(
     "received",
     "needs_followup",
     "awaiting_representative_approval",
+    "awaiting_plan_approval",
+    "approved_for_execution",
     "approved_for_planning",
     "rejected",
   ];
@@ -574,6 +811,9 @@ function normalizeApprovalPackage(
       decidedBy: typeof ap.decidedBy === "string" ? ap.decidedBy : null,
       memo: typeof ap.memo === "string" ? ap.memo : null,
     },
+    planningArtifact: normalizePlanningArtifact(o.planningArtifact, id),
+    planApproval: normalizePlanApproval(o.planApproval),
+    executionHandoff: normalizeExecutionHandoff(o.executionHandoff, id),
   };
 }
 
@@ -594,44 +834,415 @@ export async function readApprovalPackage(
   }
 }
 
-/** updateApprovalPackageDecision のメタ */
+/** 各遷移関数に渡す判定メタ（承認/却下共通） */
 export interface UpdateDecisionMeta {
   memo?: string;
   decidedBy?: string;
 }
 
-/**
- * 代表者の承認/却下をパッケージへ反映する。
- * 該当パッケージが無い場合は null を返す（呼び出し側で 404 等へマップ）。
- * Phase 1 では実行エンジンを呼ばない（状態遷移のみ）。
- */
-export async function updateApprovalPackageDecision(
-  submissionId: string,
+/* ------------------------------------------------------------------ */
+/*  Phase 2: 決定論的ビルダ（計画アーティファクト・実行ハンドオフ）     */
+/* ------------------------------------------------------------------ */
+
+/** 任意入力文字列を null 許容へ正規化（空白のみは null） */
+function trimOptional(v: string | undefined): string | null {
+  return typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
+}
+
+/** 判定メタから ApprovalDecision / PlanApprovalDecision と同じ形を組み立てる */
+function toDecision(
   action: "approve" | "reject",
+  at: string,
+  meta: UpdateDecisionMeta
+): { representativeDecision: RepresentativeDecision; decidedAt: string; decidedBy: string | null; memo: string | null } {
+  return {
+    representativeDecision: action,
+    decidedAt: at,
+    decidedBy: trimOptional(meta.decidedBy),
+    memo: trimOptional(meta.memo),
+  };
+}
+
+/**
+ * 承認パッケージから OMC 計画アーティファクトを構築する。
+ * 純粋関数・決定論的（同じ入力 → 同じ出力）。LLM 不使用。
+ * 代表者がインテイクを承認したときに生成し、第2ゲート（計画承認）で提示する。
+ */
+export function buildPlanningArtifact(pkg: ApprovalPackage): PlanningArtifact {
+  const refUrls = pkg.referenceAnalysis.referenceUrls;
+  const refCount = refUrls.length;
+  const followStrength = pkg.referenceAnalysis.requestedFollowStrength;
+  const missingAssets = pkg.materialsAnalysis.missingAssets;
+
+  const stages: PlanningStage[] = [
+    {
+      id: "normalize-brief",
+      title: "ブリーフ正規化",
+      objective:
+        "brief.json を読み込み、矛盾・不足・曖昧さを整理し、実装に使える正規化ブリーフを確定する。",
+      inputs: ["brief.json", "approval-package.json の reviewSummary"],
+      outputs: ["正規化ブリーフ", "確認すべき前提のリスト"],
+      involvesExecution: true,
+    },
+    {
+      id: "analyze-references",
+      title: "参考サイト分析",
+      objective:
+        refCount > 0
+          ? `参考サイト ${refCount} 件の構成・デザイン・色・写真を分析し、再現度（${
+              followStrength.length > 0 ? followStrength.join("・") : "指定なし"
+            }）に応じて取り込む部位を決定する。`
+          : "参考サイトの指定がないため、業種標準構成と desiredTone から方向性を決定する。",
+      inputs:
+        refCount > 0 ? refUrls : ["業種標準構成", "desiredTone（brief.json）"],
+      outputs: ["抽出対象部位", "配色・ビジュアル方向"],
+      involvesExecution: true,
+    },
+    {
+      id: "map-components",
+      title: "コンポーネント対応付け",
+      objective:
+        "顧客の意図を Monet カタログへ対応付け、そのまま再利用できる部分・要調整・要カスタムを分ける。",
+      inputs: ["正規化ブリーフ", "Monet カタログ", "抽出対象部位"],
+      outputs: ["推奨セクション一覧", "コンポーネント候補", "対応付けの根拠"],
+      involvesExecution: true,
+    },
+    {
+      id: "compose-structure",
+      title: "構成確定",
+      objective:
+        "サイトマップ・ページ構成・CTA を確定し、必須掲載情報と必要機能が漏れなく載るようにする。",
+      inputs: ["推奨セクション一覧", "brief.json の requiredPagesOrFeatures"],
+      outputs: ["サイトマップ", "ページ構成", "CTA 配置"],
+      involvesExecution: true,
+    },
+    {
+      id: "implement-site",
+      title: "実装",
+      objective:
+        "コンポーネント組み立て・原稿・画像方針に沿って実装する。不足素材の扱い（ダミー→差し替え）も決める。",
+      inputs: ["ページ構成", "コンポーネント候補", "素材状況"],
+      outputs: ["実装成果物（ページ/コンポーネント）"],
+      involvesExecution: true,
+    },
+    {
+      id: "verify",
+      title: "検証",
+      objective:
+        "成果物が正規化ブリーフ・必須セクション・参照整合・素材運用・コンバージョン目標を満たすか検証する。",
+      inputs: ["実装成果物", "最終 URL/ファイル", "期待される成果物"],
+      outputs: ["検証レポート", "要件ごとの合否チェックリスト"],
+      involvesExecution: true,
+    },
+  ];
+
+  const prerequisites: string[] = [];
+  for (const r of pkg.intakeQuality.reasons) {
+    if (r) prerequisites.push(r);
+  }
+  if (pkg.intakeQuality.status === "needs_followup") {
+    prerequisites.push(
+      "インテイク品質が needs_followup のため、計画実行前に追加確認が必要な項目がある。"
+    );
+  }
+
+  const blockers: string[] = [];
+  for (const a of pkg.reviewSummary.riskyAssumptions) {
+    if (a) blockers.push(a);
+  }
+  if (missingAssets.length > 0) {
+    blockers.push(`未提供素材あり: ${missingAssets.join("・")}`);
+  }
+
+  const rationale: string[] = [];
+  rationale.push(
+    refCount > 0
+      ? `参考サイト ${refCount} 件を分析対象とする。`
+      : "参考サイトがないため業種標準構成で補完する。"
+  );
+  rationale.push(
+    missingAssets.length === 0
+      ? "素材は一通り揃っている想定で計画する。"
+      : `未提供素材（${missingAssets.join("・")}）はダミー生成→実物差し替えを想定する。`
+  );
+
+  return {
+    schemaVersion: PLANNING_SCHEMA_VERSION,
+    submissionId: pkg.submissionId,
+    generatedAt: new Date().toISOString(),
+    generatedBy: "deterministic-planner",
+    briefSnapshot: {
+      businessSummary: pkg.reviewSummary.businessSummary,
+      targetUserSummary: pkg.reviewSummary.targetUserSummary,
+      strengths: pkg.reviewSummary.strengthsSummary,
+      mustInclude: pkg.reviewSummary.mustIncludeSummary,
+      referenceUrls: refUrls,
+    },
+    stages,
+    orderedStageIds: stages.map((s) => s.id),
+    prerequisites,
+    blockers,
+    rationale,
+  };
+}
+
+/**
+ * Claude Code 実行ハンドオフ用のプロンプト（Markdown）を構築する。
+ * 内部専用・ローカルオペレータが実行する Claude Code に読ませる。
+ * 本番（serverless）のリクエストハンドラからは実行しない。
+ */
+export function buildExecutionPromptMarkdown(
+  pkg: ApprovalPackage,
+  plan: PlanningArtifact
+): string {
+  const id = pkg.submissionId;
+  const rel = `${LOCAL_DISPLAY_ROOT}/${id}`;
+  const lines: string[] = [];
+  lines.push(`# 実行ハンドオフプロンプト — ${id}`);
+  lines.push("");
+  lines.push(
+    "> 内部専用ドキュメントです。本番（Vercel/serverless）のリクエストハンドラからは Claude Code を実行しません。"
+  );
+  lines.push("> ローカル環境のオペレータが Claude Code でこの計画を実行します。");
+  lines.push("");
+  lines.push("## 前提");
+  lines.push("- このプロンプトはリポジトリルートで実行することを想定しています。");
+  lines.push(`- ブリーフ: \`${rel}/brief.json\``);
+  lines.push(`- 計画: \`${rel}/omc-plan.json\``);
+  lines.push(`- 承認パッケージ: \`${rel}/approval-package.json\``);
+  lines.push("");
+  lines.push("## 事業要件の要点");
+  lines.push(`- ${plan.briefSnapshot.businessSummary || "（要約なし）"}`);
+  lines.push(`- ターゲット: ${plan.briefSnapshot.targetUserSummary || "（未整理）"}`);
+  if (plan.briefSnapshot.strengths.length > 0) {
+    lines.push(`- 強み: ${plan.briefSnapshot.strengths.join("・")}`);
+  }
+  if (plan.briefSnapshot.mustInclude.length > 0) {
+    lines.push(`- 必須掲載: ${plan.briefSnapshot.mustInclude.join("・")}`);
+  }
+  if (plan.briefSnapshot.referenceUrls.length > 0) {
+    lines.push(`- 参考サイト: ${plan.briefSnapshot.referenceUrls.join("・")}`);
+  }
+  lines.push("");
+  if (plan.prerequisites.length > 0) {
+    lines.push("## 実行前に確認する前提");
+    for (const p of plan.prerequisites) lines.push(`- ${p}`);
+    lines.push("");
+  }
+  if (plan.blockers.length > 0) {
+    lines.push("## ブロッカー・リスク前提");
+    for (const b of plan.blockers) lines.push(`- ${b}`);
+    lines.push("");
+  }
+  lines.push("## 実行ステップ（この順序で進める）");
+  plan.stages.forEach((s, i) => {
+    lines.push("");
+    lines.push(`### ${i + 1}. ${s.title}（${s.id}）`);
+    lines.push(s.objective);
+    lines.push("");
+    lines.push("**入力:**");
+    for (const inp of s.inputs) lines.push(`- ${inp}`);
+    lines.push("");
+    lines.push("**期待成果物:**");
+    for (const out of s.outputs) lines.push(`- ${out}`);
+  });
+  lines.push("");
+  lines.push("## 完了条件");
+  lines.push(
+    "- 最終ステップ（検証）で、要件ごとの合否チェックリストを作成し、不合格項目があれば修正する。"
+  );
+  lines.push("- 顧客向けに公開する成果物の文言はすべて日本語にすること。");
+  lines.push("");
+  return lines.join("\n");
+}
+
+/**
+ * 計画アーティファクトから実行ハンドオフ成果物（メタデータ）を構築する。
+ * プロンプト本文は別ファイル（execution-prompt.md）とするため、ここには含めない。
+ * 純粋関数・決定論的。
+ */
+export function buildExecutionHandoff(
+  pkg: ApprovalPackage,
+  plan: PlanningArtifact
+): ExecutionHandoff {
+  const id = pkg.submissionId;
+  const rel = `${LOCAL_DISPLAY_ROOT}/${id}`;
+  const promptFilePath = `${rel}/execution-prompt.md`;
+  const notices: string[] = [
+    "本番（Vercel/serverless）のリクエストハンドラからは Claude Code を実行しません（実行時間・実行環境の制約のため）。",
+    "このハンドオフはローカル環境のオペレータが Claude Code で実行することを想定しています。",
+    "コマンドはリポジトリルートで実行してください。",
+    "顧客向けに公開する文言はすべて日本語にしてください。プロンプト/コマンドの詳細は顧客に公開しないでください（内部専用）。",
+  ];
+
+  return {
+    schemaVersion: EXECUTION_HANDOFF_SCHEMA_VERSION,
+    submissionId: id,
+    generatedAt: new Date().toISOString(),
+    handoffMode: "local-operator",
+    workingDirectory: ".",
+    claudeCommand: `claude "${promptFilePath} を読み、記載の計画に従ってローカルで実装を進めてください。brief.json / omc-plan.json を参照し、各ステップを順に進め、最後に検証してください。"`,
+    promptFilePath,
+    metadataFilePath: `${rel}/execution-handoff.json`,
+    planFilePath: `${rel}/omc-plan.json`,
+    briefFilePath: `${rel}/brief.json`,
+    prerequisites: plan.prerequisites,
+    notices,
+    plannedStageIds: plan.orderedStageIds,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Phase 2: ファイル I/O                                               */
+/* ------------------------------------------------------------------ */
+
+/** 計画アーティファクトを omc-plan.json へ書き込む */
+async function writePlanningArtifactFile(plan: PlanningArtifact): Promise<void> {
+  await mkdir(submissionRealDir(plan.submissionId), { recursive: true });
+  await writeFile(
+    join(submissionRealDir(plan.submissionId), "omc-plan.json"),
+    JSON.stringify(plan, null, 2),
+    "utf8"
+  );
+}
+
+/**
+ * 実行ハンドオフを構成するファイル群を書き込む。
+ *   - execution-prompt.md  : Claude Code に読ませるプロンプト（内部専用）
+ *   - execution-handoff.json: ハンドオフのメタデータ + コマンド（内部専用）
+ */
+async function writeExecutionHandoffFiles(
+  submissionId: string,
+  handoff: ExecutionHandoff,
+  promptMarkdown: string
+): Promise<void> {
+  const dir = submissionRealDir(submissionId);
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, "execution-prompt.md"), promptMarkdown, "utf8");
+  await writeFile(join(dir, "execution-handoff.json"), JSON.stringify(handoff, null, 2), "utf8");
+}
+
+/** 実行プロンプト（Markdown）をディスクから読み込む。不在時は null。 */
+export async function readExecutionPromptMarkdown(
+  submissionId: string
+): Promise<string | null> {
+  if (!isSafeSubmissionId(submissionId)) return null;
+  try {
+    return await readFile(join(submissionRealDir(submissionId), "execution-prompt.md"), "utf8");
+  } catch {
+    return null;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Phase 2: 状態遷移                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 代表者がインテイクを承認したときの遷移（第1ゲート）。
+ * OMC 計画アーティファクトを決定論的に生成して omc-plan.json に書き出し、
+ * status を awaiting_plan_approval（第2ゲート：計画承認待ち）へ進める。
+ * 該当パッケージが無い場合は null を返す（呼び出し側で 404 へマップ）。
+ */
+export async function approveRepresentativeReview(
+  submissionId: string,
   meta: UpdateDecisionMeta = {}
 ): Promise<ApprovalPackage | null> {
   const pkg = await readApprovalPackage(submissionId);
   if (!pkg) return null;
 
-  const now = new Date().toISOString();
-  const memo = typeof meta.memo === "string" && meta.memo.trim().length > 0
-    ? meta.memo.trim()
-    : null;
-  const decidedBy = typeof meta.decidedBy === "string" && meta.decidedBy.trim().length > 0
-    ? meta.decidedBy.trim()
-    : null;
+  pkg.approval = toDecision("approve", new Date().toISOString(), meta);
 
-  if (action === "approve") {
-    pkg.status = "approved_for_planning";
-    pkg.approval.representativeDecision = "approve";
-  } else {
-    pkg.status = "rejected";
-    pkg.approval.representativeDecision = "reject";
+  const plan = buildPlanningArtifact(pkg);
+  pkg.planningArtifact = plan;
+  // 新計画に対する第2ゲートは未判定にリセット
+  pkg.planApproval = {
+    representativeDecision: null,
+    decidedAt: null,
+    decidedBy: null,
+    memo: null,
+  };
+  pkg.executionHandoff = null;
+
+  try {
+    await writePlanningArtifactFile(plan);
+  } catch {
+    // ファイル書き出し失敗でもパッケージ本体の更新を優先する
   }
-  pkg.approval.decidedAt = now;
-  pkg.approval.decidedBy = decidedBy;
-  pkg.approval.memo = memo;
 
+  pkg.status = "awaiting_plan_approval";
+  await writeApprovalPackage(pkg);
+  return pkg;
+}
+
+/**
+ * 代表者がインテイクを却下したときの遷移。status を rejected にする。
+ */
+export async function rejectRepresentativeReview(
+  submissionId: string,
+  meta: UpdateDecisionMeta = {}
+): Promise<ApprovalPackage | null> {
+  const pkg = await readApprovalPackage(submissionId);
+  if (!pkg) return null;
+
+  pkg.approval = toDecision("reject", new Date().toISOString(), meta);
+  pkg.status = "rejected";
+  await writeApprovalPackage(pkg);
+  return pkg;
+}
+
+/**
+ * 代表者が計画を承認したときの遷移（第2ゲート）。
+ * 実行ハンドオフ成果物（プロンプトMD・メタデータJSON・Claude コマンド）を
+ * 生成して submission フォルダに書き出し、status を approved_for_execution へ進める。
+ *
+ * 重要: ここでは Claude Code を実行しない。serverless では実行できないため、
+ * ローカルオペレータへ「実行ハンドオフ」として引き渡す成果物だけを生成する。
+ */
+export async function approvePlan(
+  submissionId: string,
+  meta: UpdateDecisionMeta = {}
+): Promise<ApprovalPackage | null> {
+  const pkg = await readApprovalPackage(submissionId);
+  if (!pkg) return null;
+
+  // 計画が無い場合は生成して保証（冪等性のため）
+  const plan = pkg.planningArtifact ?? buildPlanningArtifact(pkg);
+  pkg.planningArtifact = plan;
+  pkg.planApproval = toDecision("approve", new Date().toISOString(), meta);
+
+  const handoff = buildExecutionHandoff(pkg, plan);
+  const promptMarkdown = buildExecutionPromptMarkdown(pkg, plan);
+  pkg.executionHandoff = handoff;
+
+  try {
+    await writePlanningArtifactFile(plan);
+    await writeExecutionHandoffFiles(submissionId, handoff, promptMarkdown);
+  } catch {
+    // ファイル書き出し失敗でもパッケージ本体の更新を優先する
+  }
+
+  pkg.status = "approved_for_execution";
+  await writeApprovalPackage(pkg);
+  return pkg;
+}
+
+/**
+ * 代表者が計画を差し戻したときの遷移。
+ * 計画を取り下げ、status を awaiting_representative_approval に戻す。
+ * 代表者が再承認すれば新しい計画が再生成される（再計画ループ）。
+ */
+export async function rejectPlan(
+  submissionId: string,
+  meta: UpdateDecisionMeta = {}
+): Promise<ApprovalPackage | null> {
+  const pkg = await readApprovalPackage(submissionId);
+  if (!pkg) return null;
+
+  pkg.planApproval = toDecision("reject", new Date().toISOString(), meta);
+  pkg.planningArtifact = null;
+  pkg.executionHandoff = null;
+  pkg.status = "awaiting_representative_approval";
   await writeApprovalPackage(pkg);
   return pkg;
 }

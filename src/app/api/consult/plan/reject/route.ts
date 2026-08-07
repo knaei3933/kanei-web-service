@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rejectRepresentativeReview } from "@/lib/approval-package";
+import { rejectPlan } from "@/lib/approval-package";
 
 // ファイルシステム（node:fs）で承認パッケージを書き換えるため Node ランタイムを明示
 export const runtime = "nodejs";
 // 毎回ディスクへ書き込むため動的にする
 export const dynamic = "force-dynamic";
+
+/**
+ * 第2ゲート（計画承認）の差し戻し Route Handler。
+ *
+ * 代表者が計画を差し戻したときに呼ばれる。
+ * 計画アーティファクト・実行ハンドオフを取り下げ、status を
+ * awaiting_representative_approval に戻す。
+ * 代表者が再承認すれば新しい計画が再生成される（再計画ループ）。
+ */
 
 async function parseBody(request: NextRequest): Promise<{
   submissionId: string;
@@ -39,8 +48,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "submissionId is required" }, { status: 400 });
   }
 
-  // 第1ゲート却下：代表者がインテイクを却下する。status を rejected にする。
-  const updated = await rejectRepresentativeReview(submissionId, {
+  // 第2ゲート差し戻し：計画を取り下げて代表確認待ちに戻す。
+  const updated = await rejectPlan(submissionId, {
     memo,
     decidedBy: approvedBy,
   });
@@ -58,7 +67,7 @@ export async function POST(request: NextRequest) {
     submissionId: updated.submissionId,
     status: updated.status,
     customerFacingStatus: updated.customerFacingStatus,
-    approval: updated.approval,
-    nextRecommendedAction: "Send hold/revision instructions internally",
+    planApproval: updated.planApproval,
+    nextRecommendedAction: "Plan sent back; awaiting representative re-approval",
   });
 }
