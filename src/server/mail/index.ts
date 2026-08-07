@@ -7,7 +7,7 @@
 /*    MAIL_PROVIDER   = "smtp" | "log"（既定: log）                     */
 /*    MAIL_FROM       差出人アドレス                                    */
 /*    MAIL_REPLY_TO   返信先                                           */
-/*    MAIL_INTERNAL_TO 社内通知の宛先（既定: arwg22@gmail.com）         */
+/*    MAIL_INTERNAL_TO 社内通知の宛先（既定: info@kanei-trade.co.jp）    */
 /*    SMTP_HOST / SMTP_PORT / SMTP_SECURE / SMTP_USER / SMTP_PASS       */
 /*                                                                    */
 /*  振る舞い:                                                           */
@@ -32,7 +32,7 @@ import type {
 } from "./types";
 
 /** 社内通知の既定の宛先 */
-const DEFAULT_INTERNAL_TO = "arwg22@gmail.com";
+const DEFAULT_INTERNAL_TO = "info@kanei-trade.co.jp";
 /** 差出人の既定アドレス */
 const DEFAULT_FROM = "no-reply@kanei-trade.co.jp";
 
