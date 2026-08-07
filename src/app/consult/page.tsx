@@ -18,6 +18,7 @@ import {
   FileText,
   Sparkles,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -855,6 +856,9 @@ export default function ConsultPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  /* 送信成功時に API から返ってきた、お客様別の初稿プレビュー URL */
+  const [draftUrl, setDraftUrl] = useState<string | null>(null);
+
   /* ---- 更新ヘルパ ---- */
   const update = <K extends keyof FormData>(key: K, value: FormData[K]) =>
     setData((prev) => ({ ...prev, [key]: value }));
@@ -1086,6 +1090,13 @@ export default function ConsultPage() {
       const result = await res.json().catch(() => null);
       console.log("=== Consult Submission Saved ===", result);
 
+      // お客様別の初稿プレビュー URL があれば保持（完了画面で開く導線に使う）
+      setDraftUrl(
+        result && typeof result.draftUrl === "string" && result.draftUrl.length > 0
+          ? result.draftUrl
+          : null
+      );
+
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -1119,6 +1130,34 @@ export default function ConsultPage() {
               ご入力いただいたメールアドレスへご連絡いたしますので、
               しばらくお待ちください。
             </p>
+
+            {/* お客様別の初稿プレビュー導線（API から draftUrl が返ったときだけ表示） */}
+            {draftUrl && (
+              <div className="mx-auto mb-8 max-w-xl rounded-3xl border-2 border-primary/30 bg-primary/5 p-6 text-left shadow-sm sm:p-8">
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="h-5 w-5 shrink-0" />
+                  <span className="text-sm font-bold">
+                    あなたの初稿ホームページが完成しました
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  ご入力内容をもとに、AI がホームページの初稿（ファーストドラフト）を自動生成しました。
+                  今すぐ別画面でご確認いただけます。
+                </p>
+                <a
+                  href={draftUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-lg transition-opacity hover:opacity-90 sm:w-auto"
+                >
+                  作成した初稿を見る
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                  ※ 初稿はご相談内容からの自動生成です。実際の制作ではデザイン・原稿・写真をさらに整えます。
+                </p>
+              </div>
+            )}
 
             <div className="mx-auto mb-10 max-w-md space-y-3 rounded-2xl bg-accent p-6 text-left">
               <div className="flex items-center gap-3 text-sm">

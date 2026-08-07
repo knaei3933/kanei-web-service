@@ -2,6 +2,7 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
+import { buildDraftPayload, encodeDraft } from "@/lib/draft";
 
 /**
  * 相談フォームの送信を受け付ける Route Handler。
@@ -71,6 +72,24 @@ function sanitizeFilename(rawName: string): string {
     .replace(/[\s.]+$/, "")
     .trim();
   return cleaned.length > 0 ? cleaned : "file";
+}
+
+/**
+ * リクエストから公開用の絶対ベース URL（プロトコル + ホスト）を組み立てる。
+ * - Vercel 本番: x-forwarded-proto / x-forwarded-host が設定される
+ * - ローカル開発: host が localhost のときは http を使う
+ * draftUrl など「お客様に開いてもらう絶対 URL」の生成に使う。
+ */
+function absoluteBaseUrl(request: Request): string {
+  const headers = request.headers;
+  const host =
+    headers.get("x-forwarded-host") ||
+    headers.get("host") ||
+    "localhost:3000";
+  const isLocal =
+    host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const proto = headers.get("x-forwarded-proto") || (isLocal ? "http" : "https");
+  return `${proto}://${host}`;
 }
 
 /** 衝突しにくい送信 ID を生成（タイムスタンプ + UUID 短縮形） */
@@ -1006,6 +1025,20 @@ export async function POST(request: Request): Promise<Response> {
     briefGenerated = false;
   }
 
+  // --- お客様別ドラフトプレビュー URL の生成 ---
+  // 送信内容から最小ペイロードを組み立てて base64url で URL に埋め込む。
+  // ディスク（brief/submission）に依存しないので、本番 serverless でも
+  // お客様がそのまま開いて初稿プレビューを確認できる。生成/エンコードに
+  // 失敗しても送信自体は成功扱いとし、結果を draftUrl で返す（null 可）。
+  let draftUrl: string | null = null;
+  try {
+    const draftPayload = buildDraftPayload(parsedPayload, submissionId);
+    const encoded = encodeDraft(draftPayload);
+    draftUrl = `${absoluteBaseUrl(request)}/draft?d=${encoded}`;
+  } catch {
+    draftUrl = null;
+  }
+
   // --- 成功レスポンス ---
   return Response.json({
     ok: true,
@@ -1017,6 +1050,8 @@ export async function POST(request: Request): Promise<Response> {
     briefGenerated,
     /** ブリーフの保存先（生成失敗時は null） */
     briefPath,
+    /** お客様別の初稿プレビュー URL（絶対 URL）。生成失敗時は null */
+    draftUrl,
     /** 保存モード（"local" | "serverless"）— 検証・確認用 */
     storageMode: IS_SERVERLESS ? "serverless" : "local",
     /** 実際の保存ルート（絶対パス）— 検証・確認用 */
