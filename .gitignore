@@ -42,3 +42,6 @@ next-env.d.ts
 
 # hermes agent local
 .hermes/
+
+# consult submissions (local dev persistence - contains customer PII)
+/data/

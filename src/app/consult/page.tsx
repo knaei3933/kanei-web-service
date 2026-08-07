@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -9,6 +9,15 @@ import {
   Mail,
   Phone,
   Clock,
+  Lightbulb,
+  Plus,
+  Trash2,
+  Upload,
+  Image as ImageIcon,
+  Palette,
+  FileText,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -44,7 +53,7 @@ const BUSINESS_SUGGESTIONS: { category: string; items: string[] }[] = [
   },
 ];
 
-/** 2-2. 配色イメージ */
+/** 3-2. 配色イメージ */
 const COLOR_SCHEMES = [
   { value: "blue", label: "青系", desc: "信頼・清潔・ビジネス", dot: "bg-blue-500" },
   { value: "white", label: "白・グレー系", desc: "シンプル・スタイリッシュ・モダン", dot: "bg-gray-300 border border-gray-400" },
@@ -54,16 +63,37 @@ const COLOR_SCHEMES = [
   { value: "none", label: "特に指定なし", desc: "お任せします", dot: "bg-gradient-to-br from-pink-400 via-yellow-400 to-blue-400" },
 ];
 
-/** 2-3. 参考サイトのラベル */
-const REF_SITE_LABELS = [
-  { key: "refSite1", label: "競合他社のホームページ" },
-  { key: "refSite2", label: "デザインの参考にしたいサイト" },
-  { key: "refSite3", label: "この部分のレイアウトが好き" },
-  { key: "refSite4", label: "色使いが参考になるサイト" },
-  { key: "refSite5", label: "その他" },
-] as const;
+/** 3-3. 参考サイト — 種類（ラベル/タイプ） */
+const REF_SITE_TYPES = [
+  { value: "competitor", label: "競合他社のサイト" },
+  { value: "industry", label: "同業他社のサイト" },
+  { value: "design", label: "デザインの参考" },
+  { value: "layout", label: "レイアウト・構成の参考" },
+  { value: "color", label: "色使いの参考" },
+  { value: "image", label: "写真・ビジュアルの参考" },
+  { value: "other", label: "その他" },
+];
 
-/** 2-4. リニューアル時の課題 */
+/** 3-3. 参考サイト — どの程度再現してほしいか（3段階） */
+const FOLLOW_LEVELS = [
+  {
+    value: "close",
+    label: "かなり忠実に",
+    desc: "構成やデザインを近づけたい",
+  },
+  {
+    value: "partial",
+    label: "一部だけ取り入れたい",
+    desc: "好きな部分だけ参考にしたい",
+  },
+  {
+    value: "inspiration",
+    label: "参考程度",
+    desc: "雰囲気・方向性だけ参考にしたい",
+  },
+];
+
+/** 3-4. リニューアル時の課題 */
 const CURRENT_ISSUES = [
   "デザインが古い",
   "スマホで見にくい",
@@ -73,7 +103,7 @@ const CURRENT_ISSUES = [
   "検索で出てこない",
 ];
 
-/** 3-1. サイトの主な目的 */
+/** 4-1. サイトの主な目的 */
 const SITE_PURPOSES = [
   "会社の信頼性をアピールしたい",
   "サービス・商品を知ってもらいたい",
@@ -84,7 +114,7 @@ const SITE_PURPOSES = [
   "SNSと連携したい",
 ];
 
-/** 3-2. 必要なページ・機能 */
+/** 4-2. 必要なページ・機能 */
 const FEATURE_OPTIONS = [
   "会社案内（代表挨拶・沿革・アクセス）",
   "サービス・メニュー・料金表",
@@ -100,7 +130,7 @@ const FEATURE_OPTIONS = [
   "SNS連携（Instagram・LINE・X）",
 ];
 
-/** 3-3. 公開希望時期 */
+/** 4-3. 公開希望時期 */
 const TIMING_OPTIONS = [
   { value: "asap", label: "できるだけ早く（1〜2週間）" },
   { value: "1month", label: "1ヶ月以内" },
@@ -108,7 +138,7 @@ const TIMING_OPTIONS = [
   { value: "no-rush", label: "特に急ぎではない" },
 ];
 
-/** 4-1. 予算プラン（詳細説明付き） */
+/** 5-1. 予算プラン（詳細説明付き） */
 const BUDGET_OPTIONS = [
   {
     value: "9800",
@@ -132,16 +162,82 @@ const BUDGET_OPTIONS = [
   },
 ];
 
-/** 5-2. ロゴデータ */
-const LOGO_OPTIONS = [
-  { value: "yes", label: "ロゴデータあり" },
-  { value: "no", label: "ロゴデータなし（作成をお願いしたい）" },
-  { value: "unnecessary", label: "ロゴは不要" },
+/** 6-2. 素材・資料の準備状況（複数選択可） */
+const ASSET_OPTIONS = [
+  { value: "logo", label: "ロゴデータ" },
+  { value: "photos", label: "写真・画像" },
+  { value: "copy", label: "文章・キャッチコピー" },
+  { value: "company", label: "会社概要・会社案内の資料" },
+  { value: "service", label: "製品・サービスの資料" },
+  { value: "none", label: "まだ何もない（すべてお任せ）" },
+];
+
+/** 6-2. アップロード素材 — 素材の役割（用途） */
+const MATERIAL_ROLES = [
+  { value: "logo", label: "ロゴ・マーク" },
+  { value: "company", label: "会社案内・会社概要" },
+  { value: "product", label: "製品・商品カタログ" },
+  { value: "photos", label: "写真・画像（店舗・施工・商品など）" },
+  { value: "price", label: "料金表・メニュー表" },
+  { value: "copy", label: "文章・キャッチコピー（文案）" },
+  { value: "reference", label: "参考資料（デザイン・競合資料など）" },
+  { value: "other", label: "その他" },
+];
+
+/** 6-2. アップロード素材 — この素材の使い方（3段階） */
+const USE_POLICIES = [
+  { value: "mustUse", label: "必ず使う", desc: "必ずサイトへ反映してほしい" },
+  { value: "useIfSuitable", label: "合えば使う", desc: "デザインに合えば活用してほしい" },
+  { value: "referenceOnly", label: "参考だけ", desc: "方向性の参考として扱う" },
+];
+
+/** 6-3. 足りない写真・文章の補充について */
+const SUPPLEMENT_OPTIONS = [
+  { value: "all", label: "足りないものはすべて金井に作成・撮影してほしい" },
+  { value: "partial", label: "一部のみ補充してほしい（要相談）" },
+  { value: "self", label: "写真・文章はこちらで用意する" },
+];
+
+/** 6-3. お送りいただく素材の編集・加工について */
+const ALLOW_EDIT_OPTIONS = [
+  { value: "yes", label: "編集・加工・トリミングOK" },
+  { value: "partial", label: "一部のみ（要相談）" },
+  { value: "no", label: "原則としてそのまま使ってほしい" },
 ];
 
 /* ------------------------------------------------------------------ */
 /*  フォームStateの型                                                    */
 /* ------------------------------------------------------------------ */
+
+/** 参考サイト1件分の構造化データ */
+interface ReferenceSite {
+  id: string;
+  /** 種類（競合／デザイン参考／レイアウト参考／色参考 ...） */
+  type: string;
+  /** URL */
+  url: string;
+  /** 参考にしたい部分 */
+  whatToReference: string;
+  /** とくに好きな箇所・コンポーネント */
+  likedSections: string;
+  /** どの程度再現してほしいか（close / partial / inspiration） */
+  followLevel: string;
+}
+
+/** アップロード素材1件分のメタデータ（JSON安全・Fileオブジェクトは持たない） */
+interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  lastModified: number;
+  /** 素材の役割（ロゴ／会社案内／商品カタログ／写真／料金・メニュー／文案／参考資料／その他） */
+  role: string;
+  /** この素材の使い方（mustUse / useIfSuitable / referenceOnly） */
+  usePolicy: string;
+  /** メモ（任意） */
+  memo: string;
+}
 
 interface FormData {
   // Step 1
@@ -150,46 +246,69 @@ interface FormData {
   noWebsite: boolean;
   companyName: string;
   // Step 2
+  targetCustomer: string;
+  sellingPoints: string;
+  mustIncludeInfo: string;
+  avoidItems: string;
+  // Step 3
   desiredImage: string;
   colorScheme: string;
-  refSite1: string;
-  refSite2: string;
-  refSite3: string;
-  refSite4: string;
-  refSite5: string;
+  referenceSites: ReferenceSite[];
   currentIssues: string[];
   currentIssuesOther: string;
-  // Step 3
+  // Step 4
   sitePurpose: string[];
   sitePurposeOther: string;
   features: string[];
   featuresOther: string;
   timing: string;
-  // Step 4
+  // Step 5
   budget: string;
   annualPayment: string;
-  // Step 5
-  message: string;
-  hasLogo: string;
   // Step 6
+  message: string;
+  assetsStatus: string[];
+  /** アップロード素材のメタデータ一覧（Fileオブジェクトは含まない） */
+  attachments: Attachment[];
+  /** 足りない素材の補充について（all / partial / self） */
+  supplement: string;
+  /** 既存素材の編集・加工について（yes / partial / no） */
+  allowEdit: string;
+  // Step 7
   name: string;
   email: string;
   phone: string;
   enterpriseName: string;
 }
 
+/** 空の参考サイトカードを生成 */
+const createEmptyRefSite = (id: string): ReferenceSite => ({
+  id,
+  type: "",
+  url: "",
+  whatToReference: "",
+  likedSections: "",
+  followLevel: "",
+});
+
+const INITIAL_REFERENCE_SITES: ReferenceSite[] = [
+  createEmptyRefSite("ref-1"),
+  createEmptyRefSite("ref-2"),
+  createEmptyRefSite("ref-3"),
+];
+
 const INITIAL_DATA: FormData = {
   businessType: "",
   currentWebsite: "",
   noWebsite: false,
   companyName: "",
+  targetCustomer: "",
+  sellingPoints: "",
+  mustIncludeInfo: "",
+  avoidItems: "",
   desiredImage: "",
   colorScheme: "",
-  refSite1: "",
-  refSite2: "",
-  refSite3: "",
-  refSite4: "",
-  refSite5: "",
+  referenceSites: INITIAL_REFERENCE_SITES,
   currentIssues: [],
   currentIssuesOther: "",
   sitePurpose: [],
@@ -200,12 +319,60 @@ const INITIAL_DATA: FormData = {
   budget: "",
   annualPayment: "",
   message: "",
-  hasLogo: "",
+  assetsStatus: [],
+  attachments: [],
+  supplement: "",
+  allowEdit: "",
   name: "",
   email: "",
   phone: "",
   enterpriseName: "",
 };
+
+/** 参考サイトカードの最大数 */
+const MAX_REFERENCE_SITES = 8;
+
+/** バイト数を読みやすいサイズ表記に変換 */
+const formatFileSize = (bytes: number): string => {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024))
+  );
+  const value = bytes / Math.pow(1024, i);
+  return `${value.toFixed(i === 0 || value >= 100 ? 0 : 1)} ${units[i]}`;
+};
+
+/** MIMEタイプと拡張子から大まかな種別ラベルを生成 */
+const getFileKindLabel = (type: string, name: string): string => {
+  const lower = name.toLowerCase();
+  if (type.startsWith("image/")) return "画像";
+  if (type.startsWith("video/")) return "動画";
+  if (type.startsWith("audio/")) return "音声";
+  if (type === "application/pdf" || lower.endsWith(".pdf")) return "PDF";
+  if (type.includes("word") || /\.(docx?)$/.test(lower)) return "Word";
+  if (
+    type.includes("excel") ||
+    type.includes("sheet") ||
+    /\.(xlsx?|csv)$/.test(lower)
+  )
+    return "表計算";
+  if (type.includes("presentation") || /\.(pptx?)$/.test(lower))
+    return "プレゼン";
+  if (type.includes("zip") || /\.(zip|rar|7z)$/.test(lower))
+    return "圧縮ファイル";
+  if (type.startsWith("text/") || /\.(txt|md|rtf)$/.test(lower))
+    return "テキスト";
+  return type || "ファイル";
+};
+
+/** 重複排除用のキー（ファイル名・サイズ・更新日時） */
+const attachmentKey = (a: {
+  name: string;
+  size: number;
+  lastModified: number;
+}): string => `${a.name}|${a.size}|${a.lastModified}`;
 
 /* ------------------------------------------------------------------ */
 /*  小物パーツ                                                          */
@@ -239,14 +406,21 @@ function SectionCard({ children }: { children: React.ReactNode }) {
 function FieldLabel({
   children,
   required,
+  hint,
 }: {
   children: React.ReactNode;
   required?: boolean;
+  hint?: string;
 }) {
   return (
     <label className="mb-4 block text-base font-semibold text-foreground">
       {children}
       {required && <RequiredMark />}
+      {hint && (
+        <span className="ml-2 text-sm font-normal text-muted-foreground">
+          {hint}
+        </span>
+      )}
     </label>
   );
 }
@@ -338,8 +512,325 @@ function SuggestTag({
   );
 }
 
-const inputClass =
-  "mt-1 block w-full rounded-xl border-2 border-border bg-white px-4 py-3 text-base text-foreground outline-none transition-all placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/20";
+/* 入力フィールドの基本クラス（mt-1 なし） */
+const fieldClass =
+  "block w-full rounded-xl border-2 border-border bg-white px-4 py-3 text-base text-foreground outline-none transition-all placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/20";
+
+/* ラベル直下で使う入力クラス（mt-1 付き） */
+const inputClass = `mt-1 ${fieldClass}`;
+
+/* 参考サイト1枚のカード */
+function ReferenceSiteCard({
+  index,
+  site,
+  onChange,
+  onRemove,
+  canRemove,
+}: {
+  index: number;
+  site: ReferenceSite;
+  onChange: (field: keyof ReferenceSite, value: string) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border-2 border-border bg-accent/30 p-5 sm:p-6">
+      {/* ヘッダー：番号 + 削除 */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+            {index}
+          </span>
+          <span className="text-sm font-bold text-foreground">
+            参考サイト {index}
+          </span>
+        </div>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            削除
+          </button>
+        )}
+      </div>
+
+      {/* 種類 */}
+      <div className="mb-3">
+        <span className="mb-1 block text-xs font-medium text-muted-foreground">
+          このサイトの役割（種類）
+        </span>
+        <select
+          value={site.type}
+          onChange={(e) => onChange("type", e.target.value)}
+          className={fieldClass}
+        >
+          <option value="">参考の種類を選択してください</option>
+          {REF_SITE_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* URL */}
+      <div className="mb-3">
+        <span className="mb-1 block text-xs font-medium text-muted-foreground">
+          参考サイトのURL
+        </span>
+        <input
+          type="url"
+          value={site.url}
+          onChange={(e) => onChange("url", e.target.value)}
+          placeholder="https://..."
+          className={fieldClass}
+        />
+      </div>
+
+      {/* 参考にしたい部分 */}
+      <div className="mb-3">
+        <span className="mb-1 block text-xs font-medium text-muted-foreground">
+          このサイトのどこを参考にしたいか
+        </span>
+        <textarea
+          value={site.whatToReference}
+          onChange={(e) => onChange("whatToReference", e.target.value)}
+          placeholder="例：トップページの導線、料金表の見せ方、写真の使い方、スマホの使い勝手 ..."
+          rows={2}
+          className={`${fieldClass} resize-y`}
+        />
+      </div>
+
+      {/* 好きな箇所・コンポーネント */}
+      <div className="mb-4">
+        <span className="mb-1 block text-xs font-medium text-muted-foreground">
+          とくに好きな箇所・コンポーネント（任意）
+        </span>
+        <input
+          type="text"
+          value={site.likedSections}
+          onChange={(e) => onChange("likedSections", e.target.value)}
+          placeholder="例：メインビジュアル、お問い合わせボタン、実績のスライダー、フッター ..."
+          className={fieldClass}
+        />
+      </div>
+
+      {/* 再現度（3段階） */}
+      <div>
+        <span className="mb-2 block text-xs font-medium text-muted-foreground">
+          どの程度再現してほしいか
+        </span>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {FOLLOW_LEVELS.map((lvl) => {
+            const active = site.followLevel === lvl.value;
+            return (
+              <button
+                key={lvl.value}
+                type="button"
+                onClick={() => onChange("followLevel", lvl.value)}
+                className={`rounded-xl border-2 px-3 py-2 text-center transition-all ${
+                  active
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                    : "border-border bg-white hover:border-primary/40"
+                }`}
+              >
+                <span
+                  className={`block text-xs font-bold sm:text-sm ${
+                    active ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {lvl.label}
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-tight text-muted-foreground">
+                  {lvl.desc}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* アップロード素材の品質ガイド（日本語の指定書） */
+function UploadSpecGuide() {
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5 sm:p-6">
+      <p className="mb-4 flex items-center gap-2 text-sm font-bold text-amber-900">
+        <Lightbulb className="h-4 w-4 shrink-0" />
+        素材データをより良く活かすために（ご提出前にお読みください）
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl bg-white p-4 ring-1 ring-amber-100">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
+            <ImageIcon className="h-3.5 w-3.5 text-amber-600" />
+            写真・画像
+          </p>
+          <ul className="space-y-1 text-xs leading-relaxed text-muted-foreground">
+            <li>対応形式：JPG / PNG / WebP / HEIC</li>
+            <li>推奨サイズ：横1,200px以上（メインビジュアルは横1,920px以上で鮮明になります）</li>
+            <li>明るく・ピントの合った写真を推奨します</li>
+          </ul>
+        </div>
+        <div className="rounded-xl bg-white p-4 ring-1 ring-amber-100">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
+            <Palette className="h-3.5 w-3.5 text-amber-600" />
+            ロゴ・マーク
+          </p>
+          <ul className="space-y-1 text-xs leading-relaxed text-muted-foreground">
+            <li>推奨：ベクターデータ（SVG / PDF / AI / EPS）</li>
+            <li>なければ背景透過のPNG（高解像度）でも構いません</li>
+            <li>白黒・カラーの両方があると助かります</li>
+          </ul>
+        </div>
+        <div className="rounded-xl bg-white p-4 ring-1 ring-amber-100">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
+            <FileText className="h-3.5 w-3.5 text-amber-600" />
+            文書・資料
+          </p>
+          <ul className="space-y-1 text-xs leading-relaxed text-muted-foreground">
+            <li>対応形式：PDF / Word / Excel / PowerPoint</li>
+            <li>Googleドキュメントの共有リンクでもOKです</li>
+            <li>会社案内・パンフレット・料金表があると非常に参考になります</li>
+          </ul>
+        </div>
+        <div className="rounded-xl bg-white p-4 ring-1 ring-amber-100">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+            あると助かる素材
+          </p>
+          <ul className="space-y-1 text-xs leading-relaxed text-muted-foreground">
+            <li>名刺・チラシ・パンフレット・会社案内</li>
+            <li>商品写真・施工事例・店内・スタッフの写真</li>
+            <li>代表挨拶・沿革・キャッチコピー・原稿</li>
+          </ul>
+        </div>
+      </div>
+      <p className="mt-3 text-[11px] leading-relaxed text-amber-800/80">
+        ※
+        お預かりしたデータはご提案の目的でのみ使用します。機密情報はマスキングのうえ送付いただくか、事前にご相談ください。
+      </p>
+    </div>
+  );
+}
+
+/* アップロード素材1件のカード（参考サイトカードと同じデザイン言語） */
+function AttachmentCard({
+  index,
+  attachment,
+  onChange,
+  onRemove,
+}: {
+  index: number;
+  attachment: Attachment;
+  onChange: (field: keyof Attachment, value: string) => void;
+  onRemove: () => void;
+}) {
+  const kind = getFileKindLabel(attachment.type, attachment.name);
+  return (
+    <div className="rounded-2xl border-2 border-border bg-accent/30 p-5 sm:p-6">
+      {/* ヘッダー：番号＋ファイル情報＋削除 */}
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+            {index}
+          </span>
+          <div className="min-w-0">
+            <p className="break-all text-sm font-bold text-foreground">
+              {attachment.name}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+              <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 font-medium text-foreground ring-1 ring-border">
+                {kind}
+              </span>
+              <span>{formatFileSize(attachment.size)}</span>
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          削除
+        </button>
+      </div>
+
+      {/* 役割（用途） */}
+      <div className="mb-3">
+        <span className="mb-1 block text-xs font-medium text-muted-foreground">
+          この素材の役割（用途）
+        </span>
+        <select
+          value={attachment.role}
+          onChange={(e) => onChange("role", e.target.value)}
+          className={fieldClass}
+        >
+          <option value="">用途を選択してください</option>
+          {MATERIAL_ROLES.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 使い方（3段階） */}
+      <div className="mb-3">
+        <span className="mb-2 block text-xs font-medium text-muted-foreground">
+          この素材の使い方
+        </span>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {USE_POLICIES.map((p) => {
+            const active = attachment.usePolicy === p.value;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => onChange("usePolicy", p.value)}
+                className={`rounded-xl border-2 px-3 py-2 text-center transition-all ${
+                  active
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                    : "border-border bg-white hover:border-primary/40"
+                }`}
+              >
+                <span
+                  className={`block text-xs font-bold sm:text-sm ${
+                    active ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {p.label}
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-tight text-muted-foreground">
+                  {p.desc}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* メモ */}
+      <div>
+        <span className="mb-1 block text-xs font-medium text-muted-foreground">
+          メモ（任意）
+        </span>
+        <input
+          type="text"
+          value={attachment.memo}
+          onChange={(e) => onChange("memo", e.target.value)}
+          placeholder="例：トップのメインビジュアルに使いたい、料金表の〇〇の部分 ..."
+          className={fieldClass}
+        />
+      </div>
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  メインページ                                                        */
@@ -349,11 +840,29 @@ export default function ConsultPage() {
   const [data, setData] = useState<FormData>(INITIAL_DATA);
   const [submitted, setSubmitted] = useState(false);
 
+  /* 参考サイト追加用のIDカウンタ */
+  const refIdCounter = useRef(3);
+
+  /* 素材追加用のIDカウンタ */
+  const attachmentIdCounter = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  /* アップロードされた File 本体を保持するマップ（JSON安全なメタデータとは別管理）。
+     キーは attachmentKey(name|size|lastModified) でメタデータと対応付ける。 */
+  const fileMapRef = useRef<Map<string, File>>(new Map());
+
+  /* 送信中フラグ（二重送信防止）とエラーメッセージ */
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   /* ---- 更新ヘルパ ---- */
   const update = <K extends keyof FormData>(key: K, value: FormData[K]) =>
     setData((prev) => ({ ...prev, [key]: value }));
 
-  const toggleArrayItem = (key: "features" | "currentIssues" | "sitePurpose", item: string) => {
+  const toggleArrayItem = (
+    key: "features" | "currentIssues" | "sitePurpose",
+    item: string
+  ) => {
     setData((prev) => {
       const arr = prev[key];
       return {
@@ -365,22 +874,140 @@ export default function ConsultPage() {
     });
   };
 
+  /* 素材・資料のトグル（「まだ何もない」は排他） */
+  const toggleAsset = (value: string) => {
+    setData((prev) => {
+      const arr = prev.assetsStatus;
+      if (value === "none") {
+        return { ...prev, assetsStatus: arr.includes("none") ? [] : ["none"] };
+      }
+      const withoutNone = arr.filter((v) => v !== "none");
+      return {
+        ...prev,
+        assetsStatus: withoutNone.includes(value)
+          ? withoutNone.filter((v) => v !== value)
+          : [...withoutNone, value],
+      };
+    });
+  };
+
+  /* 参考サイトの操作 */
+  const updateRefSite = (
+    id: string,
+    field: keyof ReferenceSite,
+    value: string
+  ) => {
+    setData((prev) => ({
+      ...prev,
+      referenceSites: prev.referenceSites.map((s) =>
+        s.id === id ? { ...s, [field]: value } : s
+      ),
+    }));
+  };
+
+  const addRefSite = () => {
+    if (data.referenceSites.length >= MAX_REFERENCE_SITES) return;
+    refIdCounter.current += 1;
+    setData((prev) => ({
+      ...prev,
+      referenceSites: [
+        ...prev.referenceSites,
+        createEmptyRefSite(`ref-${refIdCounter.current}`),
+      ],
+    }));
+  };
+
+  const removeRefSite = (id: string) => {
+    setData((prev) => ({
+      ...prev,
+      referenceSites: prev.referenceSites.filter((s) => s.id !== id),
+    }));
+  };
+
+  /* ---- アップロード素材の操作 ---- */
+  /* ファイル選択/ドロップを受け取ってメタデータを追加（重複は自動で除外） */
+  const handleFileList = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    // File 本体を ref のマップへ保持（JSON安全なメタデータとは別管理）。
+    // 重複キーは同じ File で上書きされるだけなので reducer の外で安全に処理できる。
+    Array.from(files).forEach((file) => {
+      fileMapRef.current.set(attachmentKey(file), file);
+    });
+    setData((prev) => {
+      const seen = new Set(prev.attachments.map(attachmentKey));
+      const added: Attachment[] = [];
+      Array.from(files).forEach((file) => {
+        const key = attachmentKey(file);
+        if (seen.has(key)) return;
+        seen.add(key);
+        attachmentIdCounter.current += 1;
+        added.push({
+          id: `att-${attachmentIdCounter.current}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          lastModified: file.lastModified,
+          role: "",
+          usePolicy: "useIfSuitable",
+          memo: "",
+        });
+      });
+      if (added.length === 0) return prev;
+      return { ...prev, attachments: [...prev.attachments, ...added] };
+    });
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileList(e.target.files);
+    /* 同じファイルを連続で選べるよう入力をリセット */
+    e.target.value = "";
+  };
+
+  const updateAttachment = (
+    id: string,
+    field: keyof Attachment,
+    value: string
+  ) => {
+    setData((prev) => ({
+      ...prev,
+      attachments: prev.attachments.map((a) =>
+        a.id === id ? { ...a, [field]: value } : a
+      ),
+    }));
+  };
+
+  const removeAttachment = (id: string) => {
+    // メタデータと一緒に File 本体もマップから破棄
+    const target = data.attachments.find((a) => a.id === id);
+    if (target) fileMapRef.current.delete(attachmentKey(target));
+    setData((prev) => ({
+      ...prev,
+      attachments: prev.attachments.filter((a) => a.id !== id),
+    }));
+  };
+
   /* ---- バリデーション ---- */
   const isValid = useMemo(() => {
     // Step 1
     if (!data.businessType.trim()) return false;
     if (!data.companyName.trim()) return false;
-    // Step 2
-    if (!data.desiredImage.trim()) return false;
+    // Step 2（新規の必須項目）
+    if (!data.targetCustomer.trim()) return false;
+    if (!data.sellingPoints.trim()) return false;
+    if (!data.mustIncludeInfo.trim()) return false;
     // Step 3
-    if (data.sitePurpose.length === 0) return false;
-    if (data.sitePurpose.includes("その他") && !data.sitePurposeOther.trim()) return false;
-    if (data.features.length === 0) return false;
-    if (data.features.includes("その他") && !data.featuresOther.trim()) return false;
-    if (!data.timing) return false;
+    if (!data.desiredImage.trim()) return false;
     // Step 4
+    if (data.sitePurpose.length === 0) return false;
+    if (data.sitePurpose.includes("その他") && !data.sitePurposeOther.trim())
+      return false;
+    if (data.features.length === 0) return false;
+    if (data.features.includes("その他") && !data.featuresOther.trim())
+      return false;
+    if (!data.timing) return false;
+    // Step 5
     if (!data.budget) return false;
-    // Step 6
+    // Step 7
     if (!data.name.trim()) return false;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return false;
     if (!data.phone.trim()) return false;
@@ -388,19 +1015,88 @@ export default function ConsultPage() {
   }, [data]);
 
   /* ---- 送信 ---- */
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid) return;
+    if (!isValid || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    // 未入力の参考サイトカードは送信データから除外
+    const meaningfulReferenceSites = data.referenceSites.filter(
+      (s) =>
+        s.url.trim() ||
+        s.type ||
+        s.whatToReference.trim() ||
+        s.likedSections.trim() ||
+        s.followLevel
+    );
+
+    // 添付素材はJSON安全なメタデータだけを送信（Fileオブジェクトは含めない）
+    const safeAttachments = data.attachments.map(
+      ({ id, name, type, size, lastModified, role, usePolicy, memo }) => ({
+        id,
+        name,
+        type,
+        size,
+        lastModified,
+        role,
+        usePolicy,
+        memo,
+      })
+    );
 
     const payload = {
       ...data,
+      referenceSites: meaningfulReferenceSites,
+      attachments: safeAttachments,
       submittedAt: new Date().toISOString(),
     };
-    console.log("=== Consult Form Submission ===");
-    console.log(JSON.stringify(payload, null, 2));
 
-    setSubmitted(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // FormData を構築。ブラウザ標準の FormData を使うため globalThis で参照する
+    // （このファイル内の interface FormData との名前衝突を避けるため）。
+    const fd = new globalThis.FormData();
+    // 構造化ペイロードは安全な文字列フィールドとして1つにまとめる
+    fd.append("payload", JSON.stringify(payload));
+    // メタデータに対応する File 本体を添付（raw File は JSON とは別管理）
+    data.attachments.forEach((att) => {
+      const file = fileMapRef.current.get(attachmentKey(att));
+      if (file) fd.append("files", file, file.name);
+    });
+
+    try {
+      const res = await fetch("/api/consult", { method: "POST", body: fd });
+
+      if (!res.ok) {
+        // サーバーから日本語メッセージが返ってくればそれを使う
+        let message =
+          "送信に失敗しました。しばらく経ってからもう一度お試しください。";
+        try {
+          const body = await res.json();
+          if (typeof body?.error === "string" && body.error.length > 0) {
+            message = body.error;
+          }
+        } catch {
+          // JSON 以外のレスポンスは既定メッセージを使う
+        }
+        throw new Error(message);
+      }
+
+      // 成功 — 開発確認用にレスポンスをコンソールへ出力
+      const result = await res.json().catch(() => null);
+      console.log("=== Consult Submission Saved ===", result);
+
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      // ネットワークエラー等は err.message が空のことがあるので既定文で補う
+      const fallback =
+        "送信に失敗しました。しばらく経ってからもう一度お試しください。";
+      const message =
+        err instanceof Error && err.message ? err.message : fallback;
+      setSubmitError(message);
+      setIsSubmitting(false);
+    }
   };
 
   /* ---------------------------------------------------------------- */
@@ -464,7 +1160,7 @@ export default function ConsultPage() {
         <div className="mb-10 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700">
             <Clock className="h-4 w-4" />
-            所要時間 約5分
+            所要時間 約8〜10分
           </div>
           <h1 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             無料提案申し込みフォーム
@@ -566,12 +1262,79 @@ export default function ConsultPage() {
           </SectionCard>
 
           {/* ============================================================ */}
-          {/*  Step 2: どんなホームページにしたいか                            */}
+          {/*  Step 2: ターゲットと伝えたいこと（新規）                       */}
           {/* ============================================================ */}
           <SectionCard>
-            <StepHeader step={2} title="どんなホームページにしたいか" />
+            <StepHeader step={2} title="ターゲットと伝えたいこと" />
 
-            {/* 2-1. 伝えたいイメージ */}
+            {/* 2-1. ターゲット層 */}
+            <div className="mb-10">
+              <FieldLabel required>ターゲット・理想のお客様</FieldLabel>
+              <textarea
+                value={data.targetCustomer}
+                onChange={(e) => update("targetCustomer", e.target.value)}
+                placeholder="例：20〜30代の女性、地元のファミリー層、B2Bの製造業の購買担当者、近隣のシニア層 ..."
+                rows={3}
+                className={`${inputClass} resize-y`}
+              />
+              <p className="mt-2 text-sm text-muted-foreground">
+                どんな層に見てもらいたいか、なるべく具体的に教えてください。
+              </p>
+            </div>
+
+            {/* 2-2. 強み・差別化 */}
+            <div className="mb-10">
+              <FieldLabel required>最大の強み・差別化ポイント</FieldLabel>
+              <textarea
+                value={data.sellingPoints}
+                onChange={(e) => update("sellingPoints", e.target.value)}
+                placeholder="例：創業50年の確かな実績、業界最安クラスの料金、独自の〇〇技術、24時間対応 ..."
+                rows={3}
+                className={`${inputClass} resize-y`}
+              />
+              <p className="mt-2 text-sm text-muted-foreground">
+                他社にはない、お客様ならではの強みを教えてください。
+              </p>
+            </div>
+
+            {/* 2-3. 必ず載せたい情報 */}
+            <div className="mb-10">
+              <FieldLabel required>必ずホームページに載せたい情報</FieldLabel>
+              <textarea
+                value={data.mustIncludeInfo}
+                onChange={(e) => update("mustIncludeInfo", e.target.value)}
+                placeholder="例：料金表、アクセス・地図、施工事例、代表挨拶、保有資格、対応エリア ..."
+                rows={3}
+                className={`${inputClass} resize-y`}
+              />
+              <p className="mt-2 text-sm text-muted-foreground">
+                外せない情報・訴求内容があれば、ぜひお書きください。
+              </p>
+            </div>
+
+            {/* 2-4. 避けたい雰囲気・デザイン */}
+            <div>
+              <FieldLabel hint="（任意）">避けたいトーン・デザイン</FieldLabel>
+              <textarea
+                value={data.avoidItems}
+                onChange={(e) => update("avoidItems", e.target.value)}
+                placeholder="例：ポップすぎるトーン、原色使い、ギミックの多い動き、堅苦しい印象 ..."
+                rows={2}
+                className={`${inputClass} resize-y`}
+              />
+              <p className="mt-2 text-sm text-muted-foreground">
+                「これは避けたい」というご要望があればお知らせください。
+              </p>
+            </div>
+          </SectionCard>
+
+          {/* ============================================================ */}
+          {/*  Step 3: どんなホームページにしたいか                          */}
+          {/* ============================================================ */}
+          <SectionCard>
+            <StepHeader step={3} title="どんなホームページにしたいか" />
+
+            {/* 3-1. 伝えたいイメージ */}
             <div className="mb-10">
               <FieldLabel required>伝えたいイメージ</FieldLabel>
               <textarea
@@ -583,7 +1346,7 @@ export default function ConsultPage() {
               />
             </div>
 
-            {/* 2-2. 配色のイメージ */}
+            {/* 3-2. 配色のイメージ */}
             <div className="mb-10">
               <FieldLabel>配色のイメージ（任意）</FieldLabel>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -609,30 +1372,55 @@ export default function ConsultPage() {
               </div>
             </div>
 
-            {/* 2-3. 参考にしたいサイト */}
+            {/* 3-3. 参考サイト（構造化） */}
             <div className="mb-10">
-              <FieldLabel>参考にしたいサイト（任意）</FieldLabel>
-              <div className="space-y-3">
-                {REF_SITE_LABELS.map((ref) => (
-                  <div key={ref.key}>
-                    <span className="mb-1 block text-xs text-muted-foreground">
-                      {ref.label}
+              <FieldLabel hint="（任意）">参考にしたいサイト</FieldLabel>
+
+              {/* 説明メモ */}
+              <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                <p className="flex items-start gap-2 text-sm leading-relaxed text-blue-800">
+                  <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    参考サイトのURLを教えていただくと、金井の制作担当者が
+                    <span className="font-semibold">
+                      ページ構成・コンポーネント・レイアウトを分析
                     </span>
-                    <input
-                      type="url"
-                      value={data[ref.key]}
-                      onChange={(e) =>
-                        update(ref.key as keyof FormData, e.target.value)
-                      }
-                      placeholder="https://..."
-                      className={inputClass}
-                    />
-                  </div>
+                    し、より精度の高いご提案と初稿（ファーストドラフト）を
+                    ご用意できます。URLだけでも構いません — ぜひお気軽にご記入ください。
+                  </span>
+                </p>
+              </div>
+
+              {/* 参考サイトカード一覧 */}
+              <div className="space-y-4">
+                {data.referenceSites.map((site, idx) => (
+                  <ReferenceSiteCard
+                    key={site.id}
+                    index={idx + 1}
+                    site={site}
+                    onChange={(field, value) =>
+                      updateRefSite(site.id, field, value)
+                    }
+                    onRemove={() => removeRefSite(site.id)}
+                    canRemove={data.referenceSites.length > 1}
+                  />
                 ))}
               </div>
+
+              {/* 追加ボタン */}
+              {data.referenceSites.length < MAX_REFERENCE_SITES && (
+                <button
+                  type="button"
+                  onClick={addRefSite}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-white px-4 py-3 text-sm font-semibold text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary"
+                >
+                  <Plus className="h-4 w-4" />
+                  参考サイトを追加する（最大{MAX_REFERENCE_SITES}件）
+                </button>
+              )}
             </div>
 
-            {/* 2-4. リニューアル時の課題 */}
+            {/* 3-4. リニューアル時の課題 */}
             <div>
               <FieldLabel>
                 今のホームページで気になっている点（リニューアルの場合・任意）
@@ -667,12 +1455,12 @@ export default function ConsultPage() {
           </SectionCard>
 
           {/* ============================================================ */}
-          {/*  Step 3: サイトの目的と機能                                      */}
+          {/*  Step 4: サイトの目的と機能                                      */}
           {/* ============================================================ */}
           <SectionCard>
-            <StepHeader step={3} title="サイトの目的と機能" />
+            <StepHeader step={4} title="サイトの目的と機能" />
 
-            {/* 3-1. サイトの主な目的 */}
+            {/* 4-1. サイトの主な目的 */}
             <div className="mb-10">
               <FieldLabel required>サイトの主な目的（複数選択可）</FieldLabel>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -703,7 +1491,7 @@ export default function ConsultPage() {
               )}
             </div>
 
-            {/* 3-2. 必要なページ・機能 */}
+            {/* 4-2. 必要なページ・機能 */}
             <div className="mb-10">
               <FieldLabel required>必要なページ・機能（複数選択可）</FieldLabel>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -734,7 +1522,7 @@ export default function ConsultPage() {
               )}
             </div>
 
-            {/* 3-3. 公開希望時期 */}
+            {/* 4-3. 公開希望時期 */}
             <div>
               <FieldLabel required>公開希望時期</FieldLabel>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -752,12 +1540,12 @@ export default function ConsultPage() {
           </SectionCard>
 
           {/* ============================================================ */}
-          {/*  Step 4: ご予算について                                          */}
+          {/*  Step 5: ご予算について                                          */}
           {/* ============================================================ */}
           <SectionCard>
-            <StepHeader step={4} title="ご予算について" />
+            <StepHeader step={5} title="ご予算について" />
 
-            {/* 4-1. 予算の目安 */}
+            {/* 5-1. 予算の目安 */}
             <div className="mb-10">
               <FieldLabel required>ご予算の目安</FieldLabel>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -778,7 +1566,7 @@ export default function ConsultPage() {
               </div>
             </div>
 
-            {/* 4-2. 年払い割引 */}
+            {/* 5-2. 年払い割引 */}
             <div>
               <FieldLabel>年払い割引のご希望（任意）</FieldLabel>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -799,45 +1587,160 @@ export default function ConsultPage() {
           </SectionCard>
 
           {/* ============================================================ */}
-          {/*  Step 5: その他のご要望                                         */}
+          {/*  Step 6: 制作素材のご準備                                       */}
           {/* ============================================================ */}
           <SectionCard>
-            <StepHeader step={5} title="その他のご要望" />
+            <StepHeader step={6} title="制作素材のご準備" />
 
-            {/* 5-1. ご質問・自由記述 */}
+            {/* 6-1. ご用意できる素材・資料（ざっくり選択） */}
             <div className="mb-10">
-              <FieldLabel>ご質問・自由記述（任意）</FieldLabel>
-              <textarea
-                value={data.message}
-                onChange={(e) => update("message", e.target.value)}
-                placeholder={`例：「〇〇の機能が入れたいけれど可能か」「今のサイトから〇〇だけ引き継ぎたい」\n「ドメインは持っている」「ロゴデータがある」など、なんでもお書きください`}
-                rows={5}
-                className={`${inputClass} resize-y`}
-              />
+              <FieldLabel hint="（任意）">ご用意できる素材・資料（複数選択可）</FieldLabel>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {ASSET_OPTIONS.map((opt) => (
+                  <CheckCard
+                    key={opt.value}
+                    checked={data.assetsStatus.includes(opt.value)}
+                    onClick={() => toggleAsset(opt.value)}
+                  >
+                    {opt.label}
+                  </CheckCard>
+                ))}
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                お手持ちの素材をざっくりお選びください。実際のデータは下の「素材データのアップロード」からお送りいただけます。ないものは金井にてご用意・作成いたします。
+              </p>
             </div>
 
-            {/* 5-2. ロゴ・画像データ */}
-            <div>
-              <FieldLabel>既存のロゴ・画像データの有無（任意）</FieldLabel>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {LOGO_OPTIONS.map((opt) => (
+            {/* 6-2. 素材データのアップロード（専用セクション） */}
+            <div className="mb-10">
+              <FieldLabel hint="（任意）">素材データのアップロード</FieldLabel>
+
+              {/* 品質ガイド（日本語の指定書） */}
+              <UploadSpecGuide />
+
+              {/* ドロップゾーン */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    setIsDragging(false);
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  handleFileList(e.dataTransfer.files);
+                }}
+                className={`mt-4 rounded-2xl border-2 border-dashed p-8 text-center transition-all ${
+                  isDragging
+                    ? "border-primary bg-primary/5 ring-4 ring-primary/10"
+                    : "border-border bg-accent/30 hover:border-primary/40"
+                }`}
+              >
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-2">
+                  <span
+                    className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
+                      isDragging
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-white text-primary ring-1 ring-border"
+                    }`}
+                  >
+                    <Upload className="h-6 w-6" />
+                  </span>
+                  <span className="text-sm font-semibold text-foreground">
+                    クリックして選択、またはここにドラッグ＆ドロップ
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    複数ファイルをまとめて追加できます（1ファイル数十MB程度まで推奨）
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleFileInput}
+                    className="hidden"
+                    accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.zip,.svg,.ai,.eps,.psd"
+                  />
+                </label>
+              </div>
+
+              {/* アップロード済み素材の一覧 */}
+              {data.attachments.length > 0 ? (
+                <div className="mt-5 space-y-4">
+                  <p className="text-sm font-semibold text-foreground">
+                    アップロード済みの素材（{data.attachments.length}件）
+                  </p>
+                  {data.attachments.map((att, idx) => (
+                    <AttachmentCard
+                      key={att.id}
+                      index={idx + 1}
+                      attachment={att}
+                      onChange={(field, value) =>
+                        updateAttachment(att.id, field, value)
+                      }
+                      onRemove={() => removeAttachment(att.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  ※ 現時点で素材がなくてもお申し込みいただけます。アップロードは必須ではありません。
+                </p>
+              )}
+            </div>
+
+            {/* 6-3. 足りない写真・文章の補充について */}
+            <div className="mb-10">
+              <FieldLabel hint="（任意）">足りない写真・文章の補充について</FieldLabel>
+              <div className="grid gap-3">
+                {SUPPLEMENT_OPTIONS.map((opt) => (
                   <RadioCard
                     key={opt.value}
-                    checked={data.hasLogo === opt.value}
-                    onClick={() => update("hasLogo", opt.value)}
+                    checked={data.supplement === opt.value}
+                    onClick={() => update("supplement", opt.value)}
                   >
                     {opt.label}
                   </RadioCard>
                 ))}
               </div>
             </div>
+
+            {/* 6-3b. お送りいただく素材の編集・加工について */}
+            <div className="mb-10">
+              <FieldLabel hint="（任意）">お送りいただく素材の編集・加工について</FieldLabel>
+              <div className="grid gap-3">
+                {ALLOW_EDIT_OPTIONS.map((opt) => (
+                  <RadioCard
+                    key={opt.value}
+                    checked={data.allowEdit === opt.value}
+                    onClick={() => update("allowEdit", opt.value)}
+                  >
+                    {opt.label}
+                  </RadioCard>
+                ))}
+              </div>
+            </div>
+
+            {/* 6-4. ご質問・自由記述 */}
+            <div>
+              <FieldLabel>ご質問・自由記述（任意）</FieldLabel>
+              <textarea
+                value={data.message}
+                onChange={(e) => update("message", e.target.value)}
+                placeholder={`例：「〇〇の機能を入れたいけれど可能か」「今のサイトから〇〇だけ引き継ぎたい」\n「ドメインは持っている」など、なんでもお書きください`}
+                rows={5}
+                className={`${inputClass} resize-y`}
+              />
+            </div>
           </SectionCard>
 
           {/* ============================================================ */}
-          {/*  Step 6: お客様情報                                             */}
+          {/*  Step 7: お客様情報                                             */}
           {/* ============================================================ */}
           <SectionCard>
-            <StepHeader step={6} title="お客様情報" />
+            <StepHeader step={7} title="お客様情報" />
 
             {/* お名前 */}
             <div className="mb-6">
@@ -893,16 +1796,30 @@ export default function ConsultPage() {
             <Button
               type="submit"
               size="lg"
-              disabled={!isValid}
+              disabled={!isValid || isSubmitting}
               className={`w-full max-w-md text-lg ${
-                !isValid
+                !isValid || isSubmitting
                   ? "cursor-not-allowed opacity-50"
                   : "hover:scale-[1.02]"
               }`}
             >
-              <Send className="mr-2 h-5 w-5" />
-              無料で提案を依頼する
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  送信中...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-5 w-5" />
+                  無料で提案を依頼する
+                </>
+              )}
             </Button>
+            {submitError && (
+              <p className="w-full max-w-md rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
+                {submitError}
+              </p>
+            )}
             {!isValid && (
               <p className="text-center text-sm text-muted-foreground">
                 必須項目（<span className="text-red-500">*</span>）をすべてご入力いただくと送信できます。
