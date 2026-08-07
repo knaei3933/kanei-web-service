@@ -54,35 +54,40 @@ info@kanei-trade.co.jp からお客様 / 社内へ届く
 
 スクリプト:
 - `/root/.hermes/scripts/kanei_mail_relay.py`
+- `/root/.hermes/scripts/manage_kanei_mail_relay.sh`
 - `/root/.hermes/scripts/start_kanei_mail_relay_tunnel.sh`
 - `/root/.hermes/scripts/sync_kanei_mail_relay_upstream.py`
 
-### 1. relay server 起動
+### 1. relay server 起動（推奨: 管理スクリプト）
+
+初回だけ環境変数を export して起動すると、以後は `~/.cache/kanei-mail-relay/relay.env` に保存されます。
 
 ```bash
-RELAY_SECRET='***' \
-SMTP_HOST='sv12515.xserver.jp' \
-SMTP_PORT='465' \
-SMTP_SECURE='true' \
-SMTP_USER='info@kanei-trade.co.jp' \
-SMTP_PASS='***' \
-MAIL_FROM='info@kanei-trade.co.jp' \
-MAIL_REPLY_TO='info@kanei-trade.co.jp' \
-RELAY_PORT='8256' \
-python3 /root/.hermes/scripts/kanei_mail_relay.py
+export RELAY_SECRET='***'
+export SMTP_HOST='sv12515.xserver.jp'
+export SMTP_PORT='465'
+export SMTP_SECURE='true'
+export SMTP_USER='info@kanei-trade.co.jp'
+export SMTP_PASS='***'
+export MAIL_FROM='info@kanei-trade.co.jp'
+export MAIL_REPLY_TO='info@kanei-trade.co.jp'
+/root/.hermes/scripts/manage_kanei_mail_relay.sh start
 ```
 
-ヘルスチェック:
+日常運用:
 
 ```bash
-curl -sS http://127.0.0.1:8256/health
+/root/.hermes/scripts/manage_kanei_mail_relay.sh status
+/root/.hermes/scripts/manage_kanei_mail_relay.sh health
+/root/.hermes/scripts/manage_kanei_mail_relay.sh restart
+/root/.hermes/scripts/manage_kanei_mail_relay.sh stop
 ```
 
-期待値:
-
-```json
-{"status":"ok"}
-```
+補足:
+- PID: `~/.cache/kanei-mail-relay/relay.pid`
+- Log: `~/.cache/kanei-mail-relay/relay.log`
+- Saved env: `~/.cache/kanei-mail-relay/relay.env`
+- 既に relay が動いている場合は、管理スクリプトが実行中プロセスの環境を取り込んで `relay.env` を再生成します。
 
 ### 2. cloudflared tunnel 起動（ログを残す）
 
@@ -125,8 +130,10 @@ python3 /root/.hermes/scripts/sync_kanei_mail_relay_upstream.py --skip-redeploy
 
 ## 日次/再起動時の運用手順
 
-1. relay server を起動
-2. `curl http://127.0.0.1:8256/health` で確認
+1. relay server を起動 / 再起動
+   - `/root/.hermes/scripts/manage_kanei_mail_relay.sh start`
+   - 既に動いていれば `/root/.hermes/scripts/manage_kanei_mail_relay.sh restart`
+2. `/root/.hermes/scripts/manage_kanei_mail_relay.sh health` で確認
 3. tunnel を起動
 4. `python3 /root/.hermes/scripts/sync_kanei_mail_relay_upstream.py --verify-fixed-route` 実行
 5. Production `/consult` で 1 件送信し、以下を確認
