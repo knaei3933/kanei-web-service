@@ -307,7 +307,7 @@ interface MailResultLite {
 
 /** 完了画面で表示するメール送信サマリ */
 interface MailSummary {
-  /** 解決されたプロバイダ（"log" | "smtp"） */
+  /** 解決されたプロバイダ（"log" | "smtp" | "relay"） */
   provider: string;
   /** プロバイダ選定の理由（UI 表示用） */
   providerReason: string;
@@ -315,6 +315,23 @@ interface MailSummary {
   internal: MailResultLite | null;
   /** お客様ご案内メールの結果 */
   customer: MailResultLite | null;
+}
+
+/**
+ * プロバイダ名から完了画面のバッジ（ラベル + 色）を安全に組み立てる。
+ * 未知のプロバイダ名が来ても崩れないように default で受け止める。
+ */
+function providerBadge(provider: string): { label: string; className: string } {
+  switch (provider) {
+    case "smtp":
+      return { label: "SMTP（実配送）", className: "bg-emerald-100 text-emerald-700" };
+    case "relay":
+      return { label: "リレー経由（実配送）", className: "bg-emerald-100 text-emerald-700" };
+    case "log":
+      return { label: "ログ記録モード", className: "bg-blue-100 text-blue-700" };
+    default:
+      return { label: provider || "不明", className: "bg-slate-100 text-slate-700" };
+  }
 }
 
 /** 空の参考サイトカードを生成 */
@@ -1341,15 +1358,16 @@ export default function ConsultPage() {
                   <span className="text-sm font-bold text-foreground">
                     送信ステータス
                   </span>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                      mail.provider === "smtp"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}
-                  >
-                    {mail.provider === "smtp" ? "SMTP（実配送）" : "ログ記録モード"}
-                  </span>
+                  {(() => {
+                    const badge = providerBadge(mail.provider);
+                    return (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${badge.className}`}
+                      >
+                        {badge.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
                   {mail.providerReason}

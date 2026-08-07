@@ -6,8 +6,13 @@
 /*  呼び出し側（API Route 等）は配送結果を統一的に扱える。              */
 /* ------------------------------------------------------------------ */
 
-/** プロバイダ種別（環境変数 MAIL_PROVIDER で切り替え） */
-export type MailProviderName = "smtp" | "log";
+/**
+ * プロバイダ種別。
+ * - smtp: MAIL_PROVIDER=smtp で SMTP_* が揃っているときの本番実配送
+ * - relay: SMTP が拒否(554 等)されたときの HTTP リレーフォールバック
+ * - log: SMTP 未設定時の構造化ログフォールバック（実際の配送はしない）
+ */
+export type MailProviderName = "smtp" | "relay" | "log";
 
 /** メールアドレス（表示名は任意） */
 export interface MailAddress {

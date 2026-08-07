@@ -1116,8 +1116,14 @@ export async function POST(request: Request): Promise<Response> {
     proposalUrl,
     /** メール送信の結果。実プロバイダの状態をそのまま返す（UI 反映用） */
     mail: {
-      /** 解決されたプロバイダ（"log" | "smtp"） */
-      provider: mailConfig.activeProvider,
+      /**
+       * 実際に届けたプロバイダ（"log" | "smtp" | "relay"）。
+       * SMTP が拒否されてリレー経由で届いた場合は "relay" になる。
+       */
+      provider:
+        internalMail?.provider === "relay" || customerMail?.provider === "relay"
+          ? "relay"
+          : mailConfig.activeProvider,
       /** プロバイダ選定の理由（UI 表示用） */
       providerReason: mailConfig.reason,
       /** 社内通知の結果（送信エラーでも null にならない） */

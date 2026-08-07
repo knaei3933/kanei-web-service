@@ -18,6 +18,7 @@
 
 import { logProvider } from "./providers/log";
 import { smtpProvider, isSmtpConfigured } from "./providers/smtp";
+import { relayProvider, isRelayConfigured } from "./providers/relay";
 import {
   buildInternalNotificationMail,
   buildCustomerProposalMail,
@@ -29,6 +30,7 @@ import type {
   MailProvider,
   MailProviderName,
   MailResult,
+  SendMailInput,
 } from "./types";
 
 /** 社内通知の既定の宛先 */
@@ -50,6 +52,45 @@ export function resolveMailProvider(): MailProvider {
   return logProvider;
 }
 
+/**
+ * 解決されたプロバイダで送信し、SMTP 失敗時は HTTP リレーへフォールバックする。
+ *
+ * - log プロバイダのときは既存の「構造化ログ」挙動を維持（relay による実配送はしない）。
+ * - smtp プロバイダで送信エラー（554 client host rejected 等）のとき、
+ *   MAIL_RELAY_URL が設定されていれば HTTP リレー経由で再送を試みる。
+ * - リレーまで失敗した場合は両方のエラー情報を残した MailResult を返す
+ *   （どの段階で失敗してもパイプラインは止めない）。
+ */
+async function deliverWithFallback(
+  mail: SendMailInput,
+  provider: MailProvider
+): Promise<MailResult> {
+  const primary = await provider.send(mail);
+
+  // 成功（送信 or ログ記録）ならそのまま返す
+  if (primary.status !== "error") return primary;
+
+  // log プロバイダのときは既存どおり（relay 経由の実配送は行わない）
+  if (provider.name !== "smtp") return primary;
+
+  // SMTP 失敗 ＋ リレー設定あり → リレー経由で再送
+  if (isRelayConfigured()) {
+    const relayed = await relayProvider.send(mail);
+    if (relayed.status !== "error") return relayed;
+
+    // リレーも失敗: 両方のエラーを残して返す（パイプラインは止めない）
+    return {
+      ...relayed,
+      error:
+        `SMTP 送信失敗のためリレーへ切り替えましたが、リレーも失敗しました。` +
+        ` SMTP: ${primary.error ?? "(詳細なし)"} / リレー: ${relayed.error ?? "(詳細なし)"}`,
+    };
+  }
+
+  // リレー未設定なら SMTP のエラーをそのまま返す（既存挙動）
+  return primary;
+}
+
 /** プロバイダ選択の診断情報を返す（UI / ログ表示用） */
 export function getMailConfigStatus(): MailConfigStatus {
   const requested = (process.env.MAIL_PROVIDER ?? "log").toLowerCase();
@@ -57,9 +98,14 @@ export function getMailConfigStatus(): MailConfigStatus {
   const activeProvider: MailProviderName =
     requested === "smtp" && smtpReady ? "smtp" : "log";
 
+  const relayReady = isRelayConfigured();
+  const relayNote = relayReady
+    ? "（SMTP 拒否時はリレー経由で再送します）"
+    : "";
+
   let reason: string;
   if (requested === "smtp" && smtpReady) {
-    reason = "MAIL_PROVIDER=smtp かつ SMTP_* 設定が揃っているため SMTP で送信します。";
+    reason = `MAIL_PROVIDER=smtp かつ SMTP_* 設定が揃っているため SMTP で送信します${relayNote}。`;
   } else if (requested === "smtp" && !smtpReady) {
     reason =
       "MAIL_PROVIDER=smtp ですが SMTP_* が未設定のため、構造化ログへフォールバックします。";
@@ -89,7 +135,7 @@ export async function sendInternalConsultNotification(
 
   try {
     const mail = buildInternalNotificationMail(internalTo, input);
-    return await provider.send({ ...mail, replyTo });
+    return await deliverWithFallback({ ...mail, replyTo }, provider);
   } catch (err) {
     return {
       provider: provider.name,
@@ -124,7 +170,7 @@ export async function sendCustomerProposalEmail(
   try {
     const replyTo = process.env.MAIL_REPLY_TO;
     const mail = buildCustomerProposalMail(input);
-    return await provider.send({ ...mail, replyTo });
+    return await deliverWithFallback({ ...mail, replyTo }, provider);
   } catch (err) {
     return {
       provider: provider.name,
