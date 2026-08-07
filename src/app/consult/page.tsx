@@ -19,6 +19,9 @@ import {
   Sparkles,
   Loader2,
   ExternalLink,
+  AlertCircle,
+  Inbox,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -280,6 +283,38 @@ interface FormData {
   email: string;
   phone: string;
   enterpriseName: string;
+}
+
+/* ------------------------------------------------------------------ */
+/*  送信結果（API レスポンスのうち完了画面で使う部分）                    */
+/* ------------------------------------------------------------------ */
+
+/** メール送信1件の結果（API の MailResult から必要な分だけ） */
+interface MailResultLite {
+  /** 実行したプロバイダ名（"log" / "smtp"） */
+  provider: string;
+  /** 宛先一覧 */
+  accepted: string[];
+  /** メッセージID（ログ時は null） */
+  messageId: string | null;
+  /** 送信結果ステータス */
+  status: "sent" | "logged" | "error";
+  /** エラー時の理由 */
+  error?: string;
+  /** ログプロバイダの保存先パス */
+  artifactPath?: string;
+}
+
+/** 完了画面で表示するメール送信サマリ */
+interface MailSummary {
+  /** 解決されたプロバイダ（"log" | "smtp"） */
+  provider: string;
+  /** プロバイダ選定の理由（UI 表示用） */
+  providerReason: string;
+  /** 社内通知の結果 */
+  internal: MailResultLite | null;
+  /** お客様ご案内メールの結果 */
+  customer: MailResultLite | null;
 }
 
 /** 空の参考サイトカードを生成 */
@@ -834,6 +869,75 @@ function AttachmentCard({
 }
 
 /* ------------------------------------------------------------------ */
+/*  送信ステータス表示パーツ                                              */
+/* ------------------------------------------------------------------ */
+
+/** メール/提案の送信ステータス（3とおり） */
+type DeliveryStatus = "sent" | "logged" | "error";
+
+/** ステータスごとの表示メタ（アイコン・色・タグラベル） */
+const STATUS_META: Record<
+  DeliveryStatus,
+  { Icon: typeof CheckCircle2; color: string; bg: string; ring: string; tag: string }
+> = {
+  sent: {
+    Icon: CheckCircle2,
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+    ring: "ring-emerald-100",
+    tag: "送信済み",
+  },
+  logged: {
+    Icon: Inbox,
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    ring: "ring-blue-100",
+    tag: "記録済み",
+  },
+  error: {
+    Icon: AlertCircle,
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+    ring: "ring-amber-100",
+    tag: "要対応",
+  },
+};
+
+/** 送信ステータスを1行で表示する */
+function StatusRow({
+  status,
+  label,
+  detail,
+}: {
+  status: DeliveryStatus;
+  label: string;
+  detail?: string;
+}) {
+  const m = STATUS_META[status];
+  const Icon = m.Icon;
+  return (
+    <div className={`flex items-start gap-3 rounded-xl ${m.bg} px-4 py-3 ring-1 ${m.ring}`}>
+      <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${m.color}`} />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-sm font-semibold text-foreground">{label}</span>
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold ${m.color}`}
+          >
+            {m.tag}
+          </span>
+        </div>
+        {detail && (
+          <p className="mt-1 break-words text-xs leading-relaxed text-muted-foreground">
+            {detail}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  メインページ                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -858,6 +962,12 @@ export default function ConsultPage() {
 
   /* 送信成功時に API から返ってきた、お客様別の初稿プレビュー URL */
   const [draftUrl, setDraftUrl] = useState<string | null>(null);
+
+  /* 送信成功時に API から返ってきた、お客様別の構成提案 URL */
+  const [proposalUrl, setProposalUrl] = useState<string | null>(null);
+
+  /* 送信成功時に API から返ってきた、メール送信サマリ（実プロバイダ状態） */
+  const [mail, setMail] = useState<MailSummary | null>(null);
 
   /* ---- 更新ヘルパ ---- */
   const update = <K extends keyof FormData>(key: K, value: FormData[K]) =>
@@ -1097,6 +1207,25 @@ export default function ConsultPage() {
           : null
       );
 
+      // お客様別の構成提案 URL を保持（提案 CTA に使う）
+      setProposalUrl(
+        result && typeof result.proposalUrl === "string" && result.proposalUrl.length > 0
+          ? result.proposalUrl
+          : null
+      );
+
+      // メール送信サマリを保持（実プロバイダの状態を完了画面に反映）
+      if (
+        result &&
+        result.mail &&
+        typeof result.mail === "object" &&
+        typeof (result.mail as { provider?: unknown }).provider === "string"
+      ) {
+        setMail(result.mail as MailSummary);
+      } else {
+        setMail(null);
+      }
+
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -1114,6 +1243,24 @@ export default function ConsultPage() {
   /*  完了画面                                                          */
   /* ---------------------------------------------------------------- */
   if (submitted) {
+    // メール送信結果の表示用ディテール（実プロバイダ状態から組み立てる）
+    const internalDetail = mail?.internal
+      ? mail.internal.status === "sent"
+        ? "相談受領の通知を金井へ送信しました。"
+        : mail.internal.status === "logged"
+          ? "受領内容をシステムへ記録しました（テスト環境のため実配送はしていません）。"
+          : mail.internal.error ?? "通知の送信に失敗しました。"
+      : "通知の結果を取得できませんでした。";
+    const customerDetail = mail?.customer
+      ? mail.customer.status === "sent"
+        ? `ご案内メールをお送りしました${
+            mail.customer.accepted[0] ? `（${mail.customer.accepted[0]}）` : ""
+          }。`
+        : mail.customer.status === "logged"
+          ? "ご案内メールをシステムへ記録しました（テスト環境のため実配送はしていません）。"
+          : mail.customer.error ?? "ご案内メールを送信できませんでした。"
+      : "ご案内メールの結果を取得できませんでした。";
+
     return (
       <div className="min-h-[70vh] bg-white">
         <div className="mx-auto max-w-3xl px-4 py-16 sm:py-24">
@@ -1131,31 +1278,103 @@ export default function ConsultPage() {
               しばらくお待ちください。
             </p>
 
-            {/* お客様別の初稿プレビュー導線（API から draftUrl が返ったときだけ表示） */}
-            {draftUrl && (
-              <div className="mx-auto mb-8 max-w-xl rounded-3xl border-2 border-primary/30 bg-primary/5 p-6 text-left shadow-sm sm:p-8">
+            {/* お客様別の構成提案導線（API から proposalUrl が返ったときだけ表示） */}
+            {proposalUrl && (
+              <div className="mx-auto mb-6 max-w-xl rounded-3xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-primary/[0.03] p-6 text-left shadow-sm sm:p-8">
                 <div className="flex items-center gap-2 text-primary">
-                  <Sparkles className="h-5 w-5 shrink-0" />
+                  <Layers className="h-5 w-5 shrink-0" />
                   <span className="text-sm font-bold">
-                    あなたの初稿ホームページが完成しました
+                    あなた専用の構成提案が完成しました
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  ご入力内容をもとに、AI がホームページの初稿（ファーストドラフト）を自動生成しました。
-                  今すぐ別画面でご確認いただけます。
+                  ご入力内容と金井の実績カタログをもとに、ホームページの構成案を自動作成しました。
+                  推奨するページ構成・参考デザイン・ターゲット戦略を今すぐご確認いただけます。
+                </p>
+                <a
+                  href={proposalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-lg transition-opacity hover:opacity-90 sm:w-auto"
+                >
+                  構成提案を見る
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                  ※ 構成提案は実績カタログとご相談内容からの自動生成です。実際の制作ではデザイン・原稿・写真をさらに整えます。
+                </p>
+              </div>
+            )}
+
+            {/* お客様別の初稿プレビュー導線（API から draftUrl が返ったときだけ表示） */}
+            {draftUrl && (
+              <div className="mx-auto mb-8 max-w-xl rounded-3xl border border-border bg-accent/40 p-6 text-left shadow-sm sm:p-8">
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="h-5 w-5 shrink-0" />
+                  <span className="text-sm font-bold">
+                    初稿ホームページも生成しました
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  ご入力内容をもとに、ホームページの初稿（ファーストドラフト）を自動生成しました。
+                  別画面でご確認いただけます。
                 </p>
                 <a
                   href={draftUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-lg transition-opacity hover:opacity-90 sm:w-auto"
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-primary px-6 py-3 font-semibold text-primary transition-colors hover:bg-primary/5 sm:w-auto"
                 >
                   作成した初稿を見る
                   <ExternalLink className="h-4 w-4" />
                 </a>
                 <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                  ※ 初稿はご相談内容からの自動生成です。実際の制作ではデザイン・原稿・写真をさらに整えます。
+                  ※ 初稿はご相談内容からの自動生成です。
                 </p>
+              </div>
+            )}
+
+            {/* 送信ステータス（実プロバイダの状態をそのまま表示） */}
+            {mail && (
+              <div className="mx-auto mb-8 max-w-xl rounded-3xl border border-border bg-white p-6 text-left shadow-sm sm:p-8">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="text-sm font-bold text-foreground">
+                    送信ステータス
+                  </span>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                      mail.provider === "smtp"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {mail.provider === "smtp" ? "SMTP（実配送）" : "ログ記録モード"}
+                  </span>
+                </div>
+                <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
+                  {mail.providerReason}
+                </p>
+                <div className="space-y-3">
+                  <StatusRow
+                    status={mail.internal?.status ?? "error"}
+                    label="社内通知（金井へ）"
+                    detail={internalDetail}
+                  />
+                  <StatusRow
+                    status={mail.customer?.status ?? "error"}
+                    label="ご案内メール（お客様へ）"
+                    detail={customerDetail}
+                  />
+                  <StatusRow
+                    status={proposalUrl ? "sent" : "error"}
+                    label="構成提案の生成"
+                    detail={
+                      proposalUrl
+                        ? "構成提案ページを生成しました。上のボタンからご確認ください。"
+                        : "構成提案の生成に失敗しました。お手数ですが再送信をお願いします。"
+                    }
+                  />
+                </div>
               </div>
             )}
 

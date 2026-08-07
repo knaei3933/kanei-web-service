@@ -3,6 +3,13 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import { buildDraftPayload, encodeDraft } from "@/lib/draft";
+import { buildProposalPayload, encodeProposal } from "@/lib/proposal";
+import {
+  getMailConfigStatus,
+  sendInternalConsultNotification,
+  sendCustomerProposalEmail,
+  type MailResult,
+} from "@/server/mail";
 
 /**
  * 相談フォームの送信を受け付ける Route Handler。
@@ -1039,6 +1046,59 @@ export async function POST(request: Request): Promise<Response> {
     draftUrl = null;
   }
 
+  // --- お客様別の構成提案 URL の生成 ---
+  // 送信内容と Monet カタログから構成提案を組み立て、base64url で URL に埋め込む。
+  // ディスクに依存しないので serverless でもお客様がそのまま開ける。
+  // draft と同様、生成/エンコードに失敗しても送信自体は成功扱い（null 可）。
+  let proposalUrl: string | null = null;
+  try {
+    const proposalPayload = buildProposalPayload(parsedPayload, submissionId);
+    const encodedProposal = encodeProposal(proposalPayload);
+    proposalUrl = `${absoluteBaseUrl(request)}/proposal?p=${encodedProposal}`;
+  } catch {
+    proposalUrl = null;
+  }
+
+  // --- メール通知（社内通知 + お客様ご案内） ---
+  // どちらも「送信失敗で例外を投げない」設計。status を見て UI に反映する。
+  // 失敗・設定不足であってもパイプライン（送信成功）は止めない。
+  const mailConfig = getMailConfigStatus();
+  const payloadObject = asObject(parsedPayload);
+  const customerEmail = asString(payloadObject.email);
+  const customerName = asString(payloadObject.name);
+  const customerCompany =
+    asString(payloadObject.companyName) || asString(payloadObject.enterpriseName);
+
+  // 社内通知：受領内容・保存先・提案 URL をまとめて送る
+  let internalMail: MailResult | null = null;
+  try {
+    internalMail = await sendInternalConsultNotification({
+      submissionId,
+      storagePath: `${DISPLAY_ROOT}/${submissionId}`,
+      storageMode: IS_SERVERLESS ? "serverless" : "local",
+      briefGenerated,
+      proposalUrl: proposalUrl ?? undefined,
+      payload: payloadObject,
+      fileCount: savedFiles.length,
+    });
+  } catch {
+    internalMail = null;
+  }
+
+  // お客様ご案内：提案ページのご案内メール。宛先不正時は status:error で返る
+  let customerMail: MailResult | null = null;
+  try {
+    customerMail = await sendCustomerProposalEmail({
+      to: customerEmail,
+      customerName: customerName || undefined,
+      companyName: customerCompany || undefined,
+      proposalUrl: proposalUrl ?? "",
+      submissionId,
+    });
+  } catch {
+    customerMail = null;
+  }
+
   // --- 成功レスポンス ---
   return Response.json({
     ok: true,
@@ -1052,6 +1112,19 @@ export async function POST(request: Request): Promise<Response> {
     briefPath,
     /** お客様別の初稿プレビュー URL（絶対 URL）。生成失敗時は null */
     draftUrl,
+    /** お客様別の構成提案 URL（絶対 URL）。生成失敗時は null */
+    proposalUrl,
+    /** メール送信の結果。実プロバイダの状態をそのまま返す（UI 反映用） */
+    mail: {
+      /** 解決されたプロバイダ（"log" | "smtp"） */
+      provider: mailConfig.activeProvider,
+      /** プロバイダ選定の理由（UI 表示用） */
+      providerReason: mailConfig.reason,
+      /** 社内通知の結果（送信エラーでも null にならない） */
+      internal: internalMail,
+      /** お客様ご案内メールの結果（宛先不正時は status:error） */
+      customer: customerMail,
+    },
     /** 保存モード（"local" | "serverless"）— 検証・確認用 */
     storageMode: IS_SERVERLESS ? "serverless" : "local",
     /** 実際の保存ルート（絶対パス）— 検証・確認用 */
