@@ -11,19 +11,30 @@ Vercel の送信 IP を、会社 SMTP（`sv12515.xserver.jp:465`）が拒否す�
 
 ## 送信の流れ
 
+固定の公開ルート（Vercel）と上流リレー（WSL）の二段構えです。
+WSL 側のトンネル URL は変わりうるため、アプリは固定 URL を叩き、
+その固定ルートが上流へ転送します。
+
 ```
-Vercel (Next.js API)
+Vercel (Next.js)
    │  1. SMTP 直送を試みる（MAIL_PROVIDER=smtp）
    │     └─ 成功 → 完了
    │  2. SMTP が拒否/失敗 → MAIL_RELAY_URL へ JSON を POST
    ▼
+/api/mail-relay（固定の公開ルート・Vercel 上）
+   │  MAIL_RELAY_SECRET で Bearer 認証
+   │  ボディをそのまま MAIL_RELAY_UPSTREAM_URL へ転送
+   ▼
 社内 WSL リレー (kanei_mail_relay.py)
-   │  共有シークレットで認証
+   │  共有シークレットで認証（MAIL_RELAY_SECRET と同じ値）
    │  会社 SMTP (sv12515.xserver.jp:465 SSL) で代理送信
    ▼
 info@kanei-trade.co.jp からお客様 / 社内へ届く
 ```
 
+- `MAIL_RELAY_URL` には固定の公開ルート `https://kanei-web-service.vercel.app/api/mail-relay` を指定します。アプリ側はこの URL を変更不要です。
+- `MAIL_RELAY_UPSTREAM_URL` には「現在の WSL トンネル URL」または「将来の固定上流」を指定します。トンネル URL が変わったときはここだけ差し替えます（アプリの再デプロイ不要で Vercel の環境変数を更新すれば反映されます）。
+- `MAIL_RELAY_SECRET` は `/api/mail-relay` の認証と上流 WSL リレー（`RELAY_SECRET`）で同じ値を使います。`/api/mail-relay` は受け取った Authorization ヘッダーを上流へもそのまま渡します。
 - 表示用の差出人・返信先は引き続き `info@kanei-trade.co.jp`。
 - `log` プロバイダ（SMTP 未設定時の構造化ログ記録）の挙動は変わりません。
   リレーは「SMTP を試して失敗した」ときだけ動きます。
@@ -34,11 +45,17 @@ info@kanei-trade.co.jp からお客様 / 社内へ届く
 | --- | --- | --- |
 | `MAIL_PROVIDER` | ✓ | `smtp`（本番では SMTP を最優先） |
 | `SMTP_*` | ✓ | 既存の SMTP 設定（リレーはこの失敗時に動く） |
-| `MAIL_RELAY_URL` | リレー使用時 | リレーサーバーのエンドポイント URL |
-| `MAIL_RELAY_SECRET` | リレー使用時 | リレー認証用の共有シークレット |
+| `MAIL_RELAY_URL` | リレー使用時 | 固定の公開リレールート。`https://kanei-web-service.vercel.app/api/mail-relay` を指定 |
+| `MAIL_RELAY_UPSTREAM_URL` | リレー使用時 | `/api/mail-relay` が転送する上流エンドポイント（WSL トンネル等） |
+| `MAIL_RELAY_SECRET` | リレー使用時 | 共有シークレット。`/api/mail-relay` の認証と上流 WSL リレー（`RELAY_SECRET`）で同じ値を使う |
 
-`MAIL_RELAY_URL` / `MAIL_RELAY_SECRET` が未設定でもアプリは動きます
-（SMTP のエラーをそのまま返すだけ）。`.env.example` にコメント付きプレースホルダがあります。
+`MAIL_RELAY_*` が未設定でもアプリは動きます（SMTP のエラーをそのまま返すだけ）。
+`.env.example` にコメント付きプレースホルダがあります。
+
+> `/api/mail-relay` は `MAIL_RELAY_UPSTREAM_URL` 未設定のとき 502 で
+> `{"status":"error","error":"MAIL_RELAY_UPSTREAM_URL が未設定のため転送できません。"}`
+> を返します。認証失敗は 401、上流との通信失敗は 502 です。
+> 上流の HTTP ステータス・JSON ボディはそのまま透過します。
 
 ## リレーサーバー（WSL 側）
 
