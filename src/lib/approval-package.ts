@@ -13,21 +13,21 @@
 /*    - Claude Code の実行は serverless では行わず、ローカルオペレータ   */
 /*      への「実行ハンドオフ」として成果物だけを生成する（正直な設計）   */
 /*                                                                      */
-/*  保存先:                                                              */
-/*    - ローカル開発: data/consult-submissions/<submissionId>/          */
-/*        approval-package.json                                         */
-/*    - Vercel/serverless: /tmp/consult-submissions/<submissionId>/     */
-/*        approval-package.json                                         */
-/*    （consult route と同じルートロジックを再現。ファイル名だけ         */
-/*      approval-package.json を足す。）                                 */
+/*  保存先（src/server/submission-storage アダプタ経由・環境で切替）:    */
+/*    - local     : data/consult-submissions/<id>/approval-package.json */
+/*    - relay     : 固定ルート(/api/submission-storage)→WSL リレーへ     */
+/*                  HTTP 経由で恒久保存（本番・リレー設定あり）          */
+/*    - ephemeral : 本番でリレー未設定時の /tmp（一時・非恒久）          */
 /* ------------------------------------------------------------------ */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 import type { ConsultIntakeQuality } from "./consult-quality";
 import type { PromptStagePreview } from "./prompt-chain";
 import { buildPromptChainPreview } from "./prompt-chain";
+import {
+  writeArtifact,
+  readArtifact,
+  artifactDisplayPath,
+} from "@/server/submission-storage";
 
 /** 承認パッケージのスキーマバージョン（下流ツールの互換性確認用） */
 export const APPROVAL_SCHEMA_VERSION = "1.1.0";
@@ -260,21 +260,10 @@ export interface ApprovalSavedFile {
 /*  保存ルート（consult route と同じロジックを再現）                    */
 /* ------------------------------------------------------------------ */
 
-/**
- * Vercel/serverless 環境で動いているか。
- * consult route と同じ判定（VERCEL=1）。
- */
-const IS_SERVERLESS = process.env.VERCEL === "1";
-
-/** 送信データの保存ルート（consult route と同じ） */
-const SUBMISSIONS_DIR = IS_SERVERLESS
-  ? join(tmpdir(), "consult-submissions")
-  : join(process.cwd(), "data", "consult-submissions");
-
-/** 表示用ルート（ローカルは相対, Vercel は絶対） */
-const DISPLAY_ROOT = IS_SERVERLESS
-  ? SUBMISSIONS_DIR
-  : "data/consult-submissions";
+/* 成果物の保存先・表示パスは src/server/submission-storage アダプタが
+   環境別（local / relay / ephemeral）に解決する。このファイルでは
+   ルートを持たず、writeArtifact / readArtifact / artifactDisplayPath
+   経由で扱う。 */
 
 /**
  * 実行ハンドオフで使う「ローカル実行」前提の表示ルート。
@@ -290,35 +279,25 @@ function isSafeSubmissionId(id: string): boolean {
 
 /**
  * 表示用の承認パッケージパスを返す。
- * レスポンスやメールに載せる「人間が読む用」のパス。
+ * レスポンスやメールに載せる「人間が読む用」のパス（アダプタ経由で解決）。
  */
 export function approvalPackagePathFor(submissionId: string): string {
-  return `${DISPLAY_ROOT}/${submissionId}/approval-package.json`;
-}
-
-/** ディスク上の実パスを返す（読み書き用） */
-function approvalPackageRealPath(submissionId: string): string {
-  return join(SUBMISSIONS_DIR, submissionId, "approval-package.json");
-}
-
-/** submission フォルダの実パス（読み書き用） */
-function submissionRealDir(submissionId: string): string {
-  return join(SUBMISSIONS_DIR, submissionId);
+  return artifactDisplayPath(submissionId, "approval-package.json");
 }
 
 /** 計画アーティファクト（omc-plan.json）の表示用パス */
 export function planningArtifactPathFor(submissionId: string): string {
-  return `${DISPLAY_ROOT}/${submissionId}/omc-plan.json`;
+  return artifactDisplayPath(submissionId, "omc-plan.json");
 }
 
 /** 実行プロンプト（execution-prompt.md）の表示用パス */
 export function executionPromptPathFor(submissionId: string): string {
-  return `${DISPLAY_ROOT}/${submissionId}/execution-prompt.md`;
+  return artifactDisplayPath(submissionId, "execution-prompt.md");
 }
 
 /** 実行ハンドオフ（execution-handoff.json）の表示用パス */
 export function executionHandoffPathFor(submissionId: string): string {
-  return `${DISPLAY_ROOT}/${submissionId}/execution-handoff.json`;
+  return artifactDisplayPath(submissionId, "execution-handoff.json");
 }
 
 /* ------------------------------------------------------------------ */
@@ -592,19 +571,17 @@ export function buildApprovalPackage(
 /* ------------------------------------------------------------------ */
 
 /**
- * 承認パッケージをディスクへ書き込む。
- * ディレクトリは作成済みであることを想定（consult route が mkdir 済み）。
- * 未作成でも安全のため mkdir({ recursive: true }) を併用する。
+ * 承認パッケージを書き込む（ストレージアダプタ経由）。
+ * local は data/ 、relay は HTTP リレー、ephemeral は /tmp へ。
+ * 成果物ディレクトリはアダプタ（filesystem/relay）が保証する。
  */
 export async function writeApprovalPackage(
   pkg: ApprovalPackage
 ): Promise<void> {
-  const dir = join(SUBMISSIONS_DIR, pkg.submissionId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(
-    approvalPackageRealPath(pkg.submissionId),
-    JSON.stringify(pkg, null, 2),
-    "utf8"
+  await writeArtifact(
+    pkg.submissionId,
+    "approval-package.json",
+    JSON.stringify(pkg, null, 2)
   );
 }
 
@@ -826,7 +803,8 @@ export async function readApprovalPackage(
 ): Promise<ApprovalPackage | null> {
   if (!isSafeSubmissionId(submissionId)) return null;
   try {
-    const raw = await readFile(approvalPackageRealPath(submissionId), "utf8");
+    const raw = await readArtifact(submissionId, "approval-package.json");
+    if (raw === null) return null;
     const parsed = JSON.parse(raw);
     return normalizeApprovalPackage(parsed, submissionId);
   } catch {
@@ -1096,13 +1074,12 @@ export function buildExecutionHandoff(
 /*  Phase 2: ファイル I/O                                               */
 /* ------------------------------------------------------------------ */
 
-/** 計画アーティファクトを omc-plan.json へ書き込む */
+/** 計画アーティファクトを omc-plan.json へ書き込む（アダプタ経由） */
 async function writePlanningArtifactFile(plan: PlanningArtifact): Promise<void> {
-  await mkdir(submissionRealDir(plan.submissionId), { recursive: true });
-  await writeFile(
-    join(submissionRealDir(plan.submissionId), "omc-plan.json"),
-    JSON.stringify(plan, null, 2),
-    "utf8"
+  await writeArtifact(
+    plan.submissionId,
+    "omc-plan.json",
+    JSON.stringify(plan, null, 2)
   );
 }
 
@@ -1116,10 +1093,13 @@ async function writeExecutionHandoffFiles(
   handoff: ExecutionHandoff,
   promptMarkdown: string
 ): Promise<void> {
-  const dir = submissionRealDir(submissionId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, "execution-prompt.md"), promptMarkdown, "utf8");
-  await writeFile(join(dir, "execution-handoff.json"), JSON.stringify(handoff, null, 2), "utf8");
+  // プロンプト本文（Markdown）とメタデータ（JSON）をそれぞれアダプタ経由で書き込む
+  await writeArtifact(submissionId, "execution-prompt.md", promptMarkdown);
+  await writeArtifact(
+    submissionId,
+    "execution-handoff.json",
+    JSON.stringify(handoff, null, 2)
+  );
 }
 
 /** 実行プロンプト（Markdown）をディスクから読み込む。不在時は null。 */
@@ -1127,11 +1107,8 @@ export async function readExecutionPromptMarkdown(
   submissionId: string
 ): Promise<string | null> {
   if (!isSafeSubmissionId(submissionId)) return null;
-  try {
-    return await readFile(join(submissionRealDir(submissionId), "execution-prompt.md"), "utf8");
-  } catch {
-    return null;
-  }
+  // アダプタは不在・失敗時に null を返すので try/catch 不要
+  return readArtifact(submissionId, "execution-prompt.md");
 }
 
 /* ------------------------------------------------------------------ */

@@ -1,7 +1,6 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { tmpdir } from "node:os";
 import { assessConsultIntake } from "@/lib/consult-quality";
 import {
   buildApprovalPackage,
@@ -16,45 +15,32 @@ import {
   sendCustomerFollowupEmail,
   type MailResult,
 } from "@/server/mail";
+import {
+  writeArtifact,
+  getSubmissionDir,
+  getStorageMode,
+  getStorageBase,
+  submissionDisplayDir,
+  artifactDisplayPath,
+} from "@/server/submission-storage";
 
 /**
  * 相談フォームの送信を受け付ける Route Handler。
  *
- * ファイルはディスクの consult-submissions/{id}/ に保存されます。
- * - ローカル開発: プロジェクトルートの data/consult-submissions/
- * - Vercel/serverless: 書き込み可能な /tmp/consult-submissions/
- *   （本番では process.cwd() が読み取り専用で書き込めないため /tmp を使う。
- *     /tmp はインスタンス単位・エフェメラルで恒久保存には向かないが、
- *     受領確認と下流ブリーフ生成には十分。あとで Blob / S3 /
- *     Supabase Storage などへ差し替えやすいよう、保存処理は
- *     このファイル内に閉じています。）
+ * 成果物（submission.json / brief.json）と添付ファイルは consult-submissions/{id}/ 配下に保存:
+ * - 成果物: src/server/submission-storage アダプタ経由。
+ *     ・ローカル開発          : data/consult-submissions/（ファイルシステム）
+ *     ・本番 + リレー設定あり  : 固定ルート(/api/submission-storage)→WSL リレーへ HTTP 恒久保存
+ *     ・本番 + リレー未設定    : /tmp（一時・非恒久）
+ * - 添付ファイル(本体): 常に filesystem（local は data/、本番は /tmp）。
+ *     ※ 本番ではインスタンス再利用で消える可能性があるが、添付の「メタデータ」は
+ *        submission.json / approval-package.json に保持されるのでレビュー時には参照できる。
  */
 
-// ファイルシステム（node:fs）を使うため Node ランタイムを明示
+// ファイルシステム（node:fs）と HTTP リレーを使うため Node ランタイムを明示
 export const runtime = "nodejs";
-// POST はデフォルトで動的だが、毎回ディスクへ書き込むため明示的に動的化
+// POST はデフォルトで動的だが、毎回ストレージへ書き込むため明示的に動的化
 export const dynamic = "force-dynamic";
-
-/**
- * Vercel/serverless 環境で動いているか。
- * Vercel は本番ビルド/実行時に VERCEL=1 を設定する（安全な判定方法）。
- * この環境では process.cwd() が読み取り専用で書き込めないため、
- * 書き込み可能な /tmp 側へ保存先を切り替える。
- */
-const IS_SERVERLESS = process.env.VERCEL === "1";
-
-/** 送信データの保存ルート。
- *  - ローカル開発: プロジェクトルートの data/consult-submissions/
- *  - Vercel/serverless: /tmp/consult-submissions/ （os.tmpdir() は Vercel で /tmp）
- */
-const SUBMISSIONS_DIR = IS_SERVERLESS
-  ? join(tmpdir(), "consult-submissions")
-  : join(process.cwd(), "data", "consult-submissions");
-
-/** レスポンスに載せる表示用ルート（ローカルは相対, Vercelは絶対） */
-const DISPLAY_ROOT = IS_SERVERLESS
-  ? SUBMISSIONS_DIR
-  : "data/consult-submissions";
 
 /** 受け付ける最大ファイル数（安全のための上限） */
 const MAX_FILES = 50;
@@ -924,7 +910,8 @@ export async function POST(request: Request): Promise<Response> {
 
   // --- 保存先ディレクトリを準備 ---
   const submissionId = createSubmissionId();
-  const submissionDir = join(SUBMISSIONS_DIR, submissionId);
+  // 添付ファイル(本体)の保存ディレクトリ（成果物とは別・常に filesystem）
+  const submissionDir = getSubmissionDir(submissionId);
   const filesDir = join(submissionDir, "files");
 
   try {
@@ -1002,10 +989,10 @@ export async function POST(request: Request): Promise<Response> {
   };
 
   try {
-    await writeFile(
-      join(submissionDir, "submission.json"),
-      JSON.stringify(submissionRecord, null, 2),
-      "utf8"
+    await writeArtifact(
+      submissionId,
+      "submission.json",
+      JSON.stringify(submissionRecord, null, 2)
     );
   } catch {
     return Response.json(
@@ -1026,13 +1013,13 @@ export async function POST(request: Request): Promise<Response> {
   let briefPath: string | null = null;
   try {
     const brief = buildBrief(submissionId, parsedPayload, savedFiles);
-    await writeFile(
-      join(submissionDir, "brief.json"),
-      JSON.stringify(brief, null, 2),
-      "utf8"
+    await writeArtifact(
+      submissionId,
+      "brief.json",
+      JSON.stringify(brief, null, 2)
     );
     briefGenerated = true;
-    briefPath = `${DISPLAY_ROOT}/${submissionId}/brief.json`;
+    briefPath = artifactDisplayPath(submissionId, "brief.json");
   } catch {
     // ブリーフ生成/書き込み失敗 — 送信データは保存済みなので続行
     briefGenerated = false;
@@ -1090,8 +1077,8 @@ export async function POST(request: Request): Promise<Response> {
   try {
     internalMail = await sendInternalConsultNotification({
       submissionId,
-      storagePath: `${DISPLAY_ROOT}/${submissionId}`,
-      storageMode: IS_SERVERLESS ? "serverless" : "local",
+      storagePath: submissionDisplayDir(submissionId),
+      storageMode: getStorageMode(),
       briefGenerated,
       // Phase 1 では提案 URL を社内通知に載せない（まだ生成しないため）
       proposalUrl: undefined,
@@ -1144,8 +1131,8 @@ export async function POST(request: Request): Promise<Response> {
     ok: true,
     submissionId,
     fileCount: savedFiles.length,
-    /** 保存先（ローカルは相対パス, Vercelは絶対パス） */
-    path: `${DISPLAY_ROOT}/${submissionId}`,
+    /** 保存先（アダプタが解決。local/relay は論理相対、ephemeral は /tmp の実パス） */
+    path: submissionDisplayDir(submissionId),
     /** 構造化ブリーフ（brief.json）を生成・保存できたか */
     briefGenerated,
     /** ブリーフの保存先（生成失敗時は null） */
@@ -1183,9 +1170,9 @@ export async function POST(request: Request): Promise<Response> {
       /** お客様メールの結果（ready=提案メール / needs_followup=フォローアップメール） */
       customer: customerMail,
     },
-    /** 保存モード（"local" | "serverless"）— 検証・確認用 */
-    storageMode: IS_SERVERLESS ? "serverless" : "local",
-    /** 実際の保存ルート（絶対パス）— 検証・確認用 */
-    storageBase: SUBMISSIONS_DIR,
+    /** 保存モード（"local" | "relay" | "ephemeral"）— 検証・確認用 */
+    storageMode: getStorageMode(),
+    /** 保存先の物理ベース（検証・確認用。local/ephemeral は実パス、relay はリレー URL） */
+    storageBase: getStorageBase(),
   });
 }
