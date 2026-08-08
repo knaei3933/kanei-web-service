@@ -83,12 +83,13 @@ async function findFileMeta(
  * 多バイト文字（日本語含む）に対応するため filename*（RFC 5987）を使い、
  * 古いクライアント向けに ASCII フォールバックの filename も併記する。
  */
-function buildContentDisposition(downloadName: string): string {
+function buildContentDisposition(downloadName: string, inline: boolean): string {
   const encoded = encodeURIComponent(downloadName);
   const ascii = downloadName
     .replace(/[^\x20-\x7e]/g, "_")
     .replace(/"/g, "'");
-  return `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`;
+  const mode = inline ? "inline" : "attachment";
+  return `${mode}; filename="${ascii}"; filename*=UTF-8''${encoded}`;
 }
 
 type AttachmentDownloadContext = {
@@ -96,10 +97,11 @@ type AttachmentDownloadContext = {
 };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   ctx: AttachmentDownloadContext
 ): Promise<Response> {
   const { submissionId, savedName } = await ctx.params;
+  const inline = new URL(request.url).searchParams.get("inline") === "1";
 
   // 公開エッジで検証（トラバーサル対策）
   if (!isSafeSubmissionId(submissionId)) {
@@ -133,7 +135,7 @@ export async function GET(
     status: 200,
     headers: {
       "content-type": contentType,
-      "content-disposition": buildContentDisposition(downloadName),
+      "content-disposition": buildContentDisposition(downloadName, inline),
       // 内部専用なので検索エンジンに拾わせない
       "x-robots-tag": "noindex, noarchive",
       "cache-control": "no-store",

@@ -55,6 +55,7 @@ info@kanei-trade.co.jp からお客様 / 社内へ届く
 スクリプト:
 - `/root/.hermes/scripts/kanei_mail_relay.py`
 - `/root/.hermes/scripts/manage_kanei_mail_relay.sh`
+- `/root/.hermes/scripts/manage_kanei_relay_stack.sh`
 - `/root/.hermes/scripts/start_kanei_mail_relay_tunnel.sh`
 - `/root/.hermes/scripts/sync_kanei_mail_relay_upstream.py`
 
@@ -81,6 +82,18 @@ export MAIL_REPLY_TO='info@kanei-trade.co.jp'
 /root/.hermes/scripts/manage_kanei_mail_relay.sh health
 /root/.hermes/scripts/manage_kanei_mail_relay.sh restart
 /root/.hermes/scripts/manage_kanei_mail_relay.sh stop
+```
+
+relay + tunnel + sync をまとめて扱う場合:
+
+```bash
+/root/.hermes/scripts/manage_kanei_relay_stack.sh start
+/root/.hermes/scripts/manage_kanei_relay_stack.sh status
+/root/.hermes/scripts/manage_kanei_relay_stack.sh health
+/root/.hermes/scripts/manage_kanei_relay_stack.sh sync
+/root/.hermes/scripts/manage_kanei_relay_stack.sh up
+/root/.hermes/scripts/manage_kanei_relay_stack.sh restart
+/root/.hermes/scripts/manage_kanei_relay_stack.sh stop
 ```
 
 補足:

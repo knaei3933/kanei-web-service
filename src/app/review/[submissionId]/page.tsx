@@ -93,6 +93,93 @@ function BulletList({ items }: { items: string[] }) {
   );
 }
 
+function attachmentPreviewMode(kind: string): "image" | "pdf" | "text" | "none" {
+  if (kind === "画像") return "image";
+  if (kind === "PDF") return "pdf";
+  if (kind === "テキスト") return "text";
+  return "none";
+}
+
+function attachmentPreviewHref(submissionId: string, savedName: string): string {
+  return `/api/consult/${submissionId}/attachments/${encodeURIComponent(savedName)}?inline=1`;
+}
+
+function AttachmentPreviewCard({
+  submissionId,
+  file,
+}: {
+  submissionId: string;
+  file: {
+    originalName: string;
+    savedName: string;
+    sizeBytes: number;
+    kind: string;
+  };
+}) {
+  const previewMode = attachmentPreviewMode(file.kind);
+  const previewHref = attachmentPreviewHref(submissionId, file.savedName);
+
+  return (
+    <li className="rounded-2xl border border-border bg-accent/70 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="font-medium text-foreground">{file.originalName}</div>
+          <div className="text-xs text-muted-foreground">
+            {file.kind} / {file.sizeBytes.toLocaleString()} bytes
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={previewHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-foreground hover:bg-slate-50"
+          >
+            別タブで表示
+          </a>
+          <a
+            href={`/api/consult/${submissionId}/attachments/${encodeURIComponent(file.savedName)}`}
+            download
+            className="inline-block rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:opacity-90"
+          >
+            ダウンロード
+          </a>
+        </div>
+      </div>
+
+      {previewMode === "image" && (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-white p-2">
+          <img
+            src={previewHref}
+            alt={file.originalName}
+            loading="lazy"
+            decoding="async"
+            className="max-h-[360px] w-full rounded-xl object-contain"
+          />
+        </div>
+      )}
+
+      {previewMode === "pdf" && (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-white">
+          <iframe src={previewHref} title={file.originalName} className="h-[420px] w-full" />
+        </div>
+      )}
+
+      {previewMode === "text" && (
+        <div className="mt-4 rounded-2xl border border-border bg-white p-3">
+          <iframe src={previewHref} title={file.originalName} className="h-[220px] w-full rounded-xl" />
+        </div>
+      )}
+
+      {previewMode === "none" && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          この形式は埋め込みプレビュー非対応です。別タブ表示またはダウンロードで確認してください。
+        </p>
+      )}
+    </li>
+  );
+}
+
 /**
  * 代表者の判定（第1ゲート / 第2ゲート共通）を1行で表示する。
  * 未判定のときは「未判定」を出す。
@@ -455,21 +542,13 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                 {pkg.materialsAnalysis.availableAttachments.length === 0 ? (
                   <p className="text-sm text-muted-foreground">添付なし</p>
                 ) : (
-                  <ul className="space-y-2 text-sm text-foreground">
+                  <ul className="space-y-3 text-sm text-foreground">
                     {pkg.materialsAnalysis.availableAttachments.map((file) => (
-                      <li key={`${file.savedName}-${file.sizeBytes}`} className="rounded-xl bg-accent p-3">
-                        <div className="font-medium">{file.originalName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {file.kind} / {file.sizeBytes.toLocaleString()} bytes
-                        </div>
-                        <a
-                          href={`/api/consult/${pkg.submissionId}/attachments/${encodeURIComponent(file.savedName)}`}
-                          download
-                          className="mt-1 inline-block text-xs font-medium text-primary hover:underline"
-                        >
-                          ダウンロード（内部専用）
-                        </a>
-                      </li>
+                      <AttachmentPreviewCard
+                        key={`${file.savedName}-${file.sizeBytes}`}
+                        submissionId={pkg.submissionId}
+                        file={file}
+                      />
                     ))}
                   </ul>
                 )}
