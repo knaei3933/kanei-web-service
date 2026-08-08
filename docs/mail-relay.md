@@ -143,6 +143,28 @@ python3 /root/.hermes/scripts/sync_kanei_mail_relay_upstream.py --skip-redeploy
 
 ## 日次/再起動時の運用手順
 
+### 推奨: スタック全体で一括管理
+
+```bash
+# 一括起動（relay + tunnel + upstream sync + health check）
+/root/.hermes/scripts/manage_kanei_relay_stack.sh up
+
+# 一括再起動
+/root/.hermes/scripts/manage_kanei_relay_stack.sh restart
+
+# 状況確認
+/root/.hermes/scripts/manage_kanei_relay_stack.sh status
+/root/.hermes/scripts/manage_kanei_relay_stack.sh health
+
+# upstream sync のみ再実行（tunnel URL 変更時など）
+/root/.hermes/scripts/manage_kanei_relay_stack.sh sync
+
+# 個別コンポーネント操作（relay のみ）
+/root/.hermes/scripts/manage_kanei_mail_relay.sh start|stop|restart|status|health
+```
+
+### コンポーネント別の手順（スタックスクリプトが使えない場合）
+
 1. relay server を起動 / 再起動
    - `/root/.hermes/scripts/manage_kanei_mail_relay.sh start`
    - 既に動いていれば `/root/.hermes/scripts/manage_kanei_mail_relay.sh restart`
@@ -154,6 +176,7 @@ python3 /root/.hermes/scripts/sync_kanei_mail_relay_upstream.py --skip-redeploy
    - `internal.status = sent`
    - `customer.status = sent`
    - 受信箱で実メール確認
+
 
 ## 固定公開ルートの単体確認
 
