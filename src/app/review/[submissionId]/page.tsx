@@ -93,6 +93,13 @@ function BulletList({ items }: { items: string[] }) {
   );
 }
 
+type AttachmentFile = {
+  originalName: string;
+  savedName: string;
+  sizeBytes: number;
+  kind: string;
+};
+
 function attachmentPreviewMode(kind: string): "image" | "pdf" | "text" | "none" {
   if (kind === "画像") return "image";
   if (kind === "PDF") return "pdf";
@@ -100,8 +107,120 @@ function attachmentPreviewMode(kind: string): "image" | "pdf" | "text" | "none" 
   return "none";
 }
 
+/**
+ * 表示優先度（画像 → PDF → テキスト → その他）。
+ * 同一優先度の中では ファイル名 で安定ソートする。
+ */
+function attachmentSortPriority(kind: string): number {
+  switch (attachmentPreviewMode(kind)) {
+    case "image":
+      return 0;
+    case "pdf":
+      return 1;
+    case "text":
+      return 2;
+    default:
+      return 3;
+  }
+}
+
+/** バイト数を B / KB / MB / GB / TB の読みやすい表記にする */
+function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const exponent = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+  );
+  const value = bytes / Math.pow(1024, exponent);
+  const label = units[exponent];
+  if (exponent === 0) return `${Math.round(value)} ${label}`;
+  return `${value.toFixed(value >= 100 ? 0 : 1)} ${label}`;
+}
+
+/** 種別ごとの絵文字・ラベル・バッジ配色 */
+function attachmentKindMeta(kind: string): {
+  emoji: string;
+  label: string;
+  badgeClass: string;
+} {
+  switch (kind) {
+    case "画像":
+      return {
+        emoji: "🖼️",
+        label: "画像",
+        badgeClass: "bg-blue-100 text-blue-700 border-blue-200",
+      };
+    case "PDF":
+      return {
+        emoji: "📄",
+        label: "PDF",
+        badgeClass: "bg-rose-100 text-rose-700 border-rose-200",
+      };
+    case "テキスト":
+      return {
+        emoji: "📝",
+        label: "テキスト",
+        badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+      };
+    case "動画":
+      return {
+        emoji: "🎬",
+        label: "動画",
+        badgeClass: "bg-purple-100 text-purple-700 border-purple-200",
+      };
+    case "音声":
+      return {
+        emoji: "🎵",
+        label: "音声",
+        badgeClass: "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200",
+      };
+    case "Word":
+      return {
+        emoji: "📘",
+        label: "Word",
+        badgeClass: "bg-sky-100 text-sky-700 border-sky-200",
+      };
+    case "表計算":
+      return {
+        emoji: "📊",
+        label: "表計算",
+        badgeClass: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      };
+    case "プレゼン":
+      return {
+        emoji: "📽️",
+        label: "プレゼン",
+        badgeClass: "bg-orange-100 text-orange-700 border-orange-200",
+      };
+    case "圧縮ファイル":
+      return {
+        emoji: "🗜️",
+        label: "圧縮",
+        badgeClass: "bg-amber-100 text-amber-700 border-amber-200",
+      };
+    case "ベクターロゴ":
+    case "PSD":
+      return {
+        emoji: "🎨",
+        label: kind,
+        badgeClass: "bg-pink-100 text-pink-700 border-pink-200",
+      };
+    default:
+      return {
+        emoji: "📎",
+        label: kind || "ファイル",
+        badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+      };
+  }
+}
+
 function attachmentPreviewHref(submissionId: string, savedName: string): string {
   return `/api/consult/${submissionId}/attachments/${encodeURIComponent(savedName)}?inline=1`;
+}
+
+function attachmentDownloadHref(submissionId: string, savedName: string): string {
+  return `/api/consult/${submissionId}/attachments/${encodeURIComponent(savedName)}`;
 }
 
 function AttachmentPreviewCard({
@@ -109,73 +228,120 @@ function AttachmentPreviewCard({
   file,
 }: {
   submissionId: string;
-  file: {
-    originalName: string;
-    savedName: string;
-    sizeBytes: number;
-    kind: string;
-  };
+  file: AttachmentFile;
 }) {
   const previewMode = attachmentPreviewMode(file.kind);
   const previewHref = attachmentPreviewHref(submissionId, file.savedName);
+  const downloadHref = attachmentDownloadHref(submissionId, file.savedName);
+  const meta = attachmentKindMeta(file.kind);
 
   return (
-    <li className="rounded-2xl border border-border bg-accent/70 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="font-medium text-foreground">{file.originalName}</div>
-          <div className="text-xs text-muted-foreground">
-            {file.kind} / {file.sizeBytes.toLocaleString()} bytes
+    <li className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm transition hover:shadow-md">
+      {/* ヘッダー：種別アイコン + ファイル名 + バッジ + アクション */}
+      <div className="flex flex-col gap-3 border-b border-border/70 bg-accent/50 p-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-white text-xl"
+            aria-hidden="true"
+          >
+            {meta.emoji}
+          </span>
+          <div className="min-w-0">
+            <p className="break-all font-medium leading-snug text-foreground">
+              {file.originalName}
+            </p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${meta.badgeClass}`}
+              >
+                {meta.label}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {formatFileSize(file.sizeBytes)}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <a
             href={previewHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-block rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-foreground hover:bg-slate-50"
+            className="inline-block rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-foreground transition hover:bg-slate-50"
           >
             別タブで表示
           </a>
           <a
-            href={`/api/consult/${submissionId}/attachments/${encodeURIComponent(file.savedName)}`}
+            href={downloadHref}
             download
-            className="inline-block rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:opacity-90"
+            className="inline-block rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition hover:opacity-90"
           >
             ダウンロード
           </a>
         </div>
       </div>
 
-      {previewMode === "image" && (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-white p-2">
-          <img
-            src={previewHref}
-            alt={file.originalName}
-            loading="lazy"
-            decoding="async"
-            className="max-h-[360px] w-full rounded-xl object-contain"
-          />
-        </div>
-      )}
+      {/* プレビュー本体 */}
+      <div className="p-4">
+        {previewMode === "image" && (
+          <a
+            href={previewHref}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${file.originalName} を別タブで開く`}
+            className="group block focus:outline-none"
+          >
+            <div className="flex items-center justify-center overflow-hidden rounded-xl border border-border bg-slate-50 p-3">
+              <img
+                src={previewHref}
+                alt={file.originalName}
+                loading="lazy"
+                decoding="async"
+                className="max-h-[440px] w-full rounded-lg object-contain transition group-hover:opacity-90"
+              />
+            </div>
+          </a>
+        )}
 
-      {previewMode === "pdf" && (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-white">
-          <iframe src={previewHref} title={file.originalName} className="h-[420px] w-full" />
-        </div>
-      )}
+        {previewMode === "pdf" && (
+          <div className="overflow-hidden rounded-xl border border-border">
+            <div className="flex items-center gap-2 border-b border-border bg-accent/60 px-3 py-2 text-xs font-semibold text-muted-foreground">
+              <span aria-hidden="true">📄</span>
+              PDF プレビュー
+            </div>
+            <iframe
+              src={previewHref}
+              title={file.originalName}
+              className="h-[460px] w-full bg-white"
+            />
+          </div>
+        )}
 
-      {previewMode === "text" && (
-        <div className="mt-4 rounded-2xl border border-border bg-white p-3">
-          <iframe src={previewHref} title={file.originalName} className="h-[220px] w-full rounded-xl" />
-        </div>
-      )}
+        {previewMode === "text" && (
+          <div className="overflow-hidden rounded-xl border border-border">
+            <div className="flex items-center gap-2 border-b border-border bg-accent/60 px-3 py-2 text-xs font-semibold text-muted-foreground">
+              <span aria-hidden="true">📝</span>
+              テキスト プレビュー
+            </div>
+            <iframe
+              src={previewHref}
+              title={file.originalName}
+              className="h-[240px] w-full bg-white"
+            />
+          </div>
+        )}
 
-      {previewMode === "none" && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          この形式は埋め込みプレビュー非対応です。別タブ表示またはダウンロードで確認してください。
-        </p>
-      )}
+        {previewMode === "none" && (
+          <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-accent/40 px-4 py-3">
+            <span className="text-lg" aria-hidden="true">
+              🛈
+            </span>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              この形式は埋め込みプレビュー非対応です。別タブ表示またはダウンロードで確認してください。
+            </p>
+          </div>
+        )}
+      </div>
     </li>
   );
 }
@@ -432,6 +598,15 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   const isApproved = pkg.status === "approved_for_execution";
   const isRejected = pkg.status === "rejected";
 
+  // 添付ファイルを表示優先度（画像 → PDF → テキスト → その他）で並び替える
+  const sortedAttachments: AttachmentFile[] = [
+    ...pkg.materialsAnalysis.availableAttachments,
+  ].sort((a, b) => {
+    const priorityDiff = attachmentSortPriority(a.kind) - attachmentSortPriority(b.kind);
+    if (priorityDiff !== 0) return priorityDiff;
+    return a.originalName.localeCompare(b.originalName);
+  });
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12">
@@ -539,11 +714,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                 <p className="mb-2 mt-5 text-sm font-bold text-foreground">不足素材</p>
                 <BulletList items={pkg.materialsAnalysis.missingAssets} />
                 <p className="mb-2 mt-5 text-sm font-bold text-foreground">添付ファイル</p>
-                {pkg.materialsAnalysis.availableAttachments.length === 0 ? (
+                {sortedAttachments.length === 0 ? (
                   <p className="text-sm text-muted-foreground">添付なし</p>
                 ) : (
-                  <ul className="space-y-3 text-sm text-foreground">
-                    {pkg.materialsAnalysis.availableAttachments.map((file) => (
+                  <ul className="space-y-4 text-foreground">
+                    {sortedAttachments.map((file) => (
                       <AttachmentPreviewCard
                         key={`${file.savedName}-${file.sizeBytes}`}
                         submissionId={pkg.submissionId}
