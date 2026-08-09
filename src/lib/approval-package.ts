@@ -38,6 +38,12 @@ export const APPROVAL_SCHEMA_VERSION = "1.1.0";
  *   - awaiting_plan_approval:          代表がインテイクを承認し、計画アーティファクト生成済み・第2ゲート待ち
  *   - approved_for_execution:          計画を承認し、実行ハンドオフ生成済み（実行準備完了）
  *   - approved_for_planning:           Phase 1 の旧状態（後方互換用・新規には出力しない）
+ *   - demo_generating:                 Claude Code がデモを生成中
+ *   - demo_deployed:                   デモがデプロイ済み・顧客確認待ち
+ *   - demo_revision_ready:            顧客フィードバックを受信、Claude Code で修正の準備完了
+ *   - demo_revised:                   修正版デモ再デプロイ済み
+ *   - customer_approved:              顧客がデモを承認
+ *   - production_ready:               本制作開始可能
  *   - rejected:                        却下
  */
 export type ApprovalStatus =
@@ -47,6 +53,12 @@ export type ApprovalStatus =
   | "awaiting_plan_approval"
   | "approved_for_execution"
   | "approved_for_planning"
+  | "demo_generating"
+  | "demo_deployed"
+  | "demo_revision_ready"
+  | "demo_revised"
+  | "customer_approved"
+  | "production_ready"
   | "rejected";
 
 /** 代表者の判定。未判定時は null。 */
@@ -57,7 +69,12 @@ export type RepresentativeDecision = "approve" | "reject" | "hold" | null;
  * 内部ステータス（ApprovalStatus）とは別に、顧客に見せる意味だけ持つ。
  * レビューURL やプロンプトチェーン等の内部情報はこれに含めない。
  */
-export type CustomerFacingStatus = "followup_requested" | "under_internal_review";
+export type CustomerFacingStatus =
+  | "followup_requested"
+  | "under_internal_review"
+  | "demo_ready_for_review"
+  | "demo_revision_submitted"
+  | "demo_approved";
 
 /** 承認パッケージに含める品質評価（consult-quality の結果と同じ形） */
 export type ApprovalIntakeQuality = ConsultIntakeQuality;
@@ -689,6 +706,12 @@ function normalizeApprovalPackage(
     "awaiting_plan_approval",
     "approved_for_execution",
     "approved_for_planning",
+    "demo_generating",
+    "demo_deployed",
+    "demo_revision_ready",
+    "demo_revised",
+    "customer_approved",
+    "production_ready",
     "rejected",
   ];
   const resolvedStatus: ApprovalStatus = validStatuses.includes(status)
@@ -696,12 +719,18 @@ function normalizeApprovalPackage(
     : "received";
 
   const cfs = asString(o.customerFacingStatus) as CustomerFacingStatus;
-  const resolvedCfs: CustomerFacingStatus =
-    cfs === "under_internal_review" || cfs === "followup_requested"
-      ? cfs
-      : resolvedStatus === "needs_followup"
-        ? "followup_requested"
-        : "under_internal_review";
+  const validCustomerStatuses: CustomerFacingStatus[] = [
+    "followup_requested",
+    "under_internal_review",
+    "demo_ready_for_review",
+    "demo_revision_submitted",
+    "demo_approved",
+  ];
+  const resolvedCfs: CustomerFacingStatus = validCustomerStatuses.includes(cfs)
+    ? cfs
+    : resolvedStatus === "needs_followup"
+      ? "followup_requested"
+      : "under_internal_review";
 
   const iqObj = asObject(o.intakeQuality);
   const intakeQuality: ApprovalIntakeQuality = {
@@ -1220,6 +1249,103 @@ export async function rejectPlan(
   pkg.planningArtifact = null;
   pkg.executionHandoff = null;
   pkg.status = "awaiting_representative_approval";
+  await writeApprovalPackage(pkg);
+  return pkg;
+}
+
+/* ------------------------------------------------------------------ */
+/*  デモ生成・レビューループの状態遷移                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 内部ステータスから顧客向けステータスへマッピングする。
+ * demo_deployed / demo_revised → demo_ready_for_review
+ * demo_revision_ready → demo_revision_submitted
+ * customer_approved / production_ready → demo_approved
+ * その他 → under_internal_review（デフォルト）
+ */
+export function toCustomerFacingStatus(
+  internalStatus: ApprovalStatus
+): CustomerFacingStatus {
+  switch (internalStatus) {
+    case "demo_deployed":
+    case "demo_revised":
+      return "demo_ready_for_review";
+    case "demo_revision_ready":
+      return "demo_revision_submitted";
+    case "customer_approved":
+    case "production_ready":
+      return "demo_approved";
+    default:
+      return "under_internal_review";
+  }
+}
+
+/**
+ * 有効なステータス遷移の一覧。
+ * キー: 現在のステータス、値: 遷移可能な次のステータスの配列
+ */
+export const VALID_TRANSITIONS: Map<ApprovalStatus, ApprovalStatus[]> =
+  new Map([
+    [
+      "approved_for_execution",
+      ["demo_generating"],
+    ],
+    [
+      "demo_generating",
+      ["demo_deployed", "demo_revised"],
+    ],
+    [
+      "demo_deployed",
+      ["demo_revision_ready", "customer_approved"],
+    ],
+    [
+      "demo_revision_ready",
+      ["demo_generating"],
+    ],
+    [
+      "demo_revised",
+      ["demo_revision_ready", "customer_approved"],
+    ],
+    [
+      "customer_approved",
+      ["production_ready"],
+    ],
+  ]);
+
+/**
+ * ステータス遷移が有効かどうかを検証する。
+ * @param current 現在のステータス
+ * @param next 遷移後のステータス
+ * @returns 遷移が有効な場合は true、無効な場合は false
+ */
+export function isValidTransition(
+  current: ApprovalStatus,
+  next: ApprovalStatus
+): boolean {
+  const allowed = VALID_TRANSITIONS.get(current);
+  return allowed !== undefined && allowed.includes(next);
+}
+
+/**
+ * ステータス遷移を実行する。遷移が無効な場合は例外を投げる。
+ * また、customerFacingStatus も自動的に更新する。
+ */
+export async function transitionStatus(
+  submissionId: string,
+  newStatus: ApprovalStatus
+): Promise<ApprovalPackage | null> {
+  const pkg = await readApprovalPackage(submissionId);
+  if (!pkg) return null;
+
+  if (!isValidTransition(pkg.status, newStatus)) {
+    throw new Error(
+      `無効なステータス遷移: ${pkg.status} → ${newStatus}`
+    );
+  }
+
+  pkg.status = newStatus;
+  pkg.customerFacingStatus = toCustomerFacingStatus(newStatus);
   await writeApprovalPackage(pkg);
   return pkg;
 }
