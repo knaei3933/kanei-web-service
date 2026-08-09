@@ -42,6 +42,7 @@ export {
   isArtifactFileName,
   isSafeSubmissionId,
   isSafeAttachmentName,
+  isSafeSnapshotKey,
 } from "./types";
 export type {
   ArtifactFileName,
@@ -99,6 +100,41 @@ export async function artifactExists(
   fileName: ArtifactFileName
 ): Promise<boolean> {
   return resolveAdapter().artifactExists(submissionId, fileName);
+}
+
+/* ------------------------------------------------------------------ */
+/*  公開API（スナップショット・ラウンド別保存）                          */
+/* ------------------------------------------------------------------ */
+/*  リビジョンラウンドのスナップショット（componentSource 等）の読み書き。  */
+/*  テキスト成果物とは異なり snapshots/<key> キーで扱う。                  */
+/*  - local     : data/consult-submissions/<id>/snapshots/<key>.json       */
+/*  - relay     : HTTP リレー経由で snapshots/<key> へ恒久保存               */
+/*  - ephemeral : /tmp/consult-submissions/<id>/snapshots/<key>.json（一時） */
+/* ------------------------------------------------------------------ */
+
+/** スナップショット（JSON テキスト）を書き込む（上書き）。リレー未設定等で書けないときは例外 */
+export async function writeSnapshot(
+  submissionId: string,
+  key: string,
+  content: string
+): Promise<void> {
+  return resolveAdapter().writeSnapshot(submissionId, key, content);
+}
+
+/** スナップショットを読み込む。不在・失敗時は null */
+export async function readSnapshot(
+  submissionId: string,
+  key: string
+): Promise<string | null> {
+  return resolveAdapter().readSnapshot(submissionId, key);
+}
+
+/** スナップショットが存在するか */
+export async function snapshotExists(
+  submissionId: string,
+  key: string
+): Promise<boolean> {
+  return resolveAdapter().snapshotExists(submissionId, key);
 }
 
 /* ------------------------------------------------------------------ */

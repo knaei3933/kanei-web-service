@@ -43,6 +43,7 @@ export const ARTIFACT_FILE_NAMES = [
   "execution-prompt.md",
   "demo-feedback.json",
   "revision-handoff.json",
+  "revision-lineage.json",
   "delivery-info.json",
   "interview-request.json",
   "interview-answer.json",
@@ -90,12 +91,35 @@ export function isSafeAttachmentName(name: string): boolean {
 }
 
 /**
+ * スナップショットキー（snapshots/<key>）として安全か。
+ * リビジョンラウンドのスナップショット保存用。フォーマット: round-N または round-N-VARIANT
+ *
+ * 許可: ^round-[0-9]+(-[A-Za-z0-9_-]+)?$
+ *   例: round-0, round-1, round-3-A, round-5-B2
+ * 拒否: 空文字・パス区切り・制御文字・カレント/親ディレクトリ参照・先頭ドット
+ *
+ * ※ snapshots/ 名前空間はテキスト成果物・添付ファイルと独立。
+ */
+export function isSafeSnapshotKey(key: string): boolean {
+  if (typeof key !== "string") return false;
+  if (key.length === 0 || key.length > 100) return false;
+  // パス区切り・制御文字(0x00-0x1F, 0x7F) を拒否
+  if (/[\/\\\x00-\x1f\x7f]/.test(key)) return false;
+  // カレント/親ディレクトリ参照そのもの・先頭ドットを拒否
+  if (key === "." || key === ".." || key.startsWith(".")) return false;
+  // フォーマット: ^round-[0-9]+(-[A-Za-z0-9_-]+)?$
+  return /^round-[0-9]+(-[A-Za-z0-9_-]+)?$/.test(key);
+}
+
+/**
  * 成果物ストレージアダプタが満たすべきインターフェース。
  *
- * 扱う対象は2種類:
+ * 扱う対象は3種類:
  *  - テキスト成果物（writeArtifact / readArtifact）: JSON・Markdown など UTF-8 文字列。
  *  - バイナリ添付（writeAttachment / readAttachment）: 顧客アップロードの画像・PDF 等。
  *    キーは files/<savedName>。relay では上流へ application/octet-stream で恒久保存する。
+ *  - スナップショット（writeSnapshot / readSnapshot）: リビジョンラウンドの内容バンドル。
+ *    キーは snapshots/<key>。<key> は isSafeSnapshotKey で検証済みであること。
  */
 export interface SubmissionStorageAdapter {
   /** プロバイダ名（filesystem / relay） */
@@ -121,6 +145,31 @@ export interface SubmissionStorageAdapter {
   artifactExists(
     submissionId: string,
     fileName: ArtifactFileName
+  ): Promise<boolean>;
+  /**
+   * スナップショットを書き込む（上書き）。snapshots/<key> に置く。
+   * ディレクトリは自動で作る。relay 未設定等で書けない場合は例外を投げる。
+   *
+   * key は isSafeSnapshotKey で検証済みであること（フォーマット: round-N または round-N-VARIANT）。
+   * relay プロバイダは上流へ JSON テキストとして転送する。
+   */
+  writeSnapshot(
+    submissionId: string,
+    key: string,
+    content: string
+  ): Promise<void>;
+  /**
+   * スナップショットを読み込む。不在時・読み取り失敗時は null を返す
+   * （テキスト成果物と同じ挙動に揃える）。
+   */
+  readSnapshot(
+    submissionId: string,
+    key: string
+  ): Promise<string | null>;
+  /** スナップショットが存在するか。 */
+  snapshotExists(
+    submissionId: string,
+    key: string
   ): Promise<boolean>;
   /**
    * バイナリ添付を書き込む（上書き）。files/<savedName> に置く。

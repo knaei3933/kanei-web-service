@@ -10,6 +10,8 @@ import {
   sendDemoReadyEmail,
   sendRevisionCompleteEmail,
 } from "@/lib/demo-feedback-loop";
+import { appendRound, setCurrent } from "@/lib/revision-lineage";
+import { captureSnapshot } from "@/lib/revision-snapshot";
 import type { MailResult } from "@/server/mail/types";
 
 /* ------------------------------------------------------------------ */
@@ -109,11 +111,12 @@ export async function POST(
   const authError = authorizeCallback(request);
   if (authError) return authError;
 
-  // ボディ解析（全項目任意）
+  // ボディ解析（全項目任意・後方互換）
   let body: {
     result?: unknown;
     kind?: unknown;
     round?: unknown;
+    artifact?: unknown;
   } = {};
   try {
     body = (await request.json()) as typeof body;
@@ -135,6 +138,19 @@ export async function POST(
         : hasRevisionHandoff
           ? "revision"
           : "initial";
+
+  // artifact を安全に取り出す（オプション・後方互換）
+  const artifactObj = asObject(body.artifact);
+  const artifact = {
+    componentPath: asString(artifactObj.componentPath) || null,
+    commitSha: asString(artifactObj.commitSha) || null,
+    shortSha: asString(artifactObj.shortSha) || null,
+    commitMessage: asString(artifactObj.commitMessage) || null,
+    committedAt: asString(artifactObj.committedAt) || null,
+    componentSource: typeof artifactObj.componentSource === "string"
+      ? artifactObj.componentSource
+      : null,
+  };
 
   // 失敗報告: ステータス維持のまま 200 を返す（外部プロセスの再試行ループを止める）
   // TODO: demo_generation_failed 相当の復帰ステータスを導入し、admin が再生成できるようにする
@@ -172,6 +188,170 @@ export async function POST(
       { ok: false, error: "submission が見つかりません" },
       { status: 404 }
     );
+  }
+
+  // ------------------------------------------------------------------
+  //  Phase R2: lineage + snapshots 生成（artifact がある場合のみ）
+  // ------------------------------------------------------------------
+  //  artifact がある場合、lineage と snapshots にラウンド確定として記録する
+  //  artifact が無くても後方互換で従来通り動作する
+  // ------------------------------------------------------------------
+
+  if (artifact.componentSource && artifact.commitSha && artifact.shortSha) {
+    try {
+      // round を解決（body 指定 > revision-handoff.json > 0）
+      let round = 0;
+      if (kind === "revision") {
+        if (typeof body.round === "number" && body.round > 0) {
+          round = body.round;
+        } else {
+          const handoffRaw = await readArtifact(
+            submissionId,
+            "revision-handoff.json"
+          );
+          if (handoffRaw) {
+            try {
+              const handoff = JSON.parse(handoffRaw) as { round?: unknown };
+              if (typeof handoff.round === "number" && handoff.round > 0) {
+                round = handoff.round;
+              }
+            } catch {
+              // パース失敗は無視
+            }
+          }
+          round = round > 0 ? round : 1;
+        }
+      }
+
+      // revision-handoff.json と demo-feedback.json を読み取ってコピーを作成
+      const revisionHandoffRaw = await readArtifact(
+        submissionId,
+        "revision-handoff.json"
+      );
+      const revisionHandoffCopy = revisionHandoffRaw
+        ? JSON.parse(revisionHandoffRaw)
+        : null;
+
+      const demoFeedbackRaw = await readArtifact(
+        submissionId,
+        "demo-feedback.json"
+      );
+      let feedbackCopy = null;
+      if (demoFeedbackRaw && kind === "revision") {
+        try {
+          const demoFeedback = JSON.parse(demoFeedbackRaw) as {
+            history?: Array<{ round: number; feedback: unknown }>;
+          };
+          // 現在のラウンドに対応する feedback を取得
+          if (Array.isArray(demoFeedback.history)) {
+            const currentFeedback = demoFeedback.history.find(
+              (h) => h.round === round
+            );
+            if (currentFeedback) {
+              feedbackCopy = currentFeedback.feedback;
+            }
+          }
+        } catch {
+          // パース失敗は無視
+        }
+      }
+
+      // snapshotKey を生成
+      const snapshotKey = `round-${round}`;
+
+      // lineage にラウンドを追加
+      await appendRound(submissionId, {
+        round,
+        kind,
+        commitSha: artifact.commitSha,
+        shortSha: artifact.shortSha,
+        commitMessage: artifact.commitMessage,
+        committedAt: artifact.committedAt,
+        hasComponentSource: true,
+        status: pkg.status,
+        customerFacingStatus: pkg.customerFacingStatus,
+        feedback: feedbackCopy as {
+          rating: number;
+          comment: string;
+          submittedAt: string;
+        } | null,
+        revisionPrompt: revisionHandoffCopy &&
+          typeof revisionHandoffCopy === "object" &&
+          revisionHandoffCopy !== null &&
+          "revisionPrompt" in revisionHandoffCopy
+          ? (revisionHandoffCopy.revisionPrompt as string)
+          : null,
+        targetComponent: kind === "initial"
+          ? typeof artifactObj.targetComponent === "string"
+            ? artifactObj.targetComponent
+            : null
+          : undefined,
+        componentPath: kind === "initial" ? artifact.componentPath : undefined,
+      });
+
+      // snapshot を保存
+      await captureSnapshot(submissionId, snapshotKey, {
+        round,
+        kind,
+        componentPath: artifact.componentPath,
+        componentSource: artifact.componentSource,
+        commitSha: artifact.commitSha,
+        revisionHandoffCopy,
+        feedbackCopy,
+        approvalPackageStatusCopy: pkg.status,
+      });
+
+      console.log(
+        `[demo deployed] lineage + snapshots を生成: ${submissionId} round=${round} kind=${kind}`
+      );
+    } catch (err) {
+      // lineage/snapshots 生成に失敗してもメインフローは止めない（エラーをログ）
+      console.error(
+        `[demo deployed] lineage/snapshots 生成に失敗: ${submissionId}`,
+        err
+      );
+    }
+  } else {
+    // artifact がない場合、lineage にプレースホルダを残す（hasComponentSource:false）
+    try {
+      let round = 0;
+      if (kind === "revision") {
+        if (typeof body.round === "number" && body.round > 0) {
+          round = body.round;
+        } else {
+          const handoffRaw = await readArtifact(
+            submissionId,
+            "revision-handoff.json"
+          );
+          if (handoffRaw) {
+            try {
+              const handoff = JSON.parse(handoffRaw) as { round?: unknown };
+              if (typeof handoff.round === "number" && handoff.round > 0) {
+                round = handoff.round;
+              }
+            } catch {
+              // パース失敗は無視
+            }
+          }
+          round = round > 0 ? round : 1;
+        }
+      }
+
+      await appendRound(submissionId, {
+        round,
+        kind,
+        hasComponentSource: false,
+        status: pkg.status,
+        customerFacingStatus: pkg.customerFacingStatus,
+        notes: "artifact 未受信・componentSource なし",
+      });
+    } catch (err) {
+      // プレースホルダ生成失敗もメインフローは止めない
+      console.error(
+        `[demo deployed] lineage プレースホルダ生成に失敗: ${submissionId}`,
+        err
+      );
+    }
   }
 
   // 顧客情報を取得して通知メールを送る

@@ -29,8 +29,8 @@
 /*      （filesystem と揃えて呼び出し側が統一的に扱えるようにする）。   */
 /* ------------------------------------------------------------------ */
 
-import type { SubmissionStorageAdapter, ArtifactFileName } from "../types";
-import { isSafeSubmissionId, isSafeAttachmentName } from "../types";
+import type { SubmissionStorageAdapter } from "../types";
+import { isSafeSubmissionId, isSafeAttachmentName, isSafeSnapshotKey } from "../types";
 
 /** SUBMISSION_STORAGE_RELAY_URL / SECRET がそろっているか（リレー有効判定） */
 export function isRelayStorageConfigured(): boolean {
@@ -59,6 +59,16 @@ function buildArtifactUrl(submissionId: string, fileName: string): string {
 function buildAttachmentUrl(submissionId: string, savedName: string): string {
   const base = (process.env.SUBMISSION_STORAGE_RELAY_URL ?? "").replace(/\/+$/, "");
   return `${base}/${encodeURIComponent(submissionId)}/files/${encodeURIComponent(savedName)}`;
+}
+
+/**
+ * スナップショット用のキー付き URL を組み立てる。
+ * テキスト成果物とは異なり snapshots/<key> セグメントを挟む。
+ * submissionId / key は URL 安全にエンコードする（key は isSafeSnapshotKey で検証済み）。
+ */
+function buildSnapshotUrl(submissionId: string, key: string): string {
+  const base = (process.env.SUBMISSION_STORAGE_RELAY_URL ?? "").replace(/\/+$/, "");
+  return `${base}/${encodeURIComponent(submissionId)}/snapshots/${encodeURIComponent(key)}`;
 }
 
 /** 共有シークレット（未設定時は null） */
@@ -151,6 +161,93 @@ export const relayStorage: SubmissionStorageAdapter = {
   async artifactExists(submissionId, fileName): Promise<boolean> {
     // 小さなテキスト成果物なので readArtifact の成否で判定する
     const content = await relayStorage.readArtifact(submissionId, fileName);
+    return content !== null;
+  },
+
+  async writeSnapshot(submissionId, key, content): Promise<void> {
+    if (!isSafeSubmissionId(submissionId)) {
+      throw new Error(`不正な submissionId です: ${submissionId}`);
+    }
+    if (!isSafeSnapshotKey(key)) {
+      throw new Error(`不正なスナップショットキーです: ${key}`);
+    }
+    const secret = relaySecret();
+    const url = process.env.SUBMISSION_STORAGE_RELAY_URL;
+    if (!url || !secret) {
+      throw new Error(
+        "SUBMISSION_STORAGE_RELAY_URL / SECRET が未設定のためリレー書き込みできません。"
+      );
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+    try {
+      const res = await fetch(buildSnapshotUrl(submissionId, key), {
+        method: "PUT",
+        headers: {
+          // JSON テキストとして扱う
+          "content-type": "application/json; charset=utf-8",
+          authorization: `Bearer ${secret}`,
+        },
+        body: content,
+        signal: controller.signal,
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        throw new Error(
+          `リレーへのスナップショット書き込みに失敗しました（HTTP ${res.status}）: ${detail.slice(0, 200)}`
+        );
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("リレーへのスナップショット書き込みに失敗")) {
+        throw err;
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(`リレーへのスナップショット書き込みに失敗しました: ${message}`);
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+
+  async readSnapshot(submissionId, key): Promise<string | null> {
+    if (!isSafeSubmissionId(submissionId)) return null;
+    if (!isSafeSnapshotKey(key)) return null;
+    const secret = relaySecret();
+    const url = process.env.SUBMISSION_STORAGE_RELAY_URL;
+    if (!url || !secret) return null;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+    try {
+      const res = await fetch(buildSnapshotUrl(submissionId, key), {
+        method: "GET",
+        headers: {
+          authorization: `Bearer ${secret}`,
+        },
+        signal: controller.signal,
+        cache: "no-store",
+      });
+
+      // 404 は「無いもの」として扱う
+      if (res.status === 404) return null;
+      if (!res.ok) {
+        // それ以外のエラーも filesystem と揃えて null 扱い（パイプラインを止めない）
+        return null;
+      }
+      return await res.text();
+    } catch {
+      // ネットワークエラー等も null 扱い（呼び出し側は notFound/404 へ映射）
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+
+  async snapshotExists(submissionId, key): Promise<boolean> {
+    // スナップショットなので readSnapshot の成否で判定する
+    const content = await relayStorage.readSnapshot(submissionId, key);
     return content !== null;
   },
 

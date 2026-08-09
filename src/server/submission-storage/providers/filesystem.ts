@@ -19,7 +19,7 @@ import { readFile, writeFile, mkdir, access } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { SubmissionStorageAdapter, ArtifactFileName } from "../types";
-import { isSafeSubmissionId, isArtifactFileName, isSafeAttachmentName } from "../types";
+import { isSafeSubmissionId, isArtifactFileName, isSafeAttachmentName, isSafeSnapshotKey } from "../types";
 
 /** ローカル開発用の成果物ルート（gitignore 済み・プロジェクト内） */
 const LOCAL_ROOT = join(process.cwd(), "data", "consult-submissions");
@@ -44,6 +44,11 @@ function realPath(submissionId: string, fileName: ArtifactFileName): string {
 /** 添付ファイルの実パスを組み立てる（検証済み前提・files/ 配下） */
 function attachmentPath(submissionId: string, savedName: string): string {
   return join(rootDir(), submissionId, "files", savedName);
+}
+
+/** スナップショットの実パスを組み立てる（検証済み前提・snapshots/ 配下） */
+function snapshotPath(submissionId: string, key: string): string {
+  return join(rootDir(), submissionId, "snapshots", `${key}.json`);
 }
 
 /**
@@ -72,6 +77,19 @@ function assertAttachmentKey(submissionId: string, savedName: string): void {
   }
 }
 
+/**
+ * submissionId / key を検証する（スナップショット用）。
+ * 不正な場合は例外を投げる。
+ */
+function assertSnapshotKey(submissionId: string, key: string): void {
+  if (!isSafeSubmissionId(submissionId)) {
+    throw new Error(`不正な submissionId です: ${submissionId}`);
+  }
+  if (!isSafeSnapshotKey(key)) {
+    throw new Error(`不正なスナップショットキーです: ${key}`);
+  }
+}
+
 /** ファイルシステム プロバイダの実装 */
 export const filesystemStorage: SubmissionStorageAdapter = {
   name: "filesystem",
@@ -97,6 +115,33 @@ export const filesystemStorage: SubmissionStorageAdapter = {
     assertKey(submissionId, fileName);
     try {
       await access(realPath(submissionId, fileName));
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  async writeSnapshot(submissionId, key, content): Promise<void> {
+    assertSnapshotKey(submissionId, key);
+    // snapshots/ ディレクトリを保証（冪等）
+    await mkdir(join(rootDir(), submissionId, "snapshots"), { recursive: true });
+    await writeFile(snapshotPath(submissionId, key), content, "utf8");
+  },
+
+  async readSnapshot(submissionId, key): Promise<string | null> {
+    assertSnapshotKey(submissionId, key);
+    try {
+      return await readFile(snapshotPath(submissionId, key), "utf8");
+    } catch {
+      // 不在・読み取り失敗は「無いもの」として扱う
+      return null;
+    }
+  },
+
+  async snapshotExists(submissionId, key): Promise<boolean> {
+    assertSnapshotKey(submissionId, key);
+    try {
+      await access(snapshotPath(submissionId, key));
       return true;
     } catch {
       return false;
