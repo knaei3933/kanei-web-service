@@ -36,6 +36,12 @@ const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
     enterpriseName: "金井Durable本番検証株式会社 20260807-211835",
     businessType: "",
   },
+  "20260807-215122-1eed8ca0": {
+    loader: () =>
+      import("@/components/sections/phase2-manufacturing-showcase").then((m) => ({ default: m.default })),
+    enterpriseName: "金井添付Durable本番検証株式会社 20260807-215300",
+    businessType: "",
+  },
 };
 
 interface ExecutionPageProps {
