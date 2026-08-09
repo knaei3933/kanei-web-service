@@ -94,16 +94,19 @@ const SEATS = [
     type: "カウンター席",
     capacity: "1〜4名",
     description: "カウンターでのんびりと。職人との会話もお楽しみいただけます。",
+    image: "/generated/photos-real/restaurant.jpg",
   },
   {
     type: "テーブル席",
     capacity: "2〜8名",
     description: "少人数からグループまで。用途に合わせてご案内いたします。",
+    image: "/generated/photos-real/restaurant-about.jpg",
   },
   {
     type: "個室",
     capacity: "4〜12名",
     description: "プライベート空間で会議や接待、記念日にも最適です。",
+    image: "/generated/photos-real/restaurant-gallery2.jpg",
   },
 ];
 
@@ -196,7 +199,7 @@ export default function IzakayaShowcase() {
               </div>
             </motion.div>
 
-            {/* 画像エリア（ダミー） */}
+            {/* ヒーロー画像 */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -204,17 +207,11 @@ export default function IzakayaShowcase() {
               className="relative"
             >
               <div className="relative aspect-square overflow-hidden rounded-3xl bg-gradient-to-br from-orange-100 to-red-100 shadow-2xl">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="mb-4 text-6xl">🏮</div>
-                    <p className="text-lg font-medium text-orange-700">
-                      メインビジュアル画像
-                    </p>
-                    <p className="text-sm text-orange-600">
-                      （後で差し替え）
-                    </p>
-                  </div>
-                </div>
+                <img
+                  src="/generated/photos-real/restaurant-gallery1.jpg"
+                  alt={`${SHOP_INFO.name} - 店内の様子`}
+                  className="h-full w-full object-cover"
+                />
                 {/* 暖色系のオーバーレイ */}
                 <div className="absolute inset-0 bg-gradient-to-t from-orange-900/20 to-transparent" />
               </div>
@@ -474,16 +471,15 @@ export default function IzakayaShowcase() {
                 transition={{ duration: 0.4, delay: index * 0.1 }}
                 className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
               >
-                {/* 画像エリア（ダミー） */}
-                <div className="aspect-[4/3] bg-gradient-to-br from-orange-100 to-red-100">
-                  <div className="flex h-full items-center justify-center">
-                    <div className="text-center">
-                      <div className="mb-2 text-4xl">🏯</div>
-                      <p className="text-sm font-medium text-orange-700">
-                        {seat.type}
-                      </p>
-                    </div>
-                  </div>
+                {/* 画像エリア */}
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img
+                    src={seat.image}
+                    alt={`${seat.type}の様子`}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
                 </div>
                 <div className="p-6">
                   <h3 className="mb-2 text-lg font-bold">{seat.type}</h3>
@@ -515,7 +511,7 @@ export default function IzakayaShowcase() {
           </div>
 
           <div className="grid gap-8 lg:grid-cols-2">
-            {/* 地図エリア（ダミー） */}
+            {/* 地図プレースホルダー */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -524,12 +520,9 @@ export default function IzakayaShowcase() {
             >
               <div className="flex h-full items-center justify-center bg-gradient-to-br from-orange-50 to-red-50">
                 <div className="text-center">
-                  <MapPin className="mx-auto mb-3 h-12 w-12 text-orange-400" />
-                  <p className="text-lg font-medium text-orange-700">
-                    Google Maps
-                  </p>
-                  <p className="text-sm text-orange-600">
-                    （後で差し替え）
+                  <MapPin className="mx-auto mb-4 h-16 w-16 text-orange-300" />
+                  <p className="text-base font-medium text-orange-700">
+                    地図は後で埋め込みます
                   </p>
                 </div>
               </div>
