@@ -25,9 +25,9 @@ const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
   },
   "20260809-061637-e59e74cc": {
     loader: () =>
-      import("@/components/sections/izakaya-showcase").then((m) => ({ default: m.default })),
+      import("@/components/sections/manufacturing-showcase").then((m) => ({ default: m.default })),
     enterpriseName: "テスト製造株式会社",
-    businessType: "",
+    businessType: "製造業",
   },
 };
 
