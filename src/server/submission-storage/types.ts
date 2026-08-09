@@ -42,6 +42,7 @@ export const ARTIFACT_FILE_NAMES = [
   "execution-handoff.json",
   "execution-prompt.md",
   "demo-feedback.json",
+  "revision-handoff.json",
 ] as const;
 
 /** 成果物のファイル名（固定セットのいずれか） */

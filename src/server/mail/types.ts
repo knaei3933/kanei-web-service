@@ -41,7 +41,9 @@ export interface SendMailInput {
     | "internal-notification"
     | "customer-proposal"
     | "customer-followup"
-    | "customer-review-acknowledgement";
+    | "customer-review-acknowledgement"
+    | "customer-demo-ready"
+    | "customer-demo-revision";
 }
 
 /** 配送結果の状態 */
