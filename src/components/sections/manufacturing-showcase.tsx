@@ -420,7 +420,7 @@ export default function ManufacturingShowcase() {
                   <dd className="text-slate-900">
                     〒123-4567
                     <br />
-                    東京都渋谷区〇〇1-2-3
+                    埼玉県川口市青木1-2-3
                   </dd>
                 </div>
               </dl>
@@ -564,7 +564,7 @@ export default function ManufacturingShowcase() {
                     <dd className="text-slate-600">
                       〒123-4567
                       <br />
-                      東京都渋谷区〇〇1-2-3
+                      埼玉県川口市青木1-2-3
                     </dd>
                   </div>
                 </div>
@@ -589,9 +589,9 @@ export default function ManufacturingShowcase() {
                     最寄り駅からのアクセス
                   </dt>
                   <dd className="text-sm text-slate-600">
-                    JR山手線 渋谷駅 徒歩10分
+                    JR京浜東北線 川口駅 徒歩10分
                     <br />
-                    東京メトロ 銀座線 表参道駅 徒歩8分
+                    首都高速川口線 新郷ICより車で8分
                   </dd>
                 </div>
               </dl>
