@@ -24,6 +24,12 @@ const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
     enterpriseName: "テスト製造株式会社",
     businessType: "製造業",
   },
+  "20260808-061647-a4b73e82": {
+    loader: () =>
+      import("@/components/sections/20260808-061647-a4b73e82-showcase").then((m) => ({ default: m.default })),
+    enterpriseName: "Phase2最新検証株式会社",
+    businessType: "製造業",
+  },
 };
 
 interface ExecutionPageProps {
