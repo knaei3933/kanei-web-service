@@ -6,6 +6,7 @@ import {
   ADMIN_FILTER_GROUPS,
   filterSubmissionsByStatus,
   getAdminPriorityTier,
+  getAdminRouteLinks,
   getAdminQuickLinkStyle,
   getAdminQuickLinks,
   sortSubmissionsByPriority,
@@ -172,19 +173,56 @@ function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) 
  * プライマリアクション（ActionCell）とは別のナビゲーションエリアとして表示する。
  * ステータスに応じた可用性ルールは getAdminQuickLinks に集約している。
  */
-function QuickLinks({ submissionId, status }: { submissionId: string; status: string }) {
-  const links = getAdminQuickLinks(status, submissionId);
+function RouteAccessPanel({ submissionId, status }: { submissionId: string; status: string }) {
+  const links = getAdminRouteLinks(status, submissionId);
+  const primary = links.find((link) => link.primary) ?? links[0];
+
+  const toneClass: Record<string, string> = {
+    neutral: "border-slate-200 bg-slate-50 text-slate-700",
+    review: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    demo: "border-sky-200 bg-sky-50 text-sky-700",
+    execution: "border-violet-200 bg-violet-50 text-violet-700",
+    interview: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  };
+
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {links.map((l) => (
-        <a
-          key={l.key}
-          href={l.href}
-          className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${getAdminQuickLinkStyle(l.key)}`}
-        >
-          {l.label}
-        </a>
-      ))}
+    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          홈페이지 접근 주소
+        </span>
+        <span className="text-[11px] text-slate-400">submission: {submissionId}</span>
+      </div>
+
+      <a
+        href={primary.href}
+        className={`block rounded-xl border px-3 py-2.5 transition hover:opacity-90 ${toneClass[primary.tone]}`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold">지금 먼저 볼 페이지: {primary.label}</div>
+            <div className="mt-0.5 text-[11px] opacity-80">{primary.description}</div>
+          </div>
+          <span className="shrink-0 text-xs font-semibold">열기 →</span>
+        </div>
+        <div className="mt-2 rounded-lg bg-white/70 px-2 py-1 font-mono text-[11px] text-slate-700">
+          {primary.shortPath}
+        </div>
+      </a>
+
+      <div className="mt-2 grid gap-2">
+        {links.map((l) => (
+          <a
+            key={l.key}
+            href={l.href}
+            className={`rounded-lg border px-2.5 py-2 text-[11px] transition ${l.primary ? "hidden" : "block"} ${getAdminQuickLinkStyle(l.key)}`}
+          >
+            <div className="font-semibold">{l.label}</div>
+            <div className="mt-0.5 text-[11px] opacity-80">{l.description}</div>
+            <div className="mt-1 font-mono opacity-90">{l.shortPath}</div>
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
@@ -518,7 +556,7 @@ export default function AdminListPage() {
                         <th className="px-6 py-4 font-medium">業種</th>
                         <th className="px-6 py-4 font-medium">品質スコア</th>
                         <th className="px-6 py-4 font-medium">状態</th>
-                        <th className="px-6 py-4 font-medium">操作</th>
+                        <th className="px-6 py-4 font-medium">操作 / 접근 주소</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -557,7 +595,7 @@ export default function AdminListPage() {
                           <td className="px-6 py-4">
                             <div className="flex flex-col items-start gap-2">
                               <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
-                              <QuickLinks submissionId={s.id} status={s.status} />
+                              <RouteAccessPanel submissionId={s.id} status={s.status} />
                             </div>
                           </td>
                         </tr>
@@ -591,7 +629,7 @@ export default function AdminListPage() {
                         <div className="flex justify-end">
                           <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
                         </div>
-                        <QuickLinks submissionId={s.id} status={s.status} />
+                        <RouteAccessPanel submissionId={s.id} status={s.status} />
                       </div>
                     </div>
                   ))}

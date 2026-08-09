@@ -31,6 +31,13 @@ export interface AdminQuickLink {
   label: string;
 }
 
+export interface AdminRouteLink extends AdminQuickLink {
+  shortPath: string;
+  description: string;
+  tone: "neutral" | "review" | "demo" | "execution" | "interview";
+  primary: boolean;
+}
+
 const LABELS: Record<AdminQuickLinkKey, string> = {
   detail: "詳細",
   review: "レビュー",
@@ -82,17 +89,60 @@ export function getAdminQuickLinks(
   status: string,
   submissionId: string,
 ): AdminQuickLink[] {
-  const links: AdminQuickLink[] = [
-    { key: "detail", href: `/admin/${submissionId}`, label: LABELS.detail },
-    { key: "review", href: `/review/${submissionId}`, label: LABELS.review },
+  return getAdminRouteLinks(status, submissionId).map(({ key, href, label }) => ({
+    key,
+    href,
+    label,
+  }));
+}
+
+/**
+ * 一覧や詳細で使う、説明つきのルートリンク情報。
+ * 非技術ユーザーにも分かりやすいよう、用途説明・短いパス表示・主リンク判定を含める。
+ */
+export function getAdminRouteLinks(
+  status: string,
+  submissionId: string,
+): AdminRouteLink[] {
+  const links: AdminRouteLink[] = [
+    {
+      key: "detail",
+      href: `/admin/${submissionId}`,
+      shortPath: `/admin/${submissionId}`,
+      label: "管理詳細",
+      description: "社内の進行・承認操作を開く",
+      tone: "neutral",
+      primary: false,
+    },
+    {
+      key: "review",
+      href: `/review/${submissionId}`,
+      shortPath: `/review/${submissionId}`,
+      label: "レビュー画面",
+      description: "ブリーフ・計画・内部レビュー内容を確認",
+      tone: "review",
+      primary: false,
+    },
   ];
 
   if (DEMO_VISIBLE_STATUSES.has(status)) {
-    links.push({ key: "demo", href: `/demo/${submissionId}`, label: LABELS.demo });
+    links.push({
+      key: "demo",
+      href: `/demo/${submissionId}`,
+      shortPath: `/demo/${submissionId}`,
+      label: "顧客確認用デモ",
+      description: "お客様が見る完成デモページ",
+      tone: "demo",
+      primary: false,
+    });
     links.push({
       key: "execution",
       href: `/execution/${submissionId}`,
-      label: LABELS.execution,
+      shortPath: `/execution/${submissionId}`,
+      label: "実装プレビュー",
+      description: "生成中・実装途中を確認する内部プレビュー",
+      tone: "execution",
+      primary: false,
     });
   }
 
@@ -100,11 +150,29 @@ export function getAdminQuickLinks(
     links.push({
       key: "interview",
       href: `/interview/${submissionId}`,
-      label: LABELS.interview,
+      shortPath: `/interview/${submissionId}`,
+      label: "ヒアリング画面",
+      description: "本制作前の追加質問・回答を確認",
+      tone: "interview",
+      primary: false,
     });
   }
 
-  return links;
+  const primaryKey: AdminQuickLinkKey =
+    DEMO_VISIBLE_STATUSES.has(status)
+      ? "demo"
+      : status === "approved_for_execution" || status === "demo_generating"
+        ? "execution"
+        : status === "customer_approved" ||
+            status === "pre_production_interview" ||
+            status === "pre_production_review"
+          ? "interview"
+          : "review";
+
+  return links.map((link) => ({
+    ...link,
+    primary: link.key === primaryKey,
+  }));
 }
 
 /* ------------------------------------------------------------------ */
