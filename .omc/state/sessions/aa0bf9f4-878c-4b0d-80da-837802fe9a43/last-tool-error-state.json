@@ -1,0 +1,7 @@
+{
+  "tool_name": "PowerShell",
+  "tool_input_preview": "{\"command\":\"npm run build 2>&1 | Select-Object -Last 50\",\"timeout\":300000,\"description\":\"Run Next.js build via PowerShell\"}",
+  "error": "Exit code 1\n> kanei-web-service@0.1.0 build\r\n> next build\r\n\r\nnode.exe : 'next' is not recognized as an internal or external command,\r\nAt line:1 char:1\r\n+ & \"C:\\Program Files\\nodejs/node.exe\" \"C:\\Program Files\\nodejs/node_mo ...\r\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : NotSpecified: ('next' is not r...ternal command,:String) [], RemoteException\r\n    + FullyQualifiedErrorId : NativeCommandError\r\n \r\noperable program or batch file.",
+  "timestamp": "2026-08-07T13:10:28.820Z",
+  "retry_count": 2
+}

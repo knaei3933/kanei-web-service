@@ -1,0 +1,265 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1786219916084,
+  "projectRoot": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": "24.x",
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "next",
+        "version": "16.2.12",
+        "category": "fullstack"
+      },
+      {
+        "name": "react",
+        "version": "19.2.4",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.2.4",
+        "category": "frontend"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": "Node.js 24.x"
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": null,
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "next dev",
+      "build": "next build",
+      "start": "next start",
+      "lint": "eslint",
+      "extract:monet": "node scripts/extract-monet-catalog.mjs"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": "type-based"
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "public",
+      "scripts",
+      "src"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "cache": {
+      "path": "cache",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1786219915891,
+      "keyFiles": []
+    },
+    "data": {
+      "path": "data",
+      "purpose": "Data files",
+      "fileCount": 0,
+      "lastAccessed": 1786219915891,
+      "keyFiles": []
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 2,
+      "lastAccessed": 1786219915898,
+      "keyFiles": [
+        "mail-relay.md",
+        "submission-storage.md"
+      ]
+    },
+    "logs": {
+      "path": "logs",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1786219915898,
+      "keyFiles": [
+        "build-verify.log",
+        "nanobanana_mcp.log",
+        "npm-install.log"
+      ]
+    },
+    "outputs": {
+      "path": "outputs",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1786219915898,
+      "keyFiles": []
+    },
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 5,
+      "lastAccessed": 1786219915899,
+      "keyFiles": [
+        "file.svg",
+        "globe.svg",
+        "next.svg",
+        "vercel.svg",
+        "window.svg"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 1,
+      "lastAccessed": 1786219915899,
+      "keyFiles": [
+        "extract-monet-catalog.mjs"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1786219915899,
+      "keyFiles": []
+    },
+    "temp": {
+      "path": "temp",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1786219915899,
+      "keyFiles": []
+    },
+    "src\\app": {
+      "path": "src\\app",
+      "purpose": "Application code",
+      "fileCount": 4,
+      "lastAccessed": 1786219915901,
+      "keyFiles": [
+        "favicon.ico",
+        "globals.css",
+        "layout.tsx"
+      ]
+    },
+    "src\\components": {
+      "path": "src\\components",
+      "purpose": "UI components",
+      "fileCount": 0,
+      "lastAccessed": 1786219915901,
+      "keyFiles": []
+    },
+    "src\\lib": {
+      "path": "src\\lib",
+      "purpose": "Library code",
+      "fileCount": 6,
+      "lastAccessed": 1786219915902,
+      "keyFiles": [
+        "approval-package.ts",
+        "consult-quality.ts",
+        "draft.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/app/api/consult/[submissionId]/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1786219987811,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/submission-storage/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1786219987872,
+      "type": "file"
+    },
+    {
+      "path": "src/app/consult/page.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1786219988427,
+      "type": "file"
+    },
+    {
+      "path": "data/consult-submissions/20260808-055127-d30040be/brief.json",
+      "accessCount": 1,
+      "lastAccessed": 1786220011515,
+      "type": "file"
+    },
+    {
+      "path": "data/consult-submissions/20260808-054629-3ba5e32b/brief.json",
+      "accessCount": 1,
+      "lastAccessed": 1786220011825,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/consult/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1786220022983,
+      "type": "file"
+    },
+    {
+      "path": "src/server/submission-storage/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1786220069751,
+      "type": "file"
+    },
+    {
+      "path": ".env.local",
+      "accessCount": 1,
+      "lastAccessed": 1786220069781,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/prompt-chain.ts",
+      "accessCount": 1,
+      "lastAccessed": 1786220069827,
+      "type": "file"
+    },
+    {
+      "path": "HANDOFF.md",
+      "accessCount": 1,
+      "lastAccessed": 1786220096959,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/consult/approve/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1786220097421,
+      "type": "file"
+    },
+    {
+      "path": "src/app/api/consult/plan/approve/route.ts",
+      "accessCount": 1,
+      "lastAccessed": 1786220097485,
+      "type": "file"
+    },
+    {
+      "path": "src/server/submission-storage/providers/relay.ts",
+      "accessCount": 1,
+      "lastAccessed": 1786220151656,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

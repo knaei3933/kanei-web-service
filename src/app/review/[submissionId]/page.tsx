@@ -9,6 +9,8 @@ import {
   type ApprovalDecision,
   type PlanApprovalDecision,
 } from "@/lib/approval-package";
+import { readArtifact } from "@/server/submission-storage";
+import { FollowupEditForm } from "./FollowupEditForm";
 
 interface ReviewPageProps {
   params: Promise<{ submissionId: string }> | { submissionId: string };
@@ -593,10 +595,33 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     ? await readExecutionPromptMarkdown(submissionId)
     : null;
 
+  // needs_followup のとき、顧客が再編集できるように submission.json のペイロードを読み込む
+  let initialPayload: Record<string, unknown> = {};
+  if (pkg.status === "needs_followup") {
+    try {
+      const raw = await readArtifact(submissionId, "submission.json");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          !Array.isArray(parsed) &&
+          parsed.payload &&
+          typeof parsed.payload === "object"
+        ) {
+          initialPayload = parsed.payload as Record<string, unknown>;
+        }
+      }
+    } catch {
+      // 読み取り失敗は空オブジェクトでフォールバック
+    }
+  }
+
   const isGate1 = pkg.status === "awaiting_representative_approval";
   const isGate2 = pkg.status === "awaiting_plan_approval";
   const isApproved = pkg.status === "approved_for_execution";
   const isRejected = pkg.status === "rejected";
+  const isNeedsFollowup = pkg.status === "needs_followup";
 
   // 添付ファイルを表示優先度（画像 → PDF → テキスト → その他）で並び替える
   const sortedAttachments: AttachmentFile[] = [
@@ -697,6 +722,31 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               </div>
             </div>
           </Section>
+
+          {/* needs_followup 時の追加情報入力フォーム（顧客向け） */}
+          {isNeedsFollowup && (
+            <Section
+              title="追加情報の入力"
+              badge={
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+                  追加情報待ち
+                </span>
+              }
+            >
+              <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+                送信内容に追加情報が必要です。以下のフォームに不足している情報を入力して
+                「情報を更新する」をクリックしてください。すべての必須項目が充足されると、
+                自動的に社内レビューへ進みます。
+              </p>
+              <FollowupEditForm
+                submissionId={pkg.submissionId}
+                initialPayload={initialPayload}
+                initialScore={pkg.intakeQuality.score}
+                requestedItems={pkg.intakeQuality.requestedItems}
+                followupQuestions={pkg.intakeQuality.followupQuestions}
+              />
+            </Section>
+          )}
 
           <Section title="参考URL / 素材分析">
             <div className="grid gap-6 sm:grid-cols-2">

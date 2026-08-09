@@ -1,0 +1,269 @@
+{
+  "version": 1,
+  "jobId": "9ed01c30-ed46-484e-9657-a9de24c17fa2",
+  "sessionId": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+  "scopeKey": "3dccefd8c9d8d9daa5123c7f92f2633002265e759f1dce0229d2c60253286c63",
+  "revision": 2,
+  "createdAt": "2026-08-07T20:47:53.602Z",
+  "updatedAt": "2026-08-07T20:47:53.643Z",
+  "producerGraceExpiresAt": "2026-08-07T20:48:23.603Z",
+  "bestEffortDeadlineAt": "2026-08-07T20:49:14.603Z",
+  "producers": {
+    "core": {
+      "state": "sealed",
+      "intentKey": "b180b60b6c3c47a3d2850da672e062b02a97a09353ebd1c1bad52012776f20c2",
+      "payloadDigest": "b180b60b6c3c47a3d2850da672e062b02a97a09353ebd1c1bad52012776f20c2",
+      "sealedAt": "2026-08-07T20:47:53.643Z",
+      "sealedBy": "foreground"
+    },
+    "wiki": {
+      "state": "no-op",
+      "sealedAt": "2026-08-07T20:47:53.602Z",
+      "sealedBy": "wiki-producer"
+    }
+  },
+  "actions": {
+    "foreground-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "febf6dba2f2536433960a07f7cedce72e946b43ced0896570df80f017b8914d2",
+      "payload": {
+        "transcriptPath": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+        "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+        "reason": "other",
+        "input": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "transcript_path": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+          "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+          "prompt_id": "38b6d279-c43b-4cb6-9f65-0023e2ca7e5c",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "ended_at": "2026-08-07T20:47:53.600Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {},
+        "foregroundResult": {
+          "removedTransientFiles": 2,
+          "completedAt": "2026-08-07T20:47:53.642Z"
+        }
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-08-07T20:47:53.643Z",
+      "lastOutcomeCode": "completed"
+    },
+    "wiki-capture": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "1719cd1ef5b51e0269b78c4cb8c9308c9c1f7b82fd1c067fc034c060f23863f5",
+      "payload": {},
+      "budgetMs": 9000,
+      "completedAt": "2026-08-07T20:47:53.602Z"
+    },
+    "team-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "pending",
+      "attempts": 0,
+      "idempotencyKey": "cee6ac31df545408e1e822247ac249b3f8182a98a5fe8e448ae3b251e55bdee1",
+      "payload": {
+        "transcriptPath": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+        "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+        "reason": "other",
+        "input": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "transcript_path": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+          "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+          "prompt_id": "38b6d279-c43b-4cb6-9f65-0023e2ca7e5c",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "ended_at": "2026-08-07T20:47:53.600Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000
+    },
+    "python-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "pending",
+      "attempts": 0,
+      "idempotencyKey": "1f1370c4ac056606059d517e2f106b602d8cbcb04587b3fcc5f3b9f89e649cd0",
+      "payload": {
+        "transcriptPath": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+        "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+        "reason": "other",
+        "input": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "transcript_path": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+          "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+          "prompt_id": "38b6d279-c43b-4cb6-9f65-0023e2ca7e5c",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "ended_at": "2026-08-07T20:47:53.600Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000
+    },
+    "reply-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "pending",
+      "attempts": 0,
+      "idempotencyKey": "0b3a8b47c28b26d56aca004d4f572b96c118f16819c0d35162418816f9a5420a",
+      "payload": {
+        "transcriptPath": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+        "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+        "reason": "other",
+        "input": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "transcript_path": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+          "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+          "prompt_id": "38b6d279-c43b-4cb6-9f65-0023e2ca7e5c",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "ended_at": "2026-08-07T20:47:53.600Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000
+    },
+    "callback": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "pending",
+      "attempts": 0,
+      "idempotencyKey": "d068ede2655bf89e0c0950e087d0603d7dcf45538e94f20a654d08c6f4841895",
+      "payload": {
+        "transcriptPath": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+        "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+        "reason": "other",
+        "input": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "transcript_path": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+          "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+          "prompt_id": "38b6d279-c43b-4cb6-9f65-0023e2ca7e5c",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "ended_at": "2026-08-07T20:47:53.600Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000
+    },
+    "notification": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "pending",
+      "attempts": 0,
+      "idempotencyKey": "89c0438ff63097ce04beb60efb87292ff68a7af350a0ee331f3de9dbf42d62fc",
+      "payload": {
+        "transcriptPath": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+        "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+        "reason": "other",
+        "input": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "transcript_path": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+          "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+          "prompt_id": "38b6d279-c43b-4cb6-9f65-0023e2ca7e5c",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "ended_at": "2026-08-07T20:47:53.600Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000
+    },
+    "openclaw": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "pending",
+      "attempts": 0,
+      "idempotencyKey": "31fe8f6e1cf204e27006de511df257326fdd98655122ca437013e8779ffc735b",
+      "payload": {
+        "transcriptPath": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+        "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+        "reason": "other",
+        "input": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "transcript_path": "C:\\Users\\kanei\\.claude\\projects\\C--Users-kanei-claudecode-02-Homepage-Dev-kanei-web-service\\7ac9710f-60c4-4eeb-97b5-12381a042f1f.jsonl",
+          "cwd": "C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service",
+          "prompt_id": "38b6d279-c43b-4cb6-9f65-0023e2ca7e5c",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "7ac9710f-60c4-4eeb-97b5-12381a042f1f",
+          "ended_at": "2026-08-07T20:47:53.600Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000
+    }
+  },
+  "owner": null,
+  "phase": "ready"
+}

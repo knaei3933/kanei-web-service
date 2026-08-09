@@ -1,0 +1,221 @@
+npm warn cleanup Failed to remove some directories [
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.acorn-5ZBogOvx',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.acorn-5ZBogOvx'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.acorn-5ZBogOvx'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.baseline-browser-mapping-0yBlhkva',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.baseline-browser-mapping-0yBlhkva'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.baseline-browser-mapping-0yBlhkva'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.browserslist-YCvn1V30',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.browserslist-YCvn1V30'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.browserslist-YCvn1V30'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.eslint-UVjv7fgo',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.eslint-UVjv7fgo'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.eslint-UVjv7fgo'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\is-bun-module\\node_modules\\.bin\\.semver-FaWsKF5q',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\is-bun-module\node_modules\.bin\.semver-FaWsKF5q'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\is-bun-module\\node_modules\\.bin\\.semver-FaWsKF5q'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.js-yaml-kFsMBhDG',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.js-yaml-kFsMBhDG'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.js-yaml-kFsMBhDG'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.jiti-Br7yUFFK',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.jiti-Br7yUFFK'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.jiti-Br7yUFFK'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.jsesc-qMJHX8XP',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.jsesc-qMJHX8XP'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.jsesc-qMJHX8XP'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.json5-SN8zoIbX',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.json5-SN8zoIbX'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.json5-SN8zoIbX'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.nanoid-0Y6k4gvT',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.nanoid-0Y6k4gvT'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.nanoid-0Y6k4gvT'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.loose-envify-4umUUjbI',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.loose-envify-4umUUjbI'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.loose-envify-4umUUjbI'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.napi-postinstall-I9QLChlb',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.napi-postinstall-I9QLChlb'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.napi-postinstall-I9QLChlb'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.next-hJiI53hE',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.next-hJiI53hE'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.next-hJiI53hE'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.resolve-IGs4LPDJ',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.resolve-IGs4LPDJ'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.resolve-IGs4LPDJ'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.semver-dpJdyvJr',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.semver-dpJdyvJr'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.semver-dpJdyvJr'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\sharp\\node_modules\\.bin\\.semver-6isoGOHW',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\sharp\node_modules\.bin\.semver-6isoGOHW'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\sharp\\node_modules\\.bin\\.semver-6isoGOHW'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\tsconfig-paths\\node_modules\\.bin\\.json5-W1nPc2u4',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\tsconfig-paths\node_modules\.bin\.json5-W1nPc2u4'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\tsconfig-paths\\node_modules\\.bin\\.json5-W1nPc2u4'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.tsserver-2lvWgk2J',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.tsserver-2lvWgk2J'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.tsserver-2lvWgk2J'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.update-browserslist-db-YRgXWit6',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.update-browserslist-db-YRgXWit6'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.update-browserslist-db-YRgXWit6'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.node-which-hG1yUGd8',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.node-which-hG1yUGd8'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.node-which-hG1yUGd8'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.tsc-7veD5vuB',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.tsc-7veD5vuB'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.tsc-7veD5vuB'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.parser-B8RBRD3n',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\.bin\.parser-B8RBRD3n'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\.bin\\.parser-B8RBRD3n'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\@typescript-eslint\\typescript-estree\\node_modules\\.bin\\.semver-zkQaEUmf',
+npm warn cleanup     [Error: EACCES: permission denied, lstat 'C:\Users\kanei\claudecode\02.Homepage_Dev\kanei-web-service\node_modules\@typescript-eslint\typescript-estree\node_modules\.bin\.semver-zkQaEUmf'] {
+npm warn cleanup       errno: -4092,
+npm warn cleanup       code: 'EACCES',
+npm warn cleanup       syscall: 'lstat',
+npm warn cleanup       path: 'C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\@typescript-eslint\\typescript-estree\\node_modules\\.bin\\.semver-zkQaEUmf'
+npm warn cleanup     }
+npm warn cleanup   ]
+npm warn cleanup ]
+
+added 7 packages, removed 6 packages, changed 22 packages, and audited 382 packages in 32s
+
+147 packages are looking for funding
+  run `npm fund` for details
+
+3 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix --force
+
+Run `npm audit` for details.

@@ -1,0 +1,420 @@
+2026-08-07 11:10:05,023 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 11:10:05,023 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 11:10:05,023 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 11:10:05,024 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 11:10:05,024 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 11:10:05,024 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 11:10:05,028 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 11:10:05,046 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 11:10:05,048 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 11:10:05,048 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 11:10:19,297 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 11:10:19,298 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 11:10:19,298 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 11:10:19,298 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 11:10:19,298 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 11:10:19,298 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 11:10:19,298 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 11:10:19,316 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 11:10:19,318 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 11:10:19,319 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 11:34:17,983 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 11:34:17,984 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 11:34:17,991 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 11:34:17,991 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 11:34:17,991 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 11:34:17,991 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 11:34:17,991 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 11:34:18,014 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 11:34:18,015 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 11:34:18,016 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 11:34:47,700 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 11:34:47,701 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 11:34:47,701 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 11:34:47,701 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 11:34:47,701 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 11:34:47,701 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 11:34:47,701 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 11:34:47,720 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 11:34:47,722 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 11:34:47,723 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 13:34:26,730 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 13:34:26,730 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 13:34:26,730 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 13:34:26,731 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 13:34:26,731 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 13:34:26,731 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 13:34:26,731 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 13:34:26,746 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 13:34:26,747 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 13:34:26,748 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 13:45:00,869 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 13:45:00,869 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 13:45:00,870 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 13:45:00,870 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 13:45:00,870 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 13:45:00,870 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 13:45:00,870 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 13:45:00,884 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 13:45:00,886 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 13:45:00,886 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 14:01:56,315 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 14:01:56,315 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 14:01:56,316 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 14:01:56,316 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 14:01:56,316 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 14:01:56,316 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 14:01:56,316 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 14:01:56,331 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 14:01:56,333 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 14:01:56,333 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 14:53:52,412 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 14:53:52,413 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 14:53:52,413 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 14:53:52,413 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 14:53:52,413 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 14:53:52,413 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 14:53:52,413 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 14:53:52,430 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 14:53:52,432 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 14:53:52,432 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 17:39:05,480 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 17:39:05,480 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 17:39:05,491 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 17:39:05,491 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 17:39:05,491 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 17:39:05,491 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 17:39:05,491 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 17:39:05,518 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 17:39:05,520 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 17:39:05,521 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 17:53:08,946 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 17:53:08,946 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 17:53:08,947 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 17:53:08,947 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 17:53:08,947 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 17:53:08,947 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 17:53:08,947 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 17:53:08,961 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 17:53:08,963 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 17:53:08,964 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 19:00:53,420 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 19:00:53,421 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 19:00:53,421 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 19:00:53,421 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 19:00:53,421 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 19:00:53,421 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 19:00:53,421 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 19:00:53,437 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 19:00:53,439 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 19:00:53,440 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 19:07:17,284 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 19:07:17,291 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 19:07:17,292 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 19:07:17,292 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 19:07:17,292 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 19:07:17,292 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 19:07:17,292 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 19:07:17,305 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 19:07:17,307 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 19:07:17,308 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 19:15:29,391 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 19:15:29,391 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 19:15:29,392 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 19:15:29,392 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 19:15:29,392 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 19:15:29,392 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 19:15:29,392 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 19:15:29,406 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 19:15:29,407 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 19:15:29,408 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 21:39:00,749 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 21:39:00,749 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 21:39:00,755 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 21:39:00,755 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 21:39:00,755 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 21:39:00,755 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 21:39:00,755 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 21:39:00,778 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 21:39:00,789 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 21:39:00,790 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 22:05:44,298 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 22:05:44,298 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 22:05:44,299 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 22:05:44,299 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 22:05:44,299 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 22:05:44,299 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 22:05:44,299 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 22:05:44,316 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 22:05:44,318 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 22:05:44,319 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-07 23:14:18,256 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-07 23:14:18,256 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-07 23:14:18,256 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-07 23:14:18,256 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-07 23:14:18,256 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-07 23:14:18,256 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-07 23:14:18,256 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-07 23:14:18,677 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-07 23:14:18,678 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-07 23:14:18,679 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 04:49:29,375 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 04:49:29,375 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 04:49:29,382 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 04:49:29,382 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 04:49:29,382 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 04:49:29,382 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 04:49:29,382 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 04:49:29,402 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 04:49:29,416 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 04:49:29,416 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 04:58:34,581 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 04:58:34,582 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 04:58:34,582 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 04:58:34,582 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 04:58:34,582 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 04:58:34,582 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 04:58:34,582 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 04:58:34,596 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 04:58:34,597 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 04:58:34,598 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 05:03:04,151 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 05:03:04,152 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 05:03:04,152 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 05:03:04,152 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 05:03:04,152 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 05:03:04,152 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 05:03:04,152 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 05:03:04,179 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 05:03:04,181 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 05:03:04,182 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 05:07:17,227 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 05:07:17,227 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 05:07:17,227 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 05:07:17,227 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 05:07:17,227 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 05:07:17,227 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 05:07:17,227 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 05:07:17,244 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 05:07:17,245 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 05:07:17,246 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 05:31:09,810 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 05:31:09,810 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 05:31:09,816 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 05:31:09,816 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 05:31:09,816 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 05:31:09,816 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 05:31:09,816 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 05:31:09,838 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 05:31:09,850 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 05:31:09,850 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 05:41:11,806 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 05:41:11,807 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 05:41:11,807 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 05:41:11,807 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 05:41:11,807 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 05:41:11,807 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 05:41:11,807 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 05:41:11,824 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 05:41:11,826 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 05:41:11,827 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 05:58:21,252 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 05:58:21,252 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 05:58:21,253 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 05:58:21,253 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 05:58:21,253 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 05:58:21,253 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 05:58:21,253 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 05:58:21,269 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 05:58:21,271 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 05:58:21,272 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 06:08:34,207 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 06:08:34,207 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 06:08:34,207 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 06:08:34,208 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 06:08:34,208 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 06:08:34,208 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 06:08:34,208 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 06:08:34,223 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 06:08:34,224 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 06:08:34,225 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 06:24:45,897 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 06:24:45,898 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 06:24:45,898 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 06:24:45,898 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 06:24:45,898 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 06:24:45,898 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 06:24:45,898 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 06:24:46,012 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 06:24:46,014 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 06:24:46,015 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 06:29:07,576 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 06:29:07,577 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 06:29:07,577 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 06:29:07,577 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 06:29:07,577 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 06:29:07,577 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 06:29:07,577 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 06:29:07,593 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 06:29:07,596 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 06:29:07,597 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 06:39:33,204 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 06:39:33,204 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 06:39:33,204 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 06:39:33,204 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 06:39:33,205 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 06:39:33,205 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 06:39:33,205 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 06:39:33,223 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 06:39:33,225 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 06:39:33,226 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 09:23:08,265 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 09:23:08,265 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 09:23:08,266 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 09:23:08,266 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 09:23:08,266 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 09:23:08,266 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 09:23:08,266 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 09:23:08,282 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 09:23:08,283 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 09:23:08,284 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 09:27:40,837 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 09:27:40,837 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 09:27:40,838 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 09:27:40,838 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 09:27:40,838 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 09:27:40,838 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 09:27:40,838 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 09:27:41,000 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 09:27:41,002 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 09:27:41,003 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 11:07:06,618 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 11:07:06,619 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 11:07:06,626 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 11:07:06,626 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 11:07:06,626 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 11:07:06,626 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 11:07:06,626 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 11:07:06,646 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 11:07:06,659 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 11:07:06,660 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 11:19:08,781 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 11:19:08,782 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 11:19:08,782 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 11:19:08,782 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 11:19:08,782 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 11:19:08,782 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 11:19:08,782 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 11:19:09,080 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 11:19:09,081 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 11:19:09,082 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 11:20:42,579 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 11:20:42,580 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 11:20:42,580 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 11:20:42,580 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 11:20:42,580 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 11:20:42,580 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 11:20:42,580 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 11:20:42,604 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 11:20:42,607 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 11:20:42,607 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 11:21:51,901 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 11:21:51,901 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 11:21:51,901 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 11:21:51,901 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 11:21:51,901 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 11:21:51,901 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 11:21:51,901 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 11:21:51,951 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 11:21:51,953 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 11:21:51,954 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 11:23:09,875 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 11:23:09,875 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 11:23:09,875 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 11:23:09,876 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 11:23:09,876 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 11:23:09,876 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 11:23:09,876 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 11:23:09,892 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 11:23:09,893 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 11:23:09,894 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 11:28:08,719 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 11:28:08,719 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 11:28:08,719 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 11:28:08,719 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 11:28:08,719 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 11:28:08,719 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 11:28:08,719 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 11:28:08,736 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 11:28:08,738 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 11:28:08,739 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 11:28:52,731 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 11:28:52,731 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 11:28:52,731 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 11:28:52,731 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 11:28:52,731 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 11:28:52,731 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 11:28:52,731 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 11:28:52,746 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 11:28:52,749 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 11:28:52,749 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 14:11:43,816 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 14:11:43,817 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 14:11:43,824 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 14:11:43,824 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 14:11:43,824 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 14:11:43,824 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 14:11:43,824 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 14:11:43,847 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 14:11:43,865 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 14:11:43,866 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 21:42:07,210 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 21:42:07,211 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 21:42:07,218 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 21:42:07,218 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 21:42:07,218 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 21:42:07,218 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 21:42:07,219 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 21:42:07,242 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 21:42:07,254 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 21:42:07,255 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 21:43:37,967 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 21:43:37,967 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 21:43:37,968 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 21:43:37,968 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 21:43:37,968 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 21:43:37,968 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 21:43:37,968 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 21:43:37,985 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 21:43:37,988 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 21:43:37,989 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 21:59:23,270 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 21:59:23,270 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 21:59:23,271 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 21:59:23,271 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 21:59:23,271 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 21:59:23,271 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 21:59:23,271 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 21:59:23,287 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 21:59:23,289 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 21:59:23,290 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-08 22:19:20,241 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-08 22:19:20,241 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-08 22:19:20,241 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-08 22:19:20,241 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-08 22:19:20,241 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-08 22:19:20,241 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-08 22:19:20,241 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-08 22:19:20,255 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-08 22:19:20,256 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-08 22:19:20,257 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest
+2026-08-09 05:12:08,563 - src.server - INFO - server.py:421 - Configuration: host=localhost, port=8000, dev=True
+2026-08-09 05:12:08,563 - src.server - INFO - server.py:514 - Starting nanobanana-mcp in MCP mode...
+2026-08-09 05:12:08,571 - src.config_keyloader - INFO - config_keyloader.py:213 - Key loader initialized - Found key: True
+2026-08-09 05:12:08,571 - src.config_keyloader - INFO - config_keyloader.py:215 - Key source: MCP_Settings (GEMINI_API_KEY)
+2026-08-09 05:12:08,571 - src.server - INFO - server.py:532 - 🔐 API key loaded from: MCP_Settings
+2026-08-09 05:12:08,571 - src.server - INFO - server.py:533 - 🔐 Key name: GEMINI_API_KEY
+2026-08-09 05:12:08,571 - src.server - INFO - server.py:537 - 🔐 ✅ Clean - No OS env pollution
+2026-08-09 05:12:08,892 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListToolsRequest
+2026-08-09 05:12:08,904 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListPromptsRequest
+2026-08-09 05:12:08,905 - mcp.server.lowlevel.server - INFO - server.py:720 - Processing request of type ListResourcesRequest

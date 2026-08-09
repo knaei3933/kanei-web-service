@@ -252,6 +252,7 @@ interface FormData {
   sellingPoints: string;
   mustIncludeInfo: string;
   avoidItems: string;
+  currentSiteIssues: string;
   // Step 3
   desiredImage: string;
   colorScheme: string;
@@ -371,6 +372,7 @@ const INITIAL_DATA: FormData = {
   sellingPoints: "",
   mustIncludeInfo: "",
   avoidItems: "",
+  currentSiteIssues: "",
   desiredImage: "",
   colorScheme: "",
   referenceSites: INITIAL_REFERENCE_SITES,
@@ -554,6 +556,31 @@ function CheckCard({
       <span className="text-sm font-medium text-foreground sm:text-base">
         {children}
       </span>
+    </button>
+  );
+}
+
+/* めくり・タグ型チェックボックス（複数選択） */
+function CheckboxTag({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl border px-3 py-2 text-sm transition ${
+        selected
+          ? "border-primary bg-primary/10 text-primary font-medium"
+          : "border-border bg-white text-muted-foreground hover:border-primary/50"
+      }`}
+    >
+      {children}
     </button>
   );
 }
@@ -972,6 +999,11 @@ function StatusRow({
 
 export default function ConsultPage() {
   const [data, setData] = useState<FormData>(INITIAL_DATA);
+  // Step 2 チェックボックス選択（送信時にテキストと結合）
+  const [targetCheckboxes, setTargetCheckboxes] = useState<string[]>([]);
+  const [strengthCheckboxes, setStrengthCheckboxes] = useState<string[]>([]);
+  const [infoCheckboxes, setInfoCheckboxes] = useState<string[]>([]);
+  const [siteIssueCheckboxes, setSiteIssueCheckboxes] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
   /* 参考サイト追加用のIDカウンタ */
@@ -1144,10 +1176,10 @@ export default function ConsultPage() {
     // Step 1
     if (!data.businessType.trim()) return false;
     if (!data.companyName.trim()) return false;
-    // Step 2（新規の必須項目）
-    if (!data.targetCustomer.trim()) return false;
-    if (!data.sellingPoints.trim()) return false;
-    if (!data.mustIncludeInfo.trim()) return false;
+    // Step 2（チェックボックス or 自由入力があれば有効）
+    if (!data.targetCustomer.trim() && targetCheckboxes.length === 0) return false;
+    if (!data.sellingPoints.trim() && strengthCheckboxes.length === 0) return false;
+    if (!data.mustIncludeInfo.trim() && infoCheckboxes.length === 0) return false;
     // Step 3
     if (!data.desiredImage.trim()) return false;
     // Step 4
@@ -1165,7 +1197,7 @@ export default function ConsultPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return false;
     if (!data.phone.trim()) return false;
     return true;
-  }, [data]);
+  }, [data, targetCheckboxes, strengthCheckboxes, infoCheckboxes]);
 
   /* ---- 送信 ---- */
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1199,8 +1231,18 @@ export default function ConsultPage() {
       })
     );
 
+    // Step 2: チェックボックス選択と自由入力を結合
+    const combinedTarget = [...targetCheckboxes, data.targetCustomer].filter(Boolean).join(" / ");
+    const combinedStrength = [...strengthCheckboxes, data.sellingPoints].filter(Boolean).join(" / ");
+    const combinedInfo = [...infoCheckboxes, data.mustIncludeInfo].filter(Boolean).join(" / ");
+    const combinedSiteIssues = [...siteIssueCheckboxes, data.currentSiteIssues].filter(Boolean).join(" / ");
+
     const payload = {
       ...data,
+      targetCustomer: combinedTarget,
+      sellingPoints: combinedStrength,
+      mustIncludeInfo: combinedInfo,
+      currentSiteIssues: combinedSiteIssues,
       referenceSites: meaningfulReferenceSites,
       attachments: safeAttachments,
       submittedAt: new Date().toISOString(),
@@ -1582,7 +1624,7 @@ export default function ConsultPage() {
           </SectionCard>
 
           {/* ============================================================ */}
-          {/*  Step 2: ターゲットと伝えたいこと（新規）                       */}
+          {/*  Step 2: ターゲットと伝えたいこと（構造化選択式）                */}
           {/* ============================================================ */}
           <SectionCard>
             <StepHeader step={2} title="ターゲットと伝えたいこと" />
@@ -1590,49 +1632,389 @@ export default function ConsultPage() {
             {/* 2-1. ターゲット層 */}
             <div className="mb-10">
               <FieldLabel required>ターゲット・理想のお客様</FieldLabel>
+              <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+                該当する項目を選択し、さらに具体的なターゲット像があれば自由入力で補足してください。
+              </p>
+
+              <div className="mb-5 space-y-4 rounded-2xl bg-accent/30 p-4 sm:p-5">
+                {/* 年齢 */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">年齢</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["20代以下", "30代", "40代", "50代", "60代以上"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={targetCheckboxes.includes(label)}
+                        onClick={() =>
+                          setTargetCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 性別 */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">性別</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["男性", "女性", "どちらでも"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={targetCheckboxes.includes(label)}
+                        onClick={() =>
+                          setTargetCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 地域 */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">地域</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["地元・近隣", "県内", "全国", "海外・インバウンド"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={targetCheckboxes.includes(label)}
+                        onClick={() =>
+                          setTargetCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 顧客層 */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">顧客層</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["個人（B2C）", "企業（B2B）", "両方"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={targetCheckboxes.includes(label)}
+                        onClick={() =>
+                          setTargetCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <textarea
                 value={data.targetCustomer}
                 onChange={(e) => update("targetCustomer", e.target.value)}
-                placeholder="例：20〜30代の女性、地元のファミリー層、B2Bの製造業の購買担当者、近隣のシニア層 ..."
+                placeholder="例：自動車部品メーカーの購買担当者で、特に品質管理部門の決裁権を持つ30〜50代の方"
                 rows={3}
                 className={`${inputClass} resize-y`}
               />
               <p className="mt-2 text-sm text-muted-foreground">
-                どんな層に見てもらいたいか、なるべく具体的に教えてください。
+                上記の選択肢に当てはまらない場合や、より詳しいターゲット像があればご記入ください。
               </p>
             </div>
 
             {/* 2-2. 強み・差別化 */}
             <div className="mb-10">
               <FieldLabel required>最大の強み・差別化ポイント</FieldLabel>
+              <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+                該当する強みを選択し、具体的な実績やエピソードがあれば自由入力で補足してください。
+              </p>
+
+              <div className="mb-5 space-y-4 rounded-2xl bg-accent/30 p-4 sm:p-5">
+                {/* 技術・品質 */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">技術・品質</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["確かな実績・ノウハウ", "特許・独自技術", "業界最高水準の品質", "ISO・認証取得"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={strengthCheckboxes.includes(label)}
+                        onClick={() =>
+                          setStrengthCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* サービス */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">サービス</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["スピード・短納期", "24時間対応", "完全予約制", "アフターサービス充実"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={strengthCheckboxes.includes(label)}
+                        onClick={() =>
+                          setStrengthCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 価格 */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">価格</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["業界最安レベル", "コストパフォーマンス重視", "盛り値なし・明朗会計"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={strengthCheckboxes.includes(label)}
+                        onClick={() =>
+                          setStrengthCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 立地・設備 */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">立地・設備</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["好立地・アクセス便利", "最新設備・設備投資", "広い駐車場"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={strengthCheckboxes.includes(label)}
+                        onClick={() =>
+                          setStrengthCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* スタッフ */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">スタッフ</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["資格保有スタッフ", "長年のベテラン", "若手育成", "専門チーム体制"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={strengthCheckboxes.includes(label)}
+                        onClick={() =>
+                          setStrengthCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <textarea
                 value={data.sellingPoints}
                 onChange={(e) => update("sellingPoints", e.target.value)}
-                placeholder="例：創業50年の確かな実績、業界最安クラスの料金、独自の〇〇技術、24時間対応 ..."
+                placeholder="例：創業40年の精密機械加工実績、±0.005mmの加工精度で業界トップクラス"
                 rows={3}
                 className={`${inputClass} resize-y`}
               />
               <p className="mt-2 text-sm text-muted-foreground">
-                他社にはない、お客様ならではの強みを教えてください。
+                選択肢にない独自の強みや、具体的な実績・数字があればご記入ください。
               </p>
             </div>
 
             {/* 2-3. 必ず載せたい情報 */}
             <div className="mb-10">
               <FieldLabel required>必ずホームページに載せたい情報</FieldLabel>
+              <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+                外せない情報を選択し、他にも載せたい内容があれば自由入力で補足してください。
+              </p>
+
+              <div className="mb-5 space-y-4 rounded-2xl bg-accent/30 p-4 sm:p-5">
+                {/* 基本 */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">基本</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["会社概要・沿革", "代表挨拶", "アクセス・地図", "電話番号"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={infoCheckboxes.includes(label)}
+                        onClick={() =>
+                          setInfoCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* サービス */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">サービス</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["サービス・メニュー一覧", "料金表・コース一覧", "施工事例・実績紹介", "よくある質問（FAQ）"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={infoCheckboxes.includes(label)}
+                        onClick={() =>
+                          setInfoCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 信頼性 */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">信頼性</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["保有資格・許認可", "取引先一覧", "スタッフ紹介", "設備紹介"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={infoCheckboxes.includes(label)}
+                        onClick={() =>
+                          setInfoCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                {/* コンバージョン */}
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-foreground">コンバージョン</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["お問い合わせフォーム", "電話番号の目立つ表示", "予約・申し込み導線", "SNS連携"].map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={infoCheckboxes.includes(label)}
+                        onClick={() =>
+                          setInfoCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <textarea
                 value={data.mustIncludeInfo}
                 onChange={(e) => update("mustIncludeInfo", e.target.value)}
-                placeholder="例：料金表、アクセス・地図、施工事例、代表挨拶、保有資格、対応エリア ..."
+                placeholder="例：対応可能エリア一覧、CEマーキング取得状況、導入実績500件以上"
                 rows={3}
                 className={`${inputClass} resize-y`}
               />
               <p className="mt-2 text-sm text-muted-foreground">
-                外せない情報・訴求内容があれば、ぜひお書きください。
+                選択肢にない情報で必ず載せたいものがあればご記入ください。
               </p>
             </div>
 
-            {/* 2-4. 避けたい雰囲気・デザイン */}
+            {/* 2-4. 現在の不満・課題（新規） */}
+            <div className="mb-10">
+              <FieldLabel hint="（任意）">現在のホームページへの不満・課題</FieldLabel>
+              <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+                現在のWebサイト（またはSNSのみの状況）で気になる点があれば選択してください。
+              </p>
+
+              <div className="mb-5 rounded-2xl bg-accent/30 p-4 sm:p-5">
+                <div className="flex flex-wrap gap-2">
+                  {["見た目が古い", "スマホで見にくい", "更新が手間", "問い合わせが来ない", "検索で出てこない", "競合より見劣りする", "情報が少なすぎる"].map((label) => (
+                    <CheckboxTag
+                      key={label}
+                      selected={siteIssueCheckboxes.includes(label)}
+                      onClick={() =>
+                        setSiteIssueCheckboxes((prev) =>
+                          prev.includes(label)
+                            ? prev.filter((v) => v !== label)
+                            : [...prev, label]
+                        )
+                      }
+                    >
+                      {label}
+                    </CheckboxTag>
+                  ))}
+                </div>
+              </div>
+
+              <textarea
+                value={data.currentSiteIssues}
+                onChange={(e) => update("currentSiteIssues", e.target.value)}
+                placeholder="例：現在のサイトは5年前に制作したままで、スマホ表示が崩れている。問い合わせフォームも使いにくい。"
+                rows={2}
+                className={`${inputClass} resize-y`}
+              />
+            </div>
+
+            {/* 2-5. 避けたいトーン・デザイン */}
             <div>
               <FieldLabel hint="（任意）">避けたいトーン・デザイン</FieldLabel>
               <textarea

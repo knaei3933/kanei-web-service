@@ -1,0 +1,7 @@
+{
+  "tool_name": "PowerShell",
+  "tool_input_preview": "{\"command\":\"node node_modules/next/dist/bin/next build 2>&1 | Select-Object -Last 70\",\"timeout\":600000,\"description\":\"Run Next.js build via direct CLI path\",\"dangerouslyDisableSandbox\":true}",
+  "error": "Exit code 1\n  Using cached swc package @next/swc-win32-x64-msvc...\r\n▲ Next.js 16.2.12 (Turbopack)\r\n\r\n  Creating an optimized production build ...\r\nnode : \r\nAt line:1 char:302\r\n+ ... catch {} } }; node node_modules/next/dist/bin/next build 2>&1 | Selec ...\r\n+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : NotSpecified: (:String) [], RemoteException\r\n    + FullyQualifiedErrorId : NativeCommandError\r\n \r\n> Build error occurred\r\nError: Turbopack build...",
+  "timestamp": "2026-08-07T20:46:47.194Z",
+  "retry_count": 6
+}

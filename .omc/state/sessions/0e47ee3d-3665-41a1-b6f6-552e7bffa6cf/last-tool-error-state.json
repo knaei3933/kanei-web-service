@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd \\\"C:/Users/kanei/claudecode/02.Homepage_Dev/kanei-web-service\\\" && npm run build 2>&1\",\"timeout\":600000,\"description\":\"本番ビルド (npm run build)\"}",
+  "error": "Exit code 1\n\n> kanei-web-service@0.1.0 build\n> next build\n\n'next'��(��) ���� �Ǵ� �ܺ� ����, ������ �� �ִ� ���α׷�, �Ǵ�\r\n��ġ ������ �ƴմϴ�.",
+  "timestamp": "2026-08-07T21:16:50.667Z",
+  "retry_count": 6
+}
