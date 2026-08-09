@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   ADMIN_FILTER_GROUPS,
   filterSubmissionsByStatus,
+  getAdminPriorityTier,
   getAdminQuickLinkStyle,
   getAdminQuickLinks,
+  sortSubmissionsByPriority,
   type AdminFilterKey,
 } from "@/lib/admin-navigation";
 
@@ -235,6 +237,115 @@ function FilterTabs({
   );
 }
 
+/**
+ * 運用に必要な件数を一目で把握するための KPI サマリー。
+ * フィルタに対応するカードはクリックでそのタブへ切り替えられ、
+ * 「代表アクション待ち」は対応するフィルタがないため強調表示の参照値とする。
+ * モバイルは 2 列、タブレットは 3 列、デスクトップは 1 行に収まる 5 列。
+ */
+type KpiCardDef = {
+  key: string;
+  label: string;
+  value: number;
+  /** 未定義のときはクリック不可の参照値（フィルタに紐付かない強調カード）。 */
+  filterKey?: AdminFilterKey;
+  /** 強調カード（代表アクション待ち）の装飾に使う。 */
+  accent?: boolean;
+};
+
+function KpiSummary({
+  total,
+  representativeAction,
+  counts,
+  active,
+  onChange,
+}: {
+  total: number;
+  representativeAction: number;
+  counts: Record<AdminFilterKey, number>;
+  active: AdminFilterKey;
+  onChange: (key: AdminFilterKey) => void;
+}) {
+  const cards: KpiCardDef[] = [
+    { key: "all", label: "全体受付", value: total, filterKey: "all" },
+    {
+      key: "representative_action",
+      label: "代表アクション待ち",
+      value: representativeAction,
+      accent: true,
+    },
+    {
+      key: "demo_generated",
+      label: "デモ生成済み",
+      value: counts.demo_generated,
+      filterKey: "demo_generated",
+    },
+    {
+      key: "hearing_in_progress",
+      label: "ヒアリング進行中",
+      value: counts.hearing_in_progress,
+      filterKey: "hearing_in_progress",
+    },
+    {
+      key: "production_ready",
+      label: "本制作可能",
+      value: counts.production_ready,
+      filterKey: "production_ready",
+    },
+  ];
+
+  return (
+    <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {cards.map((c) => {
+        const filterKey = c.filterKey;
+        const clickable = filterKey !== undefined;
+        const isActive = clickable && filterKey === active;
+
+        const containerCls = c.accent
+          ? "border-amber-200 bg-amber-50"
+          : isActive
+            ? "border-indigo-300 bg-indigo-50 ring-1 ring-indigo-200"
+            : "border-border bg-white transition hover:border-indigo-200 hover:shadow";
+        const valueCls = c.accent
+          ? "text-amber-700"
+          : isActive
+            ? "text-indigo-700"
+            : "text-foreground";
+
+        const inner = (
+          <>
+            <div className="text-xs font-medium text-muted-foreground">{c.label}</div>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className={`text-2xl font-bold tabular-nums ${valueCls}`}>
+                {c.value}
+              </span>
+              <span className="text-xs text-muted-foreground">件</span>
+            </div>
+          </>
+        );
+
+        const baseCls = `rounded-2xl border p-4 text-left shadow-sm ${containerCls}`;
+
+        return clickable ? (
+          <button
+            key={c.key}
+            type="button"
+            onClick={() => onChange(filterKey as AdminFilterKey)}
+            aria-pressed={isActive}
+            className={baseCls}
+          >
+            {inner}
+          </button>
+        ) : (
+          <div key={c.key} className={baseCls} aria-label={`${c.label} ${c.value}件`}>
+            {inner}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AdminListPage() {
   const router = useRouter();
   const [authed, setAuthed] = useState(false);
@@ -243,6 +354,14 @@ export default function AdminListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<AdminFilterKey>("all");
+
+  // デフォルトの表示順（優先度ティア → 新着順）を一度だけ適用する。
+  // フィルタ（タブ・KPI）はこの順序を保ったまま絞り込むため、
+  // 全タブで「今すぐ動くべき相談」が上に来る。
+  const sortedSubmissions = useMemo(
+    () => sortSubmissionsByPriority(submissions),
+    [submissions],
+  );
 
   // 各フィルタタブの該当件数。submissions が変わったときだけ再計算する。
   const filterCounts = useMemo<Record<AdminFilterKey, number>>(() => {
@@ -253,15 +372,21 @@ export default function AdminListPage() {
       production_ready: 0,
     };
     for (const group of ADMIN_FILTER_GROUPS) {
-      result[group.key] = filterSubmissionsByStatus(submissions, group.key).length;
+      result[group.key] = filterSubmissionsByStatus(sortedSubmissions, group.key).length;
     }
     return result;
-  }, [submissions]);
+  }, [sortedSubmissions]);
+
+  // 代表が今すぐ動くべき相談（優先度ティア 0）の件数。KPI の強調カードに使う。
+  const representativeActionCount = useMemo(
+    () => sortedSubmissions.filter((s) => getAdminPriorityTier(s.status) === 0).length,
+    [sortedSubmissions],
+  );
 
   // 現在のタブで絞り込んだ一覧。デスクトップの表にもモバイルのカードにもこれを使う。
   const visibleSubmissions = useMemo(
-    () => filterSubmissionsByStatus(submissions, activeFilter),
-    [submissions, activeFilter],
+    () => filterSubmissionsByStatus(sortedSubmissions, activeFilter),
+    [sortedSubmissions, activeFilter],
   );
 
   useEffect(() => {
@@ -363,6 +488,14 @@ export default function AdminListPage() {
           </div>
         ) : (
           <>
+            <KpiSummary
+              total={submissions.length}
+              representativeAction={representativeActionCount}
+              counts={filterCounts}
+              active={activeFilter}
+              onChange={setActiveFilter}
+            />
+
             <FilterTabs
               active={activeFilter}
               onChange={setActiveFilter}

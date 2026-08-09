@@ -194,3 +194,84 @@ export function filterSubmissionsByStatus<T extends { status: string }>(
   if (!statuses) return submissions;
   return submissions.filter((s) => statuses.has(s.status));
 }
+
+/* ------------------------------------------------------------------ */
+/*  優先度ソート（デフォルトの表示順）                                     */
+/* ------------------------------------------------------------------ */
+/*  代表が「今すぐ動くべき相談」を一覧の上に寄せるための、決定的な並べ替え。   */
+/*  テキストの部分一致ではなく、明示的なステータス集合でティアを定義する。     */
+/*                                                                          */
+/*  ApprovalStatus（src/lib/approval-package.ts 参照）の全 16 状態を網羅。   */
+/*                                                                          */
+/*  ティア 0: 代表アクション待ち — 代表が動かないと進まない状態。             */
+/*           （各種承認待ち・ヒアリング開始・第3ゲート承認・納品など）         */
+/*  ティア 1: 能動ループ作業中 — 自動進行中、または顧客・システム待ちで        */
+/*           代表の直接アクションを必要としないが進行中の状態。                */
+/*  ティア 2: 完了・終了 — 納品済み・却下など、もう動く必要がない状態。         */
+/*                                                                          */
+/*  上記 2 集合（ティア 0 / ティア 2）のどちらにも属さないステータスは          */
+/*  自動的にティア 1 になる。未知のステータスもティア 1 にフォールバックし、    */
+/*  一覧の最下部に埋もれないようにする（完了扱いにはしない）。                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 代表アクション待ち（ティア 0）。代表が直接動かないと相談が進まない状態。
+ * ActionCell が何らかのアクション（承認・ヒアリング開始・第3ゲート・納品）を
+ * 抱えるステータスと一致させる。
+ */
+const REPRESENTATIVE_ACTION_STATUSES = new Set<string>([
+  "awaiting_representative_approval",
+  "awaiting_plan_approval",
+  "customer_approved",
+  "pre_production_review",
+  "production_ready",
+]);
+
+/**
+ * 完了・終了（ティア 2）。もう代表が動く必要がない状態。
+ */
+const COMPLETED_STATUSES = new Set<string>(["delivered", "rejected"]);
+
+/** 未知のステータスのフォールバック先ティア（能動ループ作業中として扱う）。 */
+const DEFAULT_PRIORITY_TIER = 1;
+
+/** 優先度ティアの表示用ラベル（デバッグ・UI 補助用）。 */
+export const ADMIN_PRIORITY_TIER_LABELS: Record<number, string> = {
+  0: "代表アクション待ち",
+  1: "能動ループ作業中",
+  2: "完了・終了",
+};
+
+/**
+ * ステータスから優先度ティアを取得する。
+ *  0 = 代表アクション待ち（最優先）
+ *  1 = 能動ループ作業中
+ *  2 = 完了・終了（最後尾）
+ *
+ * 判定はステータス集合への所属のみで行い、決定的かつテキスト照合を含まない。
+ */
+export function getAdminPriorityTier(status: string): number {
+  if (REPRESENTATIVE_ACTION_STATUSES.has(status)) return 0;
+  if (COMPLETED_STATUSES.has(status)) return 2;
+  return DEFAULT_PRIORITY_TIER;
+}
+
+/**
+ * 相談一覧をデフォルトの優先度順に並べ替える。
+ *
+ * 並べ替えルール（決定的）:
+ *  1. 優先度ティアの昇順（代表アクション待ち → 能動ループ作業中 → 完了・終了）
+ *  2. 同一ティア内では受信日時の降順（新しい順）
+ *
+ * 元の配列は変更せず、シャローコピーを並べ替えて返す。
+ * receivedAt は ISO 8601 文字列を前提とし、辞書順比較で時系列順序と一致する。
+ */
+export function sortSubmissionsByPriority<
+  T extends { status: string; receivedAt: string }
+>(submissions: T[]): T[] {
+  return [...submissions].sort((a, b) => {
+    const tierDiff = getAdminPriorityTier(a.status) - getAdminPriorityTier(b.status);
+    if (tierDiff !== 0) return tierDiff;
+    return b.receivedAt.localeCompare(a.receivedAt);
+  });
+}
