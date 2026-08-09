@@ -19,6 +19,13 @@ const STATUS_LABELS: Record<string, string> = {
   awaiting_plan_approval: "計画承認待ち",
   approved_for_execution: "実行準備完了",
   rejected: "却下",
+  demo_generating: "デモ生成中",
+  demo_deployed: "顧客確認待ち",
+  demo_revision_ready: "修正準備中",
+  demo_revised: "修正版確認待ち",
+  customer_approved: "顧客承認済み",
+  production_ready: "本制作準備完了",
+  delivered: "納品済み",
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -30,6 +37,13 @@ function StatusBadge({ status }: { status: string }) {
     awaiting_plan_approval: "bg-indigo-100 text-indigo-800 border-indigo-200",
     approved_for_execution: "bg-emerald-100 text-emerald-800 border-emerald-200",
     rejected: "bg-rose-100 text-rose-800 border-rose-200",
+    demo_generating: "bg-purple-100 text-purple-800 border-purple-200",
+    demo_deployed: "bg-sky-100 text-sky-800 border-sky-200",
+    demo_revision_ready: "bg-orange-100 text-orange-800 border-orange-200",
+    demo_revised: "bg-sky-100 text-sky-800 border-sky-200",
+    customer_approved: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    production_ready: "bg-violet-100 text-violet-800 border-violet-200",
+    delivered: "bg-green-100 text-green-800 border-green-200",
   };
   const cls = styles[status] ?? "bg-blue-100 text-blue-800 border-blue-200";
   return (
@@ -64,6 +78,85 @@ function formatDate(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+type ActionCellProps = {
+  submissionId: string;
+  status: string;
+  onActionSuccess: () => void;
+};
+
+function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) {
+  const [loading, setLoading] = useState(false);
+
+  const handleStartProduction = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/production/${submissionId}`, { method: "POST" });
+      if (res.ok) {
+        onActionSuccess();
+      } else {
+        alert("本制作の開始に失敗しました");
+      }
+    } catch (err) {
+      alert("エラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeliver = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/production/${submissionId}/deliver`, { method: "POST" });
+      if (res.ok) {
+        onActionSuccess();
+      } else {
+        alert("納品処理に失敗しました");
+      }
+    } catch (err) {
+      alert("エラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (status === "demo_deployed" || status === "demo_revised") {
+    return (
+      <a
+        href={`/demo/${submissionId}`}
+        className="inline-flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
+      >
+        デモ確認
+      </a>
+    );
+  }
+
+  if (status === "customer_approved") {
+    return (
+      <button
+        onClick={handleStartProduction}
+        disabled={loading}
+        className="inline-flex items-center rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-100 disabled:opacity-50"
+      >
+        {loading ? "処理中..." : "本制作開始"}
+      </button>
+    );
+  }
+
+  if (status === "production_ready") {
+    return (
+      <button
+        onClick={handleDeliver}
+        disabled={loading}
+        className="inline-flex items-center rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 transition hover:bg-green-100 disabled:opacity-50"
+      >
+        {loading ? "処理中..." : "納品"}
+      </button>
+    );
+  }
+
+  return <span className="text-xs text-muted-foreground">-</span>;
 }
 
 export default function AdminListPage() {
@@ -183,22 +276,45 @@ export default function AdminListPage() {
                     <th className="px-6 py-4 font-medium">業種</th>
                     <th className="px-6 py-4 font-medium">品質スコア</th>
                     <th className="px-6 py-4 font-medium">状態</th>
+                    <th className="px-6 py-4 font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {submissions.map((s) => (
-                    <tr
-                      key={s.id}
-                      onClick={() => router.push(`/admin/${s.id}`)}
-                      className="cursor-pointer transition hover:bg-gray-50"
-                    >
-                      <td className="whitespace-nowrap px-6 py-4 text-muted-foreground">
+                    <tr key={s.id} className="transition hover:bg-gray-50">
+                      <td
+                        className="whitespace-nowrap px-6 py-4 text-muted-foreground cursor-pointer"
+                        onClick={() => router.push(`/admin/${s.id}`)}
+                      >
                         {formatDate(s.receivedAt)}
                       </td>
-                      <td className="px-6 py-4 font-medium text-foreground">{s.companyName}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{s.businessType}</td>
-                      <td className="px-6 py-4"><ScoreBar score={s.score} /></td>
-                      <td className="px-6 py-4"><StatusBadge status={s.status} /></td>
+                      <td
+                        className="px-6 py-4 font-medium text-foreground cursor-pointer"
+                        onClick={() => router.push(`/admin/${s.id}`)}
+                      >
+                        {s.companyName}
+                      </td>
+                      <td
+                        className="px-6 py-4 text-muted-foreground cursor-pointer"
+                        onClick={() => router.push(`/admin/${s.id}`)}
+                      >
+                        {s.businessType}
+                      </td>
+                      <td
+                        className="px-6 py-4 cursor-pointer"
+                        onClick={() => router.push(`/admin/${s.id}`)}
+                      >
+                        <ScoreBar score={s.score} />
+                      </td>
+                      <td
+                        className="px-6 py-4 cursor-pointer"
+                        onClick={() => router.push(`/admin/${s.id}`)}
+                      >
+                        <StatusBadge status={s.status} />
+                      </td>
+                      <td className="px-6 py-4">
+                        <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -208,21 +324,28 @@ export default function AdminListPage() {
             {/* Mobile cards */}
             <div className="space-y-3 md:hidden">
               {submissions.map((s) => (
-                <button
+                <div
                   key={s.id}
-                  onClick={() => router.push(`/admin/${s.id}`)}
-                  className="block w-full rounded-3xl border border-border bg-white p-5 text-left shadow-sm transition hover:shadow-md"
+                  className="rounded-3xl border border-border bg-white p-5 shadow-sm"
                 >
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="font-semibold text-foreground">{s.companyName}</span>
-                    <StatusBadge status={s.status} />
+                  <div
+                    className="cursor-pointer transition hover:bg-gray-50 -m-5 p-5 mb-2"
+                    onClick={() => router.push(`/admin/${s.id}`)}
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="font-semibold text-foreground">{s.companyName}</span>
+                      <StatusBadge status={s.status} />
+                    </div>
+                    <div className="mb-3 text-sm text-muted-foreground">{s.businessType}</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{formatDate(s.receivedAt)}</span>
+                      <ScoreBar score={s.score} />
+                    </div>
                   </div>
-                  <div className="mb-3 text-sm text-muted-foreground">{s.businessType}</div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{formatDate(s.receivedAt)}</span>
-                    <ScoreBar score={s.score} />
+                  <div className="pt-2 border-t border-border flex justify-end">
+                    <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </>
