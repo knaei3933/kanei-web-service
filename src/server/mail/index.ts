@@ -24,11 +24,13 @@ import {
   buildCustomerProposalMail,
   buildCustomerFollowupMail,
   buildCustomerReviewAcknowledgementMail,
+  buildCustomerPreProductionInterviewMail,
 } from "./templates";
 import type {
   CustomerFollowupEmailInput,
   CustomerProposalEmailInput,
   CustomerReviewAcknowledgementEmailInput,
+  CustomerPreProductionInterviewEmailInput,
   InternalConsultNotificationInput,
   MailConfigStatus,
   MailProvider,
@@ -259,11 +261,49 @@ export async function sendCustomerReviewAcknowledgementEmail(
   }
 }
 
+/**
+ * デモをご承認いただいたあと、本制作を始める前の追加ヒアリング・素材収集を
+ * お願いするメールをお客様へ送る（または記録する）。
+ * 宛先アドレスが不正な場合は送信せず status:"error" を返す。
+ * ヒアリング回答ページの URL を本文に載せる。
+ */
+export async function sendCustomerPreProductionInterviewEmail(
+  input: CustomerPreProductionInterviewEmailInput
+): Promise<MailResult> {
+  const provider = resolveMailProvider();
+
+  // 宛先が無効なら送信しない（パイプラインは止めない）
+  if (!isValidEmail(input.to)) {
+    return {
+      provider: provider.name,
+      accepted: [],
+      messageId: null,
+      status: "error",
+      error: "お客様メールアドレスが不正なため、本制作前ヒアリングご依頼メールを送信できませんでした。",
+    };
+  }
+
+  try {
+    const replyTo = process.env.MAIL_REPLY_TO;
+    const mail = buildCustomerPreProductionInterviewMail(input);
+    return await deliverWithFallback({ ...mail, replyTo }, provider);
+  } catch (err) {
+    return {
+      provider: provider.name,
+      accepted: [input.to],
+      messageId: null,
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 // 型の再エクスポート（呼び出し側の利便性）
 export type {
   CustomerFollowupEmailInput,
   CustomerProposalEmailInput,
   CustomerReviewAcknowledgementEmailInput,
+  CustomerPreProductionInterviewEmailInput,
   InternalConsultNotificationInput,
   MailConfigStatus,
   MailProviderName,

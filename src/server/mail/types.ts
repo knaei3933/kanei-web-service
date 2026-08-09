@@ -43,7 +43,10 @@ export interface SendMailInput {
     | "customer-followup"
     | "customer-review-acknowledgement"
     | "customer-demo-ready"
-    | "customer-demo-revision";
+    | "customer-demo-revision"
+    | "customer-pre-production-interview"
+    | "customer-production-started"
+    | "customer-delivered";
 }
 
 /** 配送結果の状態 */
@@ -152,6 +155,26 @@ export interface CustomerReviewAcknowledgementEmailInput {
   companyName?: string;
   /** 受領 ID */
   submissionId: string;
+}
+
+/**
+ * お客様向け「本制作前ヒアリングご依頼」メールの組み立てに必要な入力。
+ * 顧客がデモを承認したあと、本制作を始める前の追加ヒアリング・素材収集を
+ * お願いするために使う。ヒアリングページの URL を載せる。
+ */
+export interface CustomerPreProductionInterviewEmailInput {
+  /** 宛先メールアドレス */
+  to: string;
+  /** 宛先のお名前（任意） */
+  customerName?: string;
+  /** 事業体名（表示に使う） */
+  companyName?: string;
+  /** 受領 ID */
+  submissionId: string;
+  /** ヒアリング回答ページの URL */
+  interviewUrl: string;
+  /** ヒアリングの質問一覧（任意・本文に箇条書きで載せる） */
+  questions?: string[];
 }
 
 /** プロバイダ解決の診断情報（UI / ログ用） */

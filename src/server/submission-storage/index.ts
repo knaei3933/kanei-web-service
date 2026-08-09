@@ -5,9 +5,12 @@
 /*  成果物の読み書きを単一の関数群として提供する。                        */
 /*  mail 層（src/server/mail/index.ts）と同じ「解決＋公開関数」構成。    */
 /*                                                                      */
-/*  成果物（6種）: submission.json / brief.json / approval-package.json  */
-/*                omc-plan.json / execution-handoff.json /               */
-/*                execution-prompt.md                                   */
+/*  成果物（ホワイトリスト制）:                                          */
+/*    submission.json / brief.json / approval-package.json /            */
+/*    omc-plan.json / execution-handoff.json / execution-prompt.md /    */
+/*    demo-feedback.json / revision-handoff.json / delivery-info.json / */
+/*    interview-request.json / interview-answer.json /                  */
+/*    production-readiness.json                                          */
 /*                                                                      */
 /*  モード解決:                                                        */
 /*    - ローカル開発（VERCEL!=1）            → local     (filesystem)    */

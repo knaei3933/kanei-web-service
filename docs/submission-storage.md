@@ -15,19 +15,29 @@ Vercel / serverless では、書き込み可能な `/tmp` が**インスタン�
 そこで成果物を**社内 WSL のリレーストレージへ HTTP 経由で恒久保存**し、
 どのインスタンスでも同じ内容を読めるようにします。
 
-## 保存する成果物（6 種）
+## 保存する成果物（ホワイトリスト制）
 
-ストレージアダプタが扱うのは次の 6 ファイルだけです（ホワイトリスト制。
+ストレージアダプタが扱うのは次の成果物だけです（ホワイトリスト制。
 これ以外はアダプタでもプロキシルートでも拒否します）。
 
 | ファイル | 役割 | 主な書き出し元 |
 | --- | --- | --- |
-| `submission.json` | 顧客送信データ（ペイロード + 添付メタ） | `/api/consult` |
+| `submission.json` | 顧客送信データ（ペイロード + 添付メタ） | `/api/consult`、`/api/consult/[id]/materials` |
 | `brief.json` | 構造化ウェブ制作ブリーフ（決定論的） | `/api/consult` |
 | `approval-package.json` | 社内レビュー用の統制ドキュメント | `approval-package.ts` |
 | `omc-plan.json` | OMC 計画アーティファクト（決定論的） | `approval-package.ts` |
 | `execution-handoff.json` | 実行ハンドオフのメタデータ + コマンド | `approval-package.ts` |
 | `execution-prompt.md` | 実行ハンドオフのプロンプト本文 | `approval-package.ts` |
+| `demo-feedback.json` | デモフィードバック履歴（revision loop） | `demo-feedback-loop.ts` |
+| `revision-handoff.json` | 修正版デモ生成のハンドオフ | `demo-feedback-loop.ts` |
+| `delivery-info.json` | 納品情報 | `/api/production/[id]/deliver` |
+| `interview-request.json` | 本制作前ヒアリングの質問セット | `approval-package.ts` |
+| `interview-answer.json` | 本制作前ヒアリングの顧客回答 | `approval-package.ts` |
+| `production-readiness.json` | 本制作準備度評価のキャッシュ | `/api/admin/submissions/[id]/pre-production/approve` |
+
+> 厳密なホワイトリストは `src/server/submission-storage/types.ts` の
+> `ARTIFACT_FILE_NAMES` が唯一のソースです。新規成果物を足す場合はこの定数と
+> 上流リレーストレージの両対応が必要です。
 
 > **添付ファイル（本体）の扱い**: 顧客がアップロードした添付ファイル本体
 > （画像・PDF 等・バイナリ）も、テキスト成果物と**同じアダプタ**経由で保存します。

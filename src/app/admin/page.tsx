@@ -87,23 +87,8 @@ type ActionCellProps = {
 };
 
 function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
-
-  const handleStartProduction = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/production/${submissionId}`, { method: "POST" });
-      if (res.ok) {
-        onActionSuccess();
-      } else {
-        alert("本制作の開始に失敗しました");
-      }
-    } catch (err) {
-      alert("エラーが発生しました");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDeliver = async () => {
     setLoading(true);
@@ -132,14 +117,28 @@ function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) 
     );
   }
 
-  if (status === "customer_approved") {
+  // customer_approved / pre_production_interview / pre_production_review:
+  // 本制作前ループのアクション（ヒアリング開始・第3ゲート承認）は ADMIN_SECRET が
+  // 必要なため、詳細ページ（/admin/[id]）へ誘導する。
+  // TODO(Phase C): 一覧から直接ヒアリング開始できるようにするなら、secret を渡して
+  // POST /api/consult/[id]/interview を呼ぶ。
+  if (
+    status === "customer_approved" ||
+    status === "pre_production_interview" ||
+    status === "pre_production_review"
+  ) {
+    const label =
+      status === "customer_approved"
+        ? "ヒアリング開始"
+        : status === "pre_production_review"
+          ? "第3ゲート承認"
+          : "回答待ち";
     return (
       <button
-        onClick={handleStartProduction}
-        disabled={loading}
-        className="inline-flex items-center rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-100 disabled:opacity-50"
+        onClick={() => router.push(`/admin/${submissionId}`)}
+        className="inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-100"
       >
-        {loading ? "処理中..." : "本制作開始"}
+        {label} →
       </button>
     );
   }

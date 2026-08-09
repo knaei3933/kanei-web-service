@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { transitionStatus } from "@/lib/approval-package";
-import { writeArtifact } from "@/server/submission-storage";
+import {
+  buildRevisionHandoff,
+  appendDemoFeedback,
+  type DemoFeedbackData,
+} from "@/lib/demo-feedback-loop";
 import { isSafeSubmissionId } from "@/server/submission-storage";
 
 /**
@@ -60,19 +64,22 @@ export async function POST(
       );
     }
 
-    const feedbackData = {
-      action,
+    const submittedAt = new Date().toISOString();
+    // demo-feedback-loop が扱う履歴データの形に正規化（action は含めない）
+    const feedbackData: DemoFeedbackData = {
       rating,
       comment,
-      sections: sections ?? [],
-      submittedAt: new Date().toISOString(),
+      sections: [],
+      submittedAt,
     };
 
     let newStatus: string;
     let feedbackSaved = false;
+    let revisionRound: number | null = null;
 
     if (action === "approve") {
       // 承認: demo_deployed/demo_revised → customer_approved
+      // （このあと admin が本制作前ヒアリングを起票して pre_production_interview へ進める）
       const result = await transitionStatus(submissionId, "customer_approved");
       if (!result) {
         return NextResponse.json(
@@ -82,12 +89,12 @@ export async function POST(
       }
       newStatus = result.status;
 
-      // メール送信（ダミー実装）
       console.log(
         `[Demo Feedback] Customer approved demo for ${submissionId}`
       );
       console.log(`[Demo Feedback] Rating: ${rating}/5, Comment: ${comment}`);
-      // TODO: sendCustomerDemoApprovedEmail(submissionId, feedbackData);
+      // 承認時は個別の完了通知メールは送らない（デモ完成通知は /deployed コールバックで送信済み）。
+      // 次の導線は admin からの本制作前ヒアリングご依頼メール。
     } else {
       // 修正要望: demo_deployed/demo_revised → demo_revision_ready
       const result = await transitionStatus(
@@ -102,37 +109,39 @@ export async function POST(
       }
       newStatus = result.status;
 
-      // フィードバックを保存
+      // revision-handoff.json を生成（外部 handoff-watch がこれを見て修正版を生成する）。
+      // ラウンド番号は履歴件数 + 1 で決まるので、append より先に呼ぶこと。
       try {
-        await writeArtifact(
-          submissionId,
-          "demo-feedback.json",
-          JSON.stringify(feedbackData, null, 2)
-        );
+        const handoff = await buildRevisionHandoff(submissionId, feedbackData);
+        revisionRound = handoff.round;
+        // demo-feedback.json の履歴に追記（handoff.round と一致させる）
+        await appendDemoFeedback(submissionId, feedbackData, handoff.round);
         feedbackSaved = true;
       } catch (error) {
         console.error(
-          `[Demo Feedback] Failed to save feedback for ${submissionId}:`,
+          `[Demo Feedback] Failed to save revision handoff/feedback for ${submissionId}:`,
           error
         );
-        // フィードバック保存失敗は致命的ではないので処理継続
+        // 成果物保存失敗は致命的ではないので処理継続（ステータス遷移は成功している）
       }
 
-      // メール送信（ダミー実装）
       console.log(
         `[Demo Feedback] Customer requested revision for ${submissionId}`
       );
       console.log(`[Demo Feedback] Rating: ${rating}/5, Comment: ${comment}`);
+      if (revisionRound) {
+        console.log(`[Demo Feedback] Revision round: ${revisionRound}`);
+      }
       if (sections && sections.length > 0) {
         console.log(`[Demo Feedback] Sections to revise:`, sections);
       }
-      // TODO: sendCustomerFeedbackReceivedEmail(submissionId, feedbackData);
     }
 
     return NextResponse.json({
       ok: true,
       newStatus,
       feedbackSaved,
+      revisionRound,
     });
   } catch (error) {
     console.error(`[Demo Feedback] Error processing feedback:`, error);

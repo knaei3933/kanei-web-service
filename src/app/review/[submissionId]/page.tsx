@@ -4,10 +4,12 @@ import {
   readApprovalPackage,
   readExecutionPromptMarkdown,
   type ApprovalStatus,
+  type ApprovalPackage,
   type PlanningArtifact,
   type ExecutionHandoff,
   type ApprovalDecision,
   type PlanApprovalDecision,
+  type ProductionReadiness,
 } from "@/lib/approval-package";
 import { readArtifact } from "@/server/submission-storage";
 import { FollowupEditForm } from "./FollowupEditForm";
@@ -34,6 +36,24 @@ function statusLabel(status: ApprovalStatus): string {
       return "実行準備完了";
     case "approved_for_planning":
       return "計画着手承認済み（旧状態）";
+    case "demo_generating":
+      return "デモ生成中";
+    case "demo_deployed":
+      return "デモ公開済み（顧客確認待ち）";
+    case "demo_revision_ready":
+      return "修正要望受領";
+    case "demo_revised":
+      return "修正版公開済み";
+    case "customer_approved":
+      return "顧客承認済み（本制作前ヒアリング待ち）";
+    case "pre_production_interview":
+      return "本制作前ヒアリング中（第3ゲート前）";
+    case "pre_production_review":
+      return "本制作前最終承認待ち（第3ゲート）";
+    case "production_ready":
+      return "本制作可能（第3ゲート承認済み）";
+    case "delivered":
+      return "納品済み";
     case "rejected":
       return "却下";
     default:
@@ -50,6 +70,14 @@ function statusTone(status: ApprovalStatus): string {
     case "approved_for_execution":
       return "bg-emerald-100 text-emerald-800 border-emerald-200";
     case "approved_for_planning":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+    case "pre_production_interview":
+      return "bg-amber-100 text-amber-800 border-amber-200";
+    case "pre_production_review":
+      return "bg-indigo-100 text-indigo-800 border-indigo-200";
+    case "production_ready":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+    case "delivered":
       return "bg-emerald-100 text-emerald-800 border-emerald-200";
     case "rejected":
       return "bg-rose-100 text-rose-800 border-rose-200";
@@ -578,6 +606,130 @@ function ExecutionHandoffSection({
 }
 
 /* ------------------------------------------------------------------ */
+/*  本制作前ヒアリング・再検証（第3ゲート）表示（読み取り専用）          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 第3ゲート（本制作前最終承認）の状態を読み取り専用で表示する。
+ *
+ * 第3ゲートの承認/差し戻しは ADMIN_SECRET が必要なため、この review ページ
+ * （認証なし・submissionId のみ）からは実行できない。状態の可視化にとどめ、
+ * 実際の操作は管理画面（/admin/[submissionId]）で行う前提。
+ */
+function readinessTone(readiness: ProductionReadiness): string {
+  return readiness.status === "ready"
+    ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+    : "bg-amber-100 text-amber-800 border-amber-200";
+}
+
+function PreProductionSection({ pkg }: { pkg: ApprovalPackage }) {
+  const interview = pkg.preProductionInterview;
+  const readiness = pkg.productionReadiness;
+
+  return (
+    <Section
+      title="本制作前ヒアリング・再検証（第3ゲート）"
+      badge={
+        <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-800">
+          Gate3
+        </span>
+      }
+    >
+      {!interview ? (
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          本制作前ヒアリングはまだ開始されていません。顧客がデモを承認
+          （customer_approved）したあと、管理画面からヒアリングを開始してください。
+        </p>
+      ) : (
+        <>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            顧客のヒアリング回答・追加素材・本制作準備度を確認し、第3ゲートで
+            本制作へ進めるかを判断します。起票日時: {interview.requestedAt || "不明"}
+          </p>
+
+          {/* 質問と回答 */}
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-bold text-foreground">ヒアリング回答</p>
+            <ul className="space-y-3">
+              {interview.questions.map((q) => {
+                const answer =
+                  interview.answers?.find((a) => a.questionId === q.id)?.text ?? "";
+                return (
+                  <li key={q.id} className="rounded-2xl bg-accent p-4">
+                    <p className="text-sm font-semibold text-foreground">
+                      {q.text}
+                      {q.required && (
+                        <span className="ml-2 rounded border border-rose-300 bg-rose-100 px-1.5 py-0.5 text-[10px] font-medium text-rose-700">
+                          必須
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                      {answer ? answer : "（未回答）"}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* 追加素材 */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl bg-accent p-4">
+              <p className="text-xs font-bold text-muted-foreground">追加素材</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {interview.additionalMaterialCount} 件
+              </p>
+            </div>
+            <div className="rounded-2xl bg-accent p-4">
+              <p className="text-xs font-bold text-muted-foreground">回答日時</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {interview.answeredAt ?? "（未提出）"}
+              </p>
+            </div>
+          </div>
+
+          {/* 本制作準備度（キャッシュがあれば表示） */}
+          {readiness && (
+            <div className="mt-5">
+              <p className="mb-2 text-sm font-bold text-foreground">本制作準備度（再検証）</p>
+              <div
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${readinessTone(
+                  readiness
+                )}`}
+              >
+                {readiness.status === "ready"
+                  ? `進行可能（スコア ${readiness.score}）`
+                  : `要フォロー（スコア ${readiness.score}）`}
+              </div>
+              {readiness.reasons.length > 0 && (
+                <div className="mt-3">
+                  <BulletList items={readiness.reasons} />
+                </div>
+              )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                評価日時: {readiness.assessedAt || "不明"}
+              </p>
+            </div>
+          )}
+
+          {/* アクションへの案内（認証が必要なため管理画面へ誘導） */}
+          <div className="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm leading-relaxed text-indigo-900">
+            第3ゲートの承認・差し戻しは管理画面から行います（ADMIN_SECRET が必要）。
+            <Link
+              href={`/admin/${pkg.submissionId}`}
+              className="ml-1 font-bold underline"
+            >
+              管理画面を開く →
+            </Link>
+          </div>
+        </>
+      )}
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  メイン                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -825,6 +977,15 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             />
           )}
 
+          {/* 本制作前ヒアリング・再検証（第3ゲート）— 該当状態のときだけ表示 */}
+          {(pkg.preProductionInterview ||
+            pkg.status === "customer_approved" ||
+            pkg.status === "pre_production_interview" ||
+            pkg.status === "pre_production_review" ||
+            pkg.status === "production_ready") && (
+            <PreProductionSection pkg={pkg} />
+          )}
+
           {/* 承認アクション：ステータス別に切り替え */}
           <Section
             title="承認アクション"
@@ -951,6 +1112,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             <div className="mt-6 space-y-3">
               <DecisionLine decision={pkg.approval} label="第1ゲート判定（インテイク）" />
               <DecisionLine decision={pkg.planApproval} label="第2ゲート判定（計画）" />
+              <DecisionLine decision={pkg.preProductionApproval} label="第3ゲート判定（本制作前最終承認）" />
             </div>
           </Section>
 

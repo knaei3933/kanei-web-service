@@ -42,8 +42,10 @@ export const APPROVAL_SCHEMA_VERSION = "1.1.0";
  *   - demo_deployed:                   デモがデプロイ済み・顧客確認待ち
  *   - demo_revision_ready:            顧客フィードバックを受信、Claude Code で修正の準備完了
  *   - demo_revised:                   修正版デモ再デプロイ済み
- *   - customer_approved:              顧客がデモを承認
- *   - production_ready:               本制作開始可能
+ *   - customer_approved:              顧客がデモ方向性を承認（本制作前ヒアリング待ち）
+ *   - pre_production_interview:       本制作前のヒアリング・追加素材収集中
+ *   - pre_production_review:          ヒアリング完了・再検証後、代表の本制作最終承認待ち（第3ゲート）
+ *   - production_ready:               本制作開始可能（第3ゲート承認済み）
  *   - delivered:                      納品済み
  *   - rejected:                        却下
  */
@@ -59,6 +61,8 @@ export type ApprovalStatus =
   | "demo_revision_ready"
   | "demo_revised"
   | "customer_approved"
+  | "pre_production_interview"
+  | "pre_production_review"
   | "production_ready"
   | "delivered"
   | "rejected";
@@ -76,7 +80,8 @@ export type CustomerFacingStatus =
   | "under_internal_review"
   | "demo_ready_for_review"
   | "demo_revision_submitted"
-  | "demo_approved";
+  | "demo_approved"
+  | "pre_production_in_progress";
 
 /** 承認パッケージに含める品質評価（consult-quality の結果と同じ形） */
 export type ApprovalIntakeQuality = ConsultIntakeQuality;
@@ -201,6 +206,65 @@ export interface PlanApprovalDecision {
   memo: string | null;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Phase A: 本制作前ヒアリング（pre-production interview）データモデル  */
+/* ------------------------------------------------------------------ */
+
+/** 本制作前ヒアリングの質問1件（代表者が起票・顧客が回答） */
+export interface InterviewQuestion {
+  /** 質問識別子（機械処理用・英数字と記号） */
+  id: string;
+  /** 質問文（日本語・顧客向け） */
+  text: string;
+  /** 必須質問か（未回答だと本制作準備度が下がる） */
+  required: boolean;
+  /** 入力欄のプレースホルダ（任意・日本語） */
+  placeholder?: string;
+}
+
+/** 顧客からのヒアリング回答1件 */
+export interface InterviewAnswer {
+  /** 対応する質問 id */
+  questionId: string;
+  /** 回答本文（日本語） */
+  text: string;
+}
+
+/**
+ * 本制作前ヒアリングのまとまり。
+ * 顧客がデモを承認（customer_approved）したあと、本制作前に追加で収集する。
+ * requestedAt に代表者が起票し、answeredAt に顧客が回答する。
+ */
+export interface PreProductionInterview {
+  /** ヒアリング依頼日時（ISO8601） */
+  requestedAt: string;
+  /** 起票者（admin 等・任意） */
+  requestedBy: string | null;
+  /** 質問セット */
+  questions: InterviewQuestion[];
+  /** 顧客の回答（未回答時は null） */
+  answers: InterviewAnswer[] | null;
+  /** 回答日時（ISO8601・未回答時は null） */
+  answeredAt: string | null;
+  /** 回答と同時に追加提出された素材ファイル数 */
+  additionalMaterialCount: number;
+}
+
+/**
+ * 本制作準備度の評価結果（assessProductionReadiness のキャッシュ用）。
+ * consult-quality と同じ「スコア + 閾値 + reasons」の思想。
+ */
+export interface ProductionReadiness {
+  /** ready: 本制作に進める / needs_followup: 追加ヒアリングが必要 */
+  status: "ready" | "needs_followup";
+  /** 0〜100 のスコア */
+  score: number;
+  /** 判定理由（日本語） */
+  reasons: string[];
+  /** 評価日時（ISO8601） */
+  assessedAt: string;
+}
+
 /**
  * 実行ハンドオフ成果物（内部専用）。
  * 計画を承認したときに生成する。serverless のリクエストハンドラからは
@@ -265,6 +329,12 @@ export interface ApprovalPackage {
   planApproval: PlanApprovalDecision;
   /** 実行ハンドオフ（計画承認後に生成・内部専用・未生成時は null） */
   executionHandoff: ExecutionHandoff | null;
+  /** 本制作前ヒアリング（顧客デモ承認後に収集・未実施時は null） */
+  preProductionInterview: PreProductionInterview | null;
+  /** 本制作前最終承認（第3ゲート）の判定。PlanApprovalDecision と同じ形。 */
+  preProductionApproval: PlanApprovalDecision;
+  /** 本制作準備度評価のキャッシュ（assessProductionReadiness 結果・未評価時は null） */
+  productionReadiness: ProductionReadiness | null;
 }
 
 /** buildApprovalPackage に渡す、保存済みファイルの軽量メタデータ */
@@ -582,6 +652,15 @@ export function buildApprovalPackage(
       memo: null,
     },
     executionHandoff: null,
+    // Phase A: 本制作前ヒアリング・第3ゲート・準備度は受領時点では未実施
+    preProductionInterview: null,
+    preProductionApproval: {
+      representativeDecision: null,
+      decidedAt: null,
+      decidedBy: null,
+      memo: null,
+    },
+    productionReadiness: null,
   };
 }
 
@@ -687,6 +766,74 @@ function normalizeExecutionHandoff(
   };
 }
 
+/** 読み込んだ生 JSON から本制作前ヒアリングの質問を正規化する */
+function normalizeInterviewQuestion(raw: unknown): InterviewQuestion | null {
+  const o = asObject(raw);
+  const id = asString(o.id);
+  const text = asString(o.text);
+  if (!id || !text) return null;
+  return {
+    id,
+    text,
+    required: o.required === true,
+    placeholder: typeof o.placeholder === "string" ? o.placeholder : undefined,
+  };
+}
+
+/** 読み込んだ生 JSON から本制作前ヒアリングを正規化する。不在・形式不正時は null。 */
+function normalizePreProductionInterview(
+  raw: unknown
+): PreProductionInterview | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const o = asObject(raw);
+  const requestedAt = asString(o.requestedAt);
+  if (!requestedAt) return null;
+
+  const questionsRaw = Array.isArray(o.questions) ? o.questions : [];
+  const questions = questionsRaw
+    .map((q) => normalizeInterviewQuestion(q))
+    .filter((q): q is InterviewQuestion => q !== null);
+  if (questions.length === 0) return null;
+
+  const answersRaw = Array.isArray(o.answers) ? o.answers : null;
+  const answers: InterviewAnswer[] | null = answersRaw
+    ? answersRaw
+        .map((a) => {
+          const ao = asObject(a);
+          const questionId = asString(ao.questionId);
+          if (!questionId) return null;
+          return { questionId, text: asString(ao.text) };
+        })
+        .filter((a): a is InterviewAnswer => a !== null)
+    : null;
+
+  return {
+    requestedAt,
+    requestedBy: typeof o.requestedBy === "string" ? o.requestedBy : null,
+    questions,
+    answers,
+    answeredAt: typeof o.answeredAt === "string" ? o.answeredAt : null,
+    additionalMaterialCount:
+      typeof o.additionalMaterialCount === "number"
+        ? o.additionalMaterialCount
+        : 0,
+  };
+}
+
+/** 読み込んだ生 JSON から本制作準備度評価を正規化する。不在・形式不正時は null。 */
+function normalizeProductionReadiness(raw: unknown): ProductionReadiness | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const o = asObject(raw);
+  const status = asString(o.status);
+  if (status !== "ready" && status !== "needs_followup") return null;
+  return {
+    status,
+    score: typeof o.score === "number" ? o.score : 0,
+    reasons: asStringArray(o.reasons),
+    assessedAt: asString(o.assessedAt),
+  };
+}
+
 /**
  * 読み込んだ生 JSON を ApprovalPackage の形へ正規化する。
  * 信頼できない入力（古い形式・手編集）でも安全に扱えるように、
@@ -713,6 +860,8 @@ function normalizeApprovalPackage(
     "demo_revision_ready",
     "demo_revised",
     "customer_approved",
+    "pre_production_interview",
+    "pre_production_review",
     "production_ready",
     "delivered",
     "rejected",
@@ -728,6 +877,7 @@ function normalizeApprovalPackage(
     "demo_ready_for_review",
     "demo_revision_submitted",
     "demo_approved",
+    "pre_production_in_progress",
   ];
   const resolvedCfs: CustomerFacingStatus = validCustomerStatuses.includes(cfs)
     ? cfs
@@ -823,6 +973,9 @@ function normalizeApprovalPackage(
     planningArtifact: normalizePlanningArtifact(o.planningArtifact, id),
     planApproval: normalizePlanApproval(o.planApproval),
     executionHandoff: normalizeExecutionHandoff(o.executionHandoff, id),
+    preProductionInterview: normalizePreProductionInterview(o.preProductionInterview),
+    preProductionApproval: normalizePlanApproval(o.preProductionApproval),
+    productionReadiness: normalizeProductionReadiness(o.productionReadiness),
   };
 }
 
@@ -1257,6 +1410,177 @@ export async function rejectPlan(
 }
 
 /* ------------------------------------------------------------------ */
+/*  Phase A: 本制作前ヒアリング → 再検証 → 第3ゲート（本制作最終承認）   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 顧客がデモを承認したあと、本制作前のヒアリングを開始する遷移。
+ * 質問セットを preProductionInterview に保存し、interview-request.json を書き出し、
+ * status を customer_approved → pre_production_interview へ進める。
+ *
+ * @returns 更新後のパッケージ。無効な遷移・不在時は例外または null。
+ * @throws 現在のステータスから遷移できない場合は Error
+ */
+export async function startPreProductionInterview(
+  submissionId: string,
+  questions: InterviewQuestion[],
+  requestedBy: string | null = null
+): Promise<ApprovalPackage | null> {
+  const pkg = await readApprovalPackage(submissionId);
+  if (!pkg) return null;
+
+  if (!isValidTransition(pkg.status, "pre_production_interview")) {
+    throw new Error(
+      `無効なステータス遷移: ${pkg.status} → pre_production_interview`
+    );
+  }
+
+  const requestedAt = new Date().toISOString();
+  pkg.preProductionInterview = {
+    requestedAt,
+    requestedBy,
+    questions,
+    answers: null,
+    answeredAt: null,
+    additionalMaterialCount: 0,
+  };
+
+  try {
+    await writeArtifact(
+      submissionId,
+      "interview-request.json",
+      JSON.stringify(
+        {
+          schemaVersion: "1.0.0",
+          submissionId,
+          requestedAt,
+          requestedBy,
+          questions,
+        },
+        null,
+        2
+      )
+    );
+  } catch {
+    // ファイル書き出し失敗でもパッケージ本体の更新を優先する
+  }
+
+  pkg.status = "pre_production_interview";
+  pkg.customerFacingStatus = toCustomerFacingStatus(pkg.status);
+  await writeApprovalPackage(pkg);
+  return pkg;
+}
+
+/**
+ * 顧客がヒアリングに回答したときの遷移。
+ * 回答を preProductionInterview.answers に保存し、interview-answer.json を書き出し、
+ * status を pre_production_interview → pre_production_review（代表の最終承認待ち）へ進める。
+ *
+ * @throws 現在のステータスから遷移できない場合は Error
+ */
+export async function completePreProductionInterview(
+  submissionId: string,
+  answers: InterviewAnswer[],
+  additionalMaterialCount = 0
+): Promise<ApprovalPackage | null> {
+  const pkg = await readApprovalPackage(submissionId);
+  if (!pkg) return null;
+
+  if (!isValidTransition(pkg.status, "pre_production_review")) {
+    throw new Error(
+      `無効なステータス遷移: ${pkg.status} → pre_production_review`
+    );
+  }
+
+  const answeredAt = new Date().toISOString();
+  const interview = pkg.preProductionInterview ?? {
+    requestedAt: answeredAt,
+    requestedBy: null,
+    questions: [],
+    answers: null,
+    answeredAt: null,
+    additionalMaterialCount: 0,
+  };
+  interview.answers = answers;
+  interview.answeredAt = answeredAt;
+  interview.additionalMaterialCount = additionalMaterialCount;
+  pkg.preProductionInterview = interview;
+
+  try {
+    await writeArtifact(
+      submissionId,
+      "interview-answer.json",
+      JSON.stringify(
+        {
+          schemaVersion: "1.0.0",
+          submissionId,
+          answeredAt,
+          additionalMaterialCount,
+          answers,
+        },
+        null,
+        2
+      )
+    );
+  } catch {
+    // ファイル書き出し失敗でもパッケージ本体の更新を優先する
+  }
+
+  pkg.status = "pre_production_review";
+  pkg.customerFacingStatus = toCustomerFacingStatus(pkg.status);
+  await writeApprovalPackage(pkg);
+  return pkg;
+}
+
+/**
+ * 代表者の本制作前最終承認（第3ゲート）。
+ *   - approve の場合: pre_production_review → production_ready
+ *   - reject の場合: pre_production_review → pre_production_interview（追加ヒアリングへ差し戻し）
+ *
+ * この関数は状態遷移と判定記録だけを行う。本制作準備度の評価（assessProductionReadiness）は
+ * 呼び出し側で実施し、結果を productionReadiness にキャッシュしてから呼ぶ想定。
+ *
+ * @throws 現在のステータスから遷移できない場合は Error
+ */
+export async function recordPreProductionApproval(
+  submissionId: string,
+  action: "approve" | "reject",
+  meta: UpdateDecisionMeta = {}
+): Promise<ApprovalPackage | null> {
+  const pkg = await readApprovalPackage(submissionId);
+  if (!pkg) return null;
+
+  const nextStatus: ApprovalStatus =
+    action === "approve" ? "production_ready" : "pre_production_interview";
+
+  if (!isValidTransition(pkg.status, nextStatus)) {
+    throw new Error(
+      `無効なステータス遷移: ${pkg.status} → ${nextStatus}`
+    );
+  }
+
+  pkg.preProductionApproval = toDecision(
+    action,
+    new Date().toISOString(),
+    meta
+  );
+  // 差し戻し時は回答をリセットして再ヒアリングできるようにする
+  if (action === "reject" && pkg.preProductionInterview) {
+    pkg.preProductionInterview = {
+      ...pkg.preProductionInterview,
+      answers: null,
+      answeredAt: null,
+      additionalMaterialCount: 0,
+    };
+  }
+
+  pkg.status = nextStatus;
+  pkg.customerFacingStatus = toCustomerFacingStatus(pkg.status);
+  await writeApprovalPackage(pkg);
+  return pkg;
+}
+
+/* ------------------------------------------------------------------ */
 /*  デモ生成・レビューループの状態遷移                                 */
 /* ------------------------------------------------------------------ */
 
@@ -1264,7 +1588,8 @@ export async function rejectPlan(
  * 内部ステータスから顧客向けステータスへマッピングする。
  * demo_deployed / demo_revised → demo_ready_for_review
  * demo_revision_ready → demo_revision_submitted
- * customer_approved / production_ready → demo_approved
+ * customer_approved / production_ready / delivered → demo_approved
+ * pre_production_interview / pre_production_review → pre_production_in_progress
  * その他 → under_internal_review（デフォルト）
  */
 export function toCustomerFacingStatus(
@@ -1280,6 +1605,9 @@ export function toCustomerFacingStatus(
     case "production_ready":
     case "delivered":
       return "demo_approved";
+    case "pre_production_interview":
+    case "pre_production_review":
+      return "pre_production_in_progress";
     default:
       return "under_internal_review";
   }
@@ -1288,6 +1616,15 @@ export function toCustomerFacingStatus(
 /**
  * 有効なステータス遷移の一覧。
  * キー: 現在のステータス、値: 遷移可能な次のステータスの配列
+ *
+ * 本制作前（第3ゲート）フロー:
+ *   customer_approved → pre_production_interview（ヒアリング開始）
+ *   pre_production_interview → pre_production_review（顧客回答完了・再検証後）
+ *   pre_production_review → production_ready（代表の本制作最終承認）
+ *   pre_production_review → pre_production_interview（代表の差し戻し）
+ *
+ * 注意: かつて存在した customer_approved → production_ready（直接遷移）は廃止。
+ *   本制作へ進むには必ずヒアリング→再検証→第3ゲート承認を経る必要がある。
  */
 export const VALID_TRANSITIONS: Map<ApprovalStatus, ApprovalStatus[]> =
   new Map([
@@ -1313,7 +1650,15 @@ export const VALID_TRANSITIONS: Map<ApprovalStatus, ApprovalStatus[]> =
     ],
     [
       "customer_approved",
-      ["production_ready"],
+      ["pre_production_interview"],
+    ],
+    [
+      "pre_production_interview",
+      ["pre_production_review"],
+    ],
+    [
+      "pre_production_review",
+      ["production_ready", "pre_production_interview"],
     ],
     [
       "production_ready",

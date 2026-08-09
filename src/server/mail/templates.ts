@@ -12,6 +12,7 @@
 
 import type {
   CustomerFollowupEmailInput,
+  CustomerPreProductionInterviewEmailInput,
   CustomerProposalEmailInput,
   CustomerReviewAcknowledgementEmailInput,
   InternalConsultNotificationInput,
@@ -427,6 +428,123 @@ export function buildCustomerFollowupMail(
     html,
     submissionId: input.submissionId,
     purpose: "customer-followup",
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  お客様向け「本制作前ヒアリングご依頼」メール                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * デモをご承認いただいたあと、本制作を始める前の追加ヒアリング・素材収集を
+ * お願いするメールを組み立てる。ヒアリング回答ページの URL を載せる。
+ * まだ完成したとは伝えない（あくまで「最後にもう少しだけ」の位置づけ）。
+ */
+export function buildCustomerPreProductionInterviewMail(
+  input: CustomerPreProductionInterviewEmailInput
+): SendMailInput {
+  const displayName = input.customerName || input.companyName || "ご依頼主様";
+  const companyNameLine = input.companyName ? `${input.companyName} 様\n\n` : "";
+  const subject = `【金井ホームページ制作】本制作を始める前に、もう少しお伺いします — ${
+    input.companyName || "ご依頼主様"
+  }`;
+
+  const questions = (input.questions ?? []).filter((q) => q.trim().length > 0);
+
+  const lines: string[] = [];
+  lines.push(`${displayName} 様`);
+  lines.push("");
+  lines.push(companyNameLine);
+  lines.push("この度は、デモページをご確認いただきありがとうございました。");
+  lines.push(
+    "ご承認いただきありがとうございます。いよいよ本制作に着手いたします。"
+  );
+  lines.push("");
+  lines.push(
+    "本制作を始めるにあたり、最後にもう少しだけ詳しくお伺いしたいことがございます。"
+  );
+  lines.push(
+    "下記のページから、いくつかの質問にお答えいただき、追加の素材（写真や資料など）があれば"
+  );
+  lines.push("ご提出いただけますでしょうか。");
+  lines.push("");
+  lines.push("【本制作前ヒアリング ページ】");
+  lines.push(input.interviewUrl);
+  lines.push("");
+  if (questions.length > 0) {
+    lines.push("【お伺いしたいこと（ページでもご回答いただけます）】");
+    questions.forEach((q, i) => lines.push(`${i + 1}. ${q}`));
+    lines.push("");
+  }
+  lines.push(
+    "いただいたご回答と素材をもとに、最終的なホームページを制作してまいります。"
+  );
+  lines.push("お手数をおかけいたしますが、よろしくお願いいたします。");
+  lines.push("");
+  lines.push("金井ホームページ制作");
+  lines.push("Email: info@kanei-trade.co.jp");
+  lines.push(`お問い合わせ ID: ${input.submissionId}`);
+
+  const text = lines
+    .filter((line, i, arr) => !(line === "" && arr[i - 1] === "" && i > 1))
+    .join("\n");
+
+  const questionsHtml =
+    questions.length > 0
+      ? questions
+          .map(
+            (q, i) =>
+              `<li style="margin-bottom:8px;line-height:1.7;">${i + 1}. ${escapeHtml(
+                q
+              )}</li>`
+          )
+          .join("")
+      : "";
+
+  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Meiryo,sans-serif;color:#111827;max-width:600px;">
+  <p style="font-size:15px;">${escapeHtml(displayName)} 様</p>
+  <p style="font-size:14px;line-height:1.8;">
+    この度は、デモページをご確認いただきありがとうございました。<br/>
+    ご承認いただきありがとうございます。いよいよ<span style="font-weight:bold;">本制作</span>に着手いたします。
+  </p>
+  <p style="font-size:14px;line-height:1.8;">
+    本制作を始めるにあたり、最後にもう少しだけ詳しくお伺いしたいことがございます。<br/>
+    下記のページから、いくつかの質問にお答えいただき、追加の素材（写真や資料など）があればご提出いただけますでしょうか。
+  </p>
+  <div style="margin:20px 0;padding:16px;border:1px solid #a78bfa;border-radius:12px;background:#f5f3ff;">
+    <p style="margin:0 0 8px;font-size:13px;font-weight:bold;color:#6d28d9;">本制作前ヒアリング ページ</p>
+    <p style="margin:0;"><a href="${escapeHtml(
+      input.interviewUrl
+    )}" style="color:#7c3aed;word-break:break-all;font-weight:bold;">${escapeHtml(
+    input.interviewUrl
+  )}</a></p>
+  </div>${
+    questionsHtml
+      ? `<div style="margin:20px 0;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;">
+    <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#374151;">お伺いしたいこと（ページでもご回答いただけます）</p>
+    <ol style="margin:0;padding-left:20px;font-size:14px;color:#111827;">${questionsHtml}</ol>
+  </div>`
+      : ""
+  }
+  <p style="font-size:14px;line-height:1.8;">
+    いただいたご回答と素材をもとに、最終的なホームページを制作してまいります。<br/>
+    お手数をおかけいたしますが、よろしくお願いいたします。
+  </p>
+  <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb;"/>
+  <p style="font-size:13px;color:#6b7280;line-height:1.7;">
+    金井ホームページ制作<br/>
+    Email: info@kanei-trade.co.jp<br/>
+    お問い合わせ ID: ${escapeHtml(input.submissionId)}
+  </p>
+</div>`;
+
+  return {
+    to: [{ address: input.to, name: input.customerName || undefined }],
+    subject,
+    text,
+    html,
+    submissionId: input.submissionId,
+    purpose: "customer-pre-production-interview",
   };
 }
 

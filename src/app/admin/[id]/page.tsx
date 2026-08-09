@@ -118,6 +118,8 @@ function badgeColor(status: string): string {
   if (s === "demo_revision_ready") return "bg-orange-100 text-orange-800";
   if (s === "demo_revised") return "bg-sky-100 text-sky-800";
   if (s === "customer_approved") return "bg-emerald-100 text-emerald-800";
+  if (s === "pre_production_interview") return "bg-amber-100 text-amber-800";
+  if (s === "pre_production_review") return "bg-indigo-100 text-indigo-800";
   if (s === "production_ready") return "bg-violet-100 text-violet-800";
   if (s === "delivered") return "bg-green-100 text-green-800";
   if (s === "approved_for_execution") return "bg-violet-100 text-violet-800";
@@ -172,7 +174,9 @@ function statusLabel(status: string): string {
   if (s === "demo_deployed") return "顧客確認待ち";
   if (s === "demo_revision_ready") return "修正要望受付済み";
   if (s === "demo_revised") return "修正版確認待ち";
-  if (s === "customer_approved") return "顧客承認済み";
+  if (s === "customer_approved") return "顧客承認済み（ヒアリング待ち）";
+  if (s === "pre_production_interview") return "本制作前ヒアリング中";
+  if (s === "pre_production_review") return "本制作前承認待ち（第3ゲート）";
   if (s === "production_ready") return "本制作待機中";
   if (s === "delivered") return "納品済み";
   if (s === "awaiting_plan_approval") return "企画承認待ち";
@@ -208,7 +212,8 @@ export default function AdminDetailPage() {
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [executing, setExecuting] = useState(false);
   const [demoStatus, setDemoStatus] = useState<DemoStatusResponse | null>(null);
-  const [startingProduction, setStartingProduction] = useState(false);
+  const [startingInterview, setStartingInterview] = useState(false);
+  const [gate3Acting, setGate3Acting] = useState(false);
   const [delivering, setDelivering] = useState(false);
 
   /* auth + fetch */
@@ -419,33 +424,74 @@ export default function AdminDetailPage() {
     }
   }
 
-  async function handleStartProduction() {
+  // 本制作前ヒアリングを開始する（customer_approved → pre_production_interview）。
+  // 従来の「本制作を開始（customer_approved → production_ready 直遷移）」は
+  // 新しいステートマシンで無効化されたため、本制作へは必ずヒアリング → Gate3 を経由する。
+  async function handleStartInterview() {
     const secret = sessionStorage.getItem("admin_secret");
     if (!secret) return;
-    setStartingProduction(true);
+    setStartingInterview(true);
     setActionMsg(null);
     try {
       const res = await fetch(
-        `/api/production/${encodeURIComponent(id)}`,
+        `/api/consult/${encodeURIComponent(id)}/interview`,
         {
           method: "POST",
           headers: {
             Authorization: `Bearer ${secret}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ action: "start_production" }),
+          // デフォルト質問セットで起票し、顧客へ依頼メールを送る
+          body: JSON.stringify({ sendMail: true }),
         },
       );
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
-        throw new Error(`本制作開始に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
+        throw new Error(`ヒアリング開始に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
       }
-      setActionMsg("本制作を開始しました。");
+      setActionMsg("本制作前ヒアリングを開始し、顧客へ依頼メールを送信しました。");
       router.refresh();
     } catch (e: unknown) {
-      setActionMsg(e instanceof Error ? e.message : "本制作開始エラーが発生しました。");
+      setActionMsg(e instanceof Error ? e.message : "ヒアリング開始エラーが発生しました。");
     } finally {
-      setStartingProduction(false);
+      setStartingInterview(false);
+    }
+  }
+
+  // 第3ゲート（本制作前最終承認）。
+  //   approve: pre_production_review → production_ready
+  //   reject : pre_production_review → pre_production_interview（追加ヒアリングへ差し戻し）
+  async function handleGate3(action: "approve" | "reject") {
+    const secret = sessionStorage.getItem("admin_secret");
+    if (!secret) return;
+    setGate3Acting(true);
+    setActionMsg(null);
+    try {
+      const res = await fetch(
+        `/api/admin/submissions/${encodeURIComponent(id)}/pre-production/approve`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${secret}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action }),
+        },
+      );
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`第3ゲート処理に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
+      }
+      setActionMsg(
+        action === "approve"
+          ? "本制作前最終承認（第3ゲート）を行いました。"
+          : "本制作前ヒアリングへ差し戻しました。",
+      );
+      router.refresh();
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : "第3ゲート処理エラーが発生しました。");
+    } finally {
+      setGate3Acting(false);
     }
   }
 
@@ -906,16 +952,84 @@ export default function AdminDetailPage() {
           </div>
         )}
 
-        {/* customer_approved: 本制作開始ボタン */}
+        {/* customer_approved: 本制作前ヒアリングを開始 */}
+        {/*
+          従来の「本制作を開始（customer_approved → production_ready 直遷移）」は
+          新ステートマシンで無効化済み。本制作へは必ずヒアリング → 再検証 → 第3ゲートを経由する。
+          TODO(Phase C): ヒアリング質問をカスタマイズする UI があればここに統合する。
+        */}
         {apStatus === "customer_approved" && (
-          <button
-            type="button"
-            disabled={startingProduction}
-            onClick={handleStartProduction}
-            className="rounded-xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {startingProduction ? "処理中..." : "📦 本制作を開始"}
-          </button>
+          <div className="space-y-3">
+            <button
+              type="button"
+              disabled={startingInterview}
+              onClick={handleStartInterview}
+              className="rounded-xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {startingInterview ? "処理中..." : "📝 本制作前ヒアリングを開始"}
+            </button>
+            <p className="text-sm text-muted-foreground">
+              デフォルトの質問セットでヒアリングを起票し、顧客へ依頼メールを送信します。
+              顧客は <span className="font-mono text-xs">/interview/{id}</span> で回答します。
+            </p>
+          </div>
+        )}
+
+        {/* pre_production_interview: 顧客の回答待ち */}
+        {apStatus === "pre_production_interview" && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={`/interview/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700"
+              >
+                🔗 ヒアリング回答ページを確認
+              </Link>
+              <span className="text-sm text-muted-foreground">
+                顧客のヒアリング回答・追加素材を待っています
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              顧客が回答を送信すると、自動的に第3ゲート（本制作前最終承認待ち）へ進みます。
+            </p>
+          </div>
+        )}
+
+        {/* pre_production_review: 第3ゲート（本制作前最終承認） */}
+        {apStatus === "pre_production_review" && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              ヒアリング回答・追加素材・本制作準備度を確認のうえ、本制作へ進めるか判断してください。
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                disabled={gate3Acting}
+                onClick={() => handleGate3("approve")}
+                className="rounded-xl bg-violet-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-violet-700 disabled:opacity-50"
+              >
+                {gate3Acting ? "処理中..." : "✅ 本制作を承認する（第3ゲート）"}
+              </button>
+              <button
+                type="button"
+                disabled={gate3Acting}
+                onClick={() => handleGate3("reject")}
+                className="rounded-xl bg-rose-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50"
+              >
+                {gate3Acting ? "処理中..." : "↩️ ヒアリングへ差し戻す"}
+              </button>
+            </div>
+            <Link
+              href={`/review/${id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-sm text-blue-600 hover:underline"
+            >
+              レビュー画面で回答・準備度を確認する →
+            </Link>
+          </div>
         )}
 
         {/* production_ready: 納品処理ボタン */}
@@ -948,6 +1062,8 @@ export default function AdminDetailPage() {
           "demo_revised",
           "demo_revision_ready",
           "customer_approved",
+          "pre_production_interview",
+          "pre_production_review",
           "production_ready",
           "delivered",
         ].includes(apStatus) && (

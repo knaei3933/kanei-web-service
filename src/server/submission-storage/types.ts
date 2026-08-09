@@ -44,6 +44,9 @@ export const ARTIFACT_FILE_NAMES = [
   "demo-feedback.json",
   "revision-handoff.json",
   "delivery-info.json",
+  "interview-request.json",
+  "interview-answer.json",
+  "production-readiness.json",
 ] as const;
 
 /** 成果物のファイル名（固定セットのいずれか） */

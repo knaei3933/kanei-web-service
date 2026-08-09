@@ -10,6 +10,12 @@ import { readArtifact, artifactExists } from "@/server/submission-storage";
 /*    管理者が「デモを生成する」ボタンを押した時に呼ばれるエンドポイント。*/
 /*    Claude Code でデモサイトを生成するプロセスを開始します。           */
 /*                                                                      */
+/*  ※生成本体はリポジトリ外の外部プロセス（kanei_demo_handoff_watch.py）  */
+/*    が担う。本ルートの役割は (1) handoff 成果物を整え (2) status を     */
+/*    demo_generating に進めること。ローカルでは .py の起動も試みるが、   */
+/*    serverless では起動不可のため status 遷移のみ。完了報告は外部から   */
+/*    POST /api/demo/[id]/deployed で受け取る。詳細は docs/demo-handoff-watch.md。*/
+/*                                                                      */
 /*  認証:                                                              */
 /*    Authorization: Bearer *** を定時間比較で検証。         */
 /*    ADMIN_SECRET 未設定・不一致時は 401（構造化 JSON）。              */
@@ -199,13 +205,26 @@ export async function POST(
     );
   }
 
-  // Python スクリプトを起動
-  const pythonResult = await startDemoGeneration(submissionId);
-  if (!pythonResult.ok) {
-    return Response.json(
-      { ok: false, error: pythonResult.error },
-      { status: pythonResult.status }
-    );
+  // デモ生成の起動方針（正直な設計）:
+  //   - ローカル開発（VERCEL!=1）: kanei_demo_handoff_watch.py の起動を試みる。
+  //     ただし .py はリポジトリ外（WSL）にあり serverless では起動できないため、
+  //     起動の成否によらず「handoff 成果物が生成済みであること」が本体。
+  //   - 本番（serverless）: プロセス起動不可のため spawn しない。
+  //     execution-handoff.json / revision-handoff.json を外部 handoff-watch が監視し、
+  //     完了後に POST /api/demo/[id]/deployed で demo_deployed / demo_revised へ反映する。
+  //     詳細は docs/demo-handoff-watch.md。
+  const isServerless = process.env.VERCEL === "1";
+  let spawnAttempted = false;
+  if (!isServerless) {
+    const pythonResult = await startDemoGeneration(submissionId);
+    spawnAttempted = true;
+    if (!pythonResult.ok) {
+      // ローカル spawn の同期エラー。handoff 成果物は生成済みなので、
+      // status は demo_generating に進め、外部プロセスの拾い上げに委ねる。
+      console.warn(
+        `[execute-demo] ローカルの spawn 起動に失敗しました（外部プロセスに委譲）: ${pythonResult.error}`
+      );
+    }
   }
 
   // status を demo_generating に更新
@@ -221,11 +240,19 @@ export async function POST(
     );
   }
 
+  const message = isServerless
+    ? "デモ生成を外部プロセス（handoff-watch）に委譲しました。完了すると自動的にステータスが更新されます。"
+    : "デモ生成を開始しました（ローカルの外部プロセスに委譲）。";
+
   return Response.json({
     ok: true,
     status: "demo_generating",
     submissionId,
     handoffType: handoffResult.handoffType,
-    message: "デモ生成を開始しました",
+    // 起動方法の透明化（UI で案内分岐に使える）
+    delegated: true,
+    spawnAttempted,
+    serverless: isServerless,
+    message,
   });
 }
