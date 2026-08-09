@@ -97,6 +97,12 @@ export interface InternalConsultNotificationInput {
     score: number;
     reasons: string[];
   };
+  /** 自動ゲート結果（高品質インテイク時の自動承認情報） */
+  autoGate?: {
+    skipped: boolean;
+    approved: boolean;
+    reason?: string;
+  };
 }
 
 /** お客様向け提案メールの組み立てに必要な入力 */

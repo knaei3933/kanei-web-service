@@ -3,6 +3,9 @@ import { assessConsultIntake } from "@/lib/consult-quality";
 import {
   buildApprovalPackage,
   writeApprovalPackage,
+  readApprovalPackage,
+  approveRepresentativeReview,
+  approvePlan,
   approvalPackagePathFor,
   type ApprovalSavedFile,
 } from "@/lib/approval-package";
@@ -1037,7 +1040,7 @@ export async function POST(request: Request): Promise<Response> {
     sizeBytes: f.size,
     type: f.type,
   }));
-  const approvalPackage = buildApprovalPackage(
+  let approvalPackage = buildApprovalPackage(
     parsedPayload,
     submissionId,
     savedFilesForPackage,
@@ -1048,6 +1051,56 @@ export async function POST(request: Request): Promise<Response> {
     await writeApprovalPackage(approvalPackage);
   } catch {
     // 承認パッケージの保存失敗 — 送信データは保存済みなので続行
+  }
+
+  // --- 高品質自動ゲート ---
+  // スコア100 + 必須項目全て充実 → Gate1・Gate2 を自動通過して execution 待ちにする
+  const AUTO_APPROVE_THRESHOLD = 100;
+  let autoGateResult: {
+    skipped: boolean;
+    approved: boolean;
+    reason?: string;
+  } = { skipped: true, approved: false };
+
+  if (
+    isReady &&
+    intakeQuality.score >= AUTO_APPROVE_THRESHOLD &&
+    intakeQuality.reasons.length === 0
+  ) {
+    autoGateResult.skipped = false;
+    try {
+      // Gate1: 代表者レビュー承認 → omc-plan.json 生成、status → awaiting_plan_approval
+      await approveRepresentativeReview(
+        submissionId,
+        {
+          decidedBy: "auto-gate",
+          memo: "品質スコア100・必須項目全てOKのため自動承認"
+        }
+      );
+      // Gate2: 計画承認 → execution-handoff.json 生成、status → approved_for_execution
+      await approvePlan(
+        submissionId,
+        {
+          decidedBy: "auto-gate",
+          memo: "自動ゲート通過"
+        }
+      );
+      // 最新のパッケージを再読み込み
+      const latestPkg = await readApprovalPackage(submissionId);
+      if (latestPkg) {
+        approvalPackage = latestPkg;
+      }
+      autoGateResult.approved = true;
+      autoGateResult.reason = "品質スコア100・必須項目全てOKのため2ゲートとも自動通過";
+    } catch (e) {
+      // 自動ゲート失敗 → 通常の awaiting_representative_approval フローにフォールバック
+      autoGateResult.approved = false;
+      autoGateResult.reason = e instanceof Error ? e.message : "自動ゲート処理で不明なエラー";
+    }
+  } else {
+    autoGateResult.reason = isReady
+      ? `品質スコア${intakeQuality.score}・理由${intakeQuality.reasons.length}件のため自動ゲート閾値未満`
+      : "品質評価が needs_followup ため自動ゲート対象外";
   }
 
   // --- メール通知（社内通知 + お客様ご案内） ---
@@ -1080,6 +1133,7 @@ export async function POST(request: Request): Promise<Response> {
         score: intakeQuality.score,
         reasons: intakeQuality.reasons,
       },
+      autoGate: autoGateResult,
     });
   } catch {
     internalMail = null;
@@ -1132,10 +1186,12 @@ export async function POST(request: Request): Promise<Response> {
     proposalUrl: null,
     /** インテイク品質評価（status / score / reasons / 追加依頼項目） */
     consultQuality: intakeQuality,
-    /** レビューゲートの状態（needs_followup | awaiting_representative_approval） */
+    /** レビューゲートの状態（needs_followup | awaiting_representative_approval | awaiting_plan_approval | approved_for_execution） */
     reviewStatus: approvalPackage.status,
-    /** 承認パッケージの内部ステータス（パイプライン統制用） */
+    /** 承認パッケージの内部ステータス（パイプライン統制用・自動ゲート後は最新値） */
     approvalStatus: approvalPackage.status,
+    /** 自動ゲート結果（高品質インテイク時の自動承認情報） */
+    autoGate: autoGateResult,
     /** 顧客向け表示状態（followup_requested | under_internal_review） */
     customerFacingStatus: approvalPackage.customerFacingStatus,
     /** 内部レビューページ URL（社内のみ・顧客には出さない） */

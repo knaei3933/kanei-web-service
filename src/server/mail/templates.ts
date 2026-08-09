@@ -92,11 +92,21 @@ export function buildInternalNotificationMail(
   const mustInclude = splitToItems(asString(p.mustIncludeInfo));
   const features = asStringArray(p.features);
 
-  const subject = `【新規相談】${companyName || businessType || "（事業体名未設定）"}様 — ${input.submissionId}`;
+  // 自動ゲート通過時は件名にプレフィックスを追加
+  const autoGateApproved = input.autoGate?.approved === true;
+  const subjectPrefix = autoGateApproved ? "⚠️ 自動ゲート通過｜" : "";
+  const subject = `${subjectPrefix}【新規相談】${companyName || businessType || "（事業体名未設定）"}様 — ${input.submissionId}`;
 
   const lines: string[] = [];
   lines.push(`新しいホームページ相談を受け付けました。`);
   lines.push(`受領 ID: ${input.submissionId}`);
+  if (autoGateApproved) {
+    lines.push("");
+    lines.push("⚠️ 【自動ゲート通過】品質スコア100・必須項目全てOKのため2ゲートとも自動通過しました。");
+    if (input.autoGate?.reason) {
+      lines.push(`理由: ${input.autoGate.reason}`);
+    }
+  }
   lines.push("");
   lines.push("▼ お客様情報");
   if (companyName) lines.push(`事業体名: ${companyName}`);
@@ -159,8 +169,19 @@ export function buildInternalNotificationMail(
   const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Meiryo,sans-serif;color:#111827;max-width:600px;">
   <p style="font-size:14px;line-height:1.7;">新しいホームページ相談を受け付けました。<br/><b>受領 ID: ${escapeHtml(
     input.submissionId
-  )}</b></p>
-  <h3 style="font-size:15px;margin:20px 0 6px;border-left:4px solid #2563eb;padding-left:8px;">お客様情報</h3>
+  )}</b></p>${
+    autoGateApproved
+      ? `<div style="margin:16px 0;padding:12px 16px;background:#fef3c7;border-left:4px solid #f59e0b;border-radius:4px;">
+    <p style="margin:0;font-size:14px;font-weight:bold;color:#92400e;">⚠️ 自動ゲート通過</p>
+    <p style="margin:4px 0 0;font-size:13px;color:#b45309;">品質スコア100・必須項目全てOKのため2ゲートとも自動通過しました。</p>${
+      input.autoGate?.reason
+        ? `<p style="margin:4px 0 0;font-size:12px;color:#b45309;">理由: ${escapeHtml(
+            input.autoGate.reason
+          )}</p>`
+        : ""
+    }</div>`
+      : ""
+  }<h3 style="font-size:15px;margin:20px 0 6px;border-left:4px solid #2563eb;padding-left:8px;">お客様情報</h3>
   <table style="font-size:14px;border-collapse:collapse;">${rows.join("")}</table>
   <h3 style="font-size:15px;margin:20px 0 6px;border-left:4px solid #2563eb;padding-left:8px;">強み・差別化</h3>${toListHtml(
     strengths
