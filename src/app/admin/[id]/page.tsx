@@ -77,6 +77,18 @@ interface ApiResponse {
   qualityChecklist?: ChecklistItem[];
 }
 
+interface DemoFeedbackEntry {
+  sentAt: string;
+  type: 'request' | 'revision';
+  message: string;
+}
+
+interface DemoStatusResponse {
+  status: string;
+  feedbackHistory?: DemoFeedbackEntry[];
+  lastUpdated?: string;
+}
+
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
@@ -100,14 +112,24 @@ function fmtDate(iso?: string | null): string {
 
 function badgeColor(status: string): string {
   const s = status.toLowerCase();
+  // 新しいステータス（具体的なマッチを優先）
+  if (s === "demo_generating") return "bg-purple-100 text-purple-800";
+  if (s === "demo_deployed") return "bg-sky-100 text-sky-800";
+  if (s === "demo_revision_ready") return "bg-orange-100 text-orange-800";
+  if (s === "demo_revised") return "bg-sky-100 text-sky-800";
+  if (s === "customer_approved") return "bg-emerald-100 text-emerald-800";
+  if (s === "production_ready") return "bg-violet-100 text-violet-800";
+  if (s === "delivered") return "bg-green-100 text-green-800";
+  if (s === "approved_for_execution") return "bg-violet-100 text-violet-800";
+  // 既存の汎用マッチ
   if (s.includes("followup") || s.includes("needs")) {
     return "bg-amber-100 text-amber-800";
   }
-  if (s.includes("approved") || s.includes("approve")) {
-    return "bg-emerald-100 text-emerald-800";
-  }
   if (s.includes("reject")) {
     return "bg-rose-100 text-rose-800";
+  }
+  if (s.includes("approved") || s.includes("approve")) {
+    return "bg-emerald-100 text-emerald-800";
   }
   if (s.includes("plan") || s.includes("intake")) {
     return "bg-indigo-100 text-indigo-800";
@@ -145,12 +167,24 @@ function checklistRowBg(status: ChecklistItem["status"]): string {
 
 function statusLabel(status: string): string {
   const s = status.toLowerCase();
-  if (s.includes("awaiting")) return "承認待ち";
+  // 新しいステータス（具体的なマッチを優先）
+  if (s === "demo_generating") return "デモ生成中";
+  if (s === "demo_deployed") return "顧客確認待ち";
+  if (s === "demo_revision_ready") return "修正要望受付済み";
+  if (s === "demo_revised") return "修正版確認待ち";
+  if (s === "customer_approved") return "顧客承認済み";
+  if (s === "production_ready") return "本制作待機中";
+  if (s === "delivered") return "納品済み";
+  if (s === "awaiting_plan_approval") return "企画承認待ち";
+  if (s === "approved_for_execution") return "デモ実行待ち";
+  if (s === "awaiting_representative_approval") return "代表者承認待ち";
+  // 既存の汎用マッチ
   if (s.includes("followup") || s.includes("needs")) return "追加確認中";
-  if (s.includes("approved")) return "承認済み";
   if (s.includes("reject")) return "却下";
-  if (s.includes("plan")) return "企画承認待ち";
   if (s.includes("intake")) return "受付中";
+  if (s.includes("awaiting")) return "承認待ち";
+  if (s.includes("approved") || s.includes("approve")) return "承認済み";
+  if (s.includes("plan")) return "企画承認待ち";
   return status;
 }
 
@@ -172,6 +206,10 @@ export default function AdminDetailPage() {
   const [sending, setSending] = useState(false);
   const [approving, setApproving] = useState(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [executing, setExecuting] = useState(false);
+  const [demoStatus, setDemoStatus] = useState<DemoStatusResponse | null>(null);
+  const [startingProduction, setStartingProduction] = useState(false);
+  const [delivering, setDelivering] = useState(false);
 
   /* auth + fetch */
   useEffect(() => {
@@ -320,6 +358,158 @@ export default function AdminDetailPage() {
       setApproving(false);
     }
   }
+
+  async function handleApprovePlan() {
+    const secret = sessionStorage.getItem("admin_secret");
+    if (!secret) return;
+    setApproving(true);
+    setActionMsg(null);
+    try {
+      const res = await fetch(
+        `/api/admin/submissions/${encodeURIComponent(id)}/approve-plan`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${secret}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ memo: "" }),
+        },
+      );
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`計画承認に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
+      }
+      setActionMsg("計画を承認しました。");
+      router.refresh();
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : "計画承認エラーが発生しました。");
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  async function handleExecuteDemo(isRevision: boolean = false) {
+    const secret = sessionStorage.getItem("admin_secret");
+    if (!secret) return;
+    setExecuting(true);
+    setActionMsg(null);
+    try {
+      const res = await fetch(
+        `/api/admin/submissions/${encodeURIComponent(id)}/execute-demo`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${secret}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ isRevision }),
+        },
+      );
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`デモ生成に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
+      }
+      setActionMsg(isRevision ? "修正版の生成を開始しました。" : "デモ生成を開始しました。");
+      router.refresh();
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : "デモ生成エラーが発生しました。");
+    } finally {
+      setExecuting(false);
+    }
+  }
+
+  async function handleStartProduction() {
+    const secret = sessionStorage.getItem("admin_secret");
+    if (!secret) return;
+    setStartingProduction(true);
+    setActionMsg(null);
+    try {
+      const res = await fetch(
+        `/api/production/${encodeURIComponent(id)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${secret}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "start_production" }),
+        },
+      );
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`本制作開始に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
+      }
+      setActionMsg("本制作を開始しました。");
+      router.refresh();
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : "本制作開始エラーが発生しました。");
+    } finally {
+      setStartingProduction(false);
+    }
+  }
+
+  async function handleDeliver() {
+    const secret = sessionStorage.getItem("admin_secret");
+    if (!secret) return;
+    setDelivering(true);
+    setActionMsg(null);
+    try {
+      const res = await fetch(
+        `/api/production/${encodeURIComponent(id)}/deliver`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${secret}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "deliver", domain: "", hostingOption: "kanei" }),
+        },
+      );
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`納品処理に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
+      }
+      setActionMsg("納品処理が完了しました。");
+      router.refresh();
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : "納品エラーが発生しました。");
+    } finally {
+      setDelivering(false);
+    }
+  }
+
+  /* demoStatus取得 */
+  useEffect(() => {
+    const secret = sessionStorage.getItem("admin_secret");
+    if (!secret || !id) return;
+
+    // demo_deployed, demo_revised ステータスの場合のみ demoStatus を取得
+    if (apStatus !== "demo_deployed" && apStatus !== "demo_revised" && apStatus !== "demo_revision_ready") {
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/demo/${encodeURIComponent(id)}/status`,
+          { headers: { Authorization: `Bearer ${secret}` } },
+        );
+        if (cancelled) return;
+        if (res.ok) {
+          const json: DemoStatusResponse = await res.json();
+          setDemoStatus(json);
+        }
+      } catch (e: unknown) {
+        // demoStatus取得は必須ではないため、エラーは無視
+        console.warn("demoStatus取得エラー:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, apStatus]);
 
   /* ---------------------------------------------------------------- */
   /* Render                                                           */
@@ -571,27 +761,199 @@ export default function AdminDetailPage() {
         </section>
       )}
 
-      {/* ---- Approve ---- */}
+      {/* ---- Approve / Actions ---- */}
       <section className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="mb-4 text-lg font-bold text-foreground">承認</h2>
-        {allOk ? (
+        <h2 className="mb-4 text-lg font-bold text-foreground">アクション</h2>
+
+        {/* awaiting_representative_approval: 既存の承認ボタン */}
+        {apStatus === "awaiting_representative_approval" && (
+          <>
+            {allOk ? (
+              <button
+                type="button"
+                disabled={approving}
+                onClick={handleApprove}
+                className="rounded-xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {approving ? "処理中..." : "✅ 承認する"}
+              </button>
+            ) : (
+              <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                ⚠️ すべてのチェックリスト項目が「OK」になるまで承認できません。
+                {incompleteItems.length > 0 && (
+                  <span className="mt-1 block">
+                    未完了項目: {incompleteItems.length}件
+                  </span>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* awaiting_plan_approval: 計画承認ボタン */}
+        {apStatus === "awaiting_plan_approval" && (
           <button
             type="button"
             disabled={approving}
-            onClick={handleApprove}
-            className="rounded-xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+            onClick={handleApprovePlan}
+            className="rounded-xl bg-indigo-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50"
           >
-            {approving ? "処理中..." : "✅ 承認する"}
+            {approving ? "処理中..." : "✅ 計画を承認する"}
           </button>
-        ) : (
-          <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            ⚠️ すべてのチェックリスト項目が「OK」になるまで承認できません。
-            {incompleteItems.length > 0 && (
-              <span className="mt-1 block">
-                未完了項目: {incompleteItems.length}件
+        )}
+
+        {/* approved_for_execution: デモ生成ボタン */}
+        {apStatus === "approved_for_execution" && (
+          <div className="space-y-4">
+            <button
+              type="button"
+              disabled={executing}
+              onClick={() => handleExecuteDemo(false)}
+              className="w-full rounded-xl bg-purple-600 px-8 py-4 text-base font-bold text-white transition hover:bg-purple-700 disabled:opacity-50 sm:w-auto"
+            >
+              {executing ? "生成中..." : "🚀 デモを生成する"}
+            </button>
+            <p className="text-sm text-muted-foreground">
+              💡 Claude Code がデモサイトを生成します。数分かかる場合があります。
+            </p>
+          </div>
+        )}
+
+        {/* demo_deployed: 顧客確認待ち */}
+        {apStatus === "demo_deployed" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/demo/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+              >
+                🔗 デモサイトを確認
+              </Link>
+              <span className="text-sm text-muted-foreground">
+                顧客が確認中です
               </span>
+            </div>
+            {demoStatus?.feedbackHistory && demoStatus.feedbackHistory.length > 0 && (
+              <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+                <p className="mb-2 text-sm font-semibold text-sky-700">フィードバック履歴</p>
+                <ul className="space-y-2">
+                  {demoStatus.feedbackHistory.map((fb, i) => (
+                    <li key={i} className="rounded-lg bg-white px-3 py-2 text-sm">
+                      <p className="text-xs text-muted-foreground">{fmtDate(fb.sentAt)}</p>
+                      <p className="mt-1 font-medium text-foreground">
+                        {fb.type === 'request' ? '📝 修正要望' : '🔄 修正版'}
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{fb.message}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
+        )}
+
+        {/* demo_revised: 修正版確認待ち */}
+        {apStatus === "demo_revised" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/demo/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+              >
+                🔗 修正版デモを確認
+              </Link>
+              <span className="text-sm text-muted-foreground">
+                顧客が修正版を確認中です
+              </span>
+            </div>
+            {demoStatus?.feedbackHistory && demoStatus.feedbackHistory.length > 0 && (
+              <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+                <p className="mb-2 text-sm font-semibold text-sky-700">フィードバック履歴</p>
+                <ul className="space-y-2">
+                  {demoStatus.feedbackHistory.map((fb, i) => (
+                    <li key={i} className="rounded-lg bg-white px-3 py-2 text-sm">
+                      <p className="text-xs text-muted-foreground">{fmtDate(fb.sentAt)}</p>
+                      <p className="mt-1 font-medium text-foreground">
+                        {fb.type === 'request' ? '📝 修正要望' : '🔄 修正版'}
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{fb.message}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* demo_revision_ready: 修正版生成ボタン */}
+        {apStatus === "demo_revision_ready" && (
+          <div className="space-y-4">
+            <button
+              type="button"
+              disabled={executing}
+              onClick={() => handleExecuteDemo(true)}
+              className="w-full rounded-xl bg-orange-600 px-8 py-4 text-base font-bold text-white transition hover:bg-orange-700 disabled:opacity-50 sm:w-auto"
+            >
+              {executing ? "生成中..." : "🚀 修正版を生成する"}
+            </button>
+            <p className="text-sm text-muted-foreground">
+              💡 顧客の修正要望に基づいてClaude Codeが修正版を生成します
+            </p>
+          </div>
+        )}
+
+        {/* customer_approved: 本制作開始ボタン */}
+        {apStatus === "customer_approved" && (
+          <button
+            type="button"
+            disabled={startingProduction}
+            onClick={handleStartProduction}
+            className="rounded-xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {startingProduction ? "処理中..." : "📦 本制作を開始"}
+          </button>
+        )}
+
+        {/* production_ready: 納品処理ボタン */}
+        {apStatus === "production_ready" && (
+          <button
+            type="button"
+            disabled={delivering}
+            onClick={handleDeliver}
+            className="rounded-xl bg-violet-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-violet-700 disabled:opacity-50"
+          >
+            {delivering ? "処理中..." : "📤 納品処理"}
+          </button>
+        )}
+
+        {/* delivered: 納品完了表示 */}
+        {apStatus === "delivered" && (
+          <div className="rounded-xl bg-green-50 px-6 py-4">
+            <p className="text-center text-lg font-bold text-green-700">
+              ✅ 納品完了
+            </p>
+          </div>
+        )}
+
+        {/* その他のステータス */}
+        {![
+          "awaiting_representative_approval",
+          "awaiting_plan_approval",
+          "approved_for_execution",
+          "demo_deployed",
+          "demo_revised",
+          "demo_revision_ready",
+          "customer_approved",
+          "production_ready",
+          "delivered",
+        ].includes(apStatus) && (
+          <p className="text-sm text-muted-foreground">
+            現在、実行可能なアクションはありません。
+          </p>
         )}
       </section>
 
