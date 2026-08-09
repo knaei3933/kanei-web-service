@@ -47,3 +47,4 @@ next-env.d.ts
 
 # consult submissions (local dev persistence - contains customer PII)
 /data/
+.omc/

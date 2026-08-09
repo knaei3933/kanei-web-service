@@ -1,7 +1,0 @@
-{
-  "tool_name": "PowerShell",
-  "tool_input_preview": "{\"command\":\"node node_modules/next/dist/bin/next build; Write-Output \\\"=== next build exit: $LASTEXITCODE ===\\\"\",\"timeout\":420000,\"description\":\"next build を直接実行して本番ビルド検証\"}",
-  "error": "Exit code 1\n  Downloading swc package @next/swc-win32-x64-msvc... to C:\\Users\\kanei\\AppData\\Local\\next-swc\n▲ Next.js 16.2.12 (Turbopack)\n\n  Creating an optimized production build ...\n\n> Build error occurred\nError: Turbopack build failed with 1 errors:\n./src/app/globals.css\nError evaluating Node.js code\nError: Cannot find module '../lightningcss.win32-x64-msvc.node'\nRequire stack:\n- C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service\\node_modules\\lightningcss\\node\\index.js\n- C:\\Users\\kane...",
-  "timestamp": "2026-08-07T05:11:23.803Z",
-  "retry_count": 2
-}

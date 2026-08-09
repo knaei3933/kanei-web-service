@@ -1,7 +1,0 @@
-{
-  "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"\\\\tmp\\\\file1_route.ts\"}",
-  "error": "File does not exist. Note: your current working directory is C:\\Users\\kanei\\claudecode\\02.Homepage_Dev\\kanei-web-service.",
-  "timestamp": "2026-08-08T02:19:22.011Z",
-  "retry_count": 2
-}

@@ -1,7 +1,0 @@
-{
-  "tool_name": "PowerShell",
-  "tool_input_preview": "{\"command\":\"node node_modules\\\\next\\\\dist\\\\bin\\\\next build 2>&1 | Select-Object -Last 60\",\"timeout\":600000,\"description\":\"Run Next.js production build\"}",
-  "error": "Exit code 1\n▲ Next.js 16.2.12 (Turbopack)\r\n\r\n  Creating an optimized production build ...\r\nnode : \r\nAt line:1 char:302\r\n+ ... catch {} } }; node node_modules\\next\\dist\\bin\\next build 2>&1 | Selec ...\r\n+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : NotSpecified: (:String) [], RemoteException\r\n    + FullyQualifiedErrorId : NativeCommandError\r\n \r\n> Build error occurred\r\nError: Turbopack build failed with 1 errors:\r\n./src/app/globals.css\r\nError eva...",
-  "timestamp": "2026-08-07T08:43:57.401Z",
-  "retry_count": 2
-}
