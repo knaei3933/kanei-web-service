@@ -44,6 +44,7 @@ export const APPROVAL_SCHEMA_VERSION = "1.1.0";
  *   - demo_revised:                   修正版デモ再デプロイ済み
  *   - customer_approved:              顧客がデモを承認
  *   - production_ready:               本制作開始可能
+ *   - delivered:                      納品済み
  *   - rejected:                        却下
  */
 export type ApprovalStatus =
@@ -59,6 +60,7 @@ export type ApprovalStatus =
   | "demo_revised"
   | "customer_approved"
   | "production_ready"
+  | "delivered"
   | "rejected";
 
 /** 代表者の判定。未判定時は null。 */
@@ -712,6 +714,7 @@ function normalizeApprovalPackage(
     "demo_revised",
     "customer_approved",
     "production_ready",
+    "delivered",
     "rejected",
   ];
   const resolvedStatus: ApprovalStatus = validStatuses.includes(status)
@@ -1275,6 +1278,7 @@ export function toCustomerFacingStatus(
       return "demo_revision_submitted";
     case "customer_approved":
     case "production_ready":
+    case "delivered":
       return "demo_approved";
     default:
       return "under_internal_review";
@@ -1310,6 +1314,10 @@ export const VALID_TRANSITIONS: Map<ApprovalStatus, ApprovalStatus[]> =
     [
       "customer_approved",
       ["production_ready"],
+    ],
+    [
+      "production_ready",
+      ["delivered"],
     ],
   ]);
 
