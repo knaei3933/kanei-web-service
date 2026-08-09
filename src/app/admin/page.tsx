@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { getAdminQuickLinks } from "@/lib/admin-navigation";
 
 type Submission = {
   id: string;
@@ -158,6 +159,28 @@ function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) 
   return <span className="text-xs text-muted-foreground">-</span>;
 }
 
+/**
+ * 各ページへジャンプするためのコンパクトなクイックリンク。
+ * プライマリアクション（ActionCell）とは別のナビゲーションエリアとして表示する。
+ * ステータスに応じた可用性ルールは getAdminQuickLinks に集約している。
+ */
+function QuickLinks({ submissionId, status }: { submissionId: string; status: string }) {
+  const links = getAdminQuickLinks(status, submissionId);
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {links.map((l) => (
+        <a
+          key={l.key}
+          href={l.href}
+          className="inline-flex items-center rounded-md border border-border bg-white px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:bg-slate-50 hover:text-foreground"
+        >
+          {l.label}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 export default function AdminListPage() {
   const router = useRouter();
   const [authed, setAuthed] = useState(false);
@@ -312,7 +335,10 @@ export default function AdminListPage() {
                         <StatusBadge status={s.status} />
                       </td>
                       <td className="px-6 py-4">
-                        <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
+                        <div className="flex flex-col items-start gap-2">
+                          <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
+                          <QuickLinks submissionId={s.id} status={s.status} />
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -341,8 +367,11 @@ export default function AdminListPage() {
                       <ScoreBar score={s.score} />
                     </div>
                   </div>
-                  <div className="pt-2 border-t border-border flex justify-end">
-                    <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
+                  <div className="pt-2 border-t border-border space-y-2">
+                    <div className="flex justify-end">
+                      <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
+                    </div>
+                    <QuickLinks submissionId={s.id} status={s.status} />
                   </div>
                 </div>
               ))}

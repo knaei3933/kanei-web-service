@@ -57,15 +57,15 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
     notFound();
   }
 
-  // SHOWCASE_MAP にエントリがなければ 404
+  // SHOWCASE_MAP にエントリがなければプレースホルダを表示する。
+  // ダッシュボードのクイックリンクから開いたときのリンク切れ（404）を防ぐため、
+  // 実装が未生成の段階でもページ自体は開けるようにする。
   const showcaseEntry = SHOWCASE_MAP[submissionId];
-  if (!showcaseEntry) {
-    notFound();
-  }
-
-  // エントリから情報を取得
-  const { loader, enterpriseName, businessType } = showcaseEntry;
-  const ShowcaseComponent = (await loader()).default;
+  const ShowcaseComponent = showcaseEntry
+    ? (await showcaseEntry.loader()).default
+    : null;
+  const enterpriseName = showcaseEntry?.enterpriseName ?? "企業名";
+  const businessType = showcaseEntry?.businessType ?? "業種";
 
   return (
     <div className="bg-slate-50">
@@ -114,7 +114,11 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
       {/* ============================================================ */}
       {/*  メインコンテンツ（動的 showcase コンポーネント）                    */}
       {/* ============================================================ */}
-      <ShowcaseComponent />
+      {ShowcaseComponent ? (
+        <ShowcaseComponent />
+      ) : (
+        <DemoNotGeneratedPlaceholder />
+      )}
 
       {/* ============================================================ */}
       {/*  フッターコメント                                               */}

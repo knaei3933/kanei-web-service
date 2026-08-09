@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { getAdminQuickLinks } from "@/lib/admin-navigation";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -683,6 +684,24 @@ export default function AdminDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* ---- クイック移動 ---- */}
+      <nav className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">
+            クイック移動:
+          </span>
+          {getAdminQuickLinks(apStatus, id).map((l) => (
+            <Link
+              key={l.key}
+              href={l.href}
+              className="inline-flex items-center rounded-lg border border-border bg-slate-50 px-3 py-1 text-xs font-medium text-foreground transition hover:bg-slate-100"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
 
       {/* ---- Customer info ---- */}
       <section className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8">

@@ -65,11 +65,20 @@ export default async function DemoPage({ params }: DemoPageProps) {
   // approval-package.json から情報を取得
   const approvalPackage = await readApprovalPackage(submissionId);
 
-  // status が demo_deployed または demo_revised の場合のみ表示
+  // デモは顧客確認待ち（demo_deployed / demo_revised）だけでなく、
+  // 承認後・本制作前ヒアリング・納品後など「デモ以降」のステータスでも
+  // 担当者がいつでも再確認できるよう表示する。
+  const DEMO_VISIBLE_STATUSES = new Set([
+    "demo_deployed",
+    "demo_revised",
+    "customer_approved",
+    "pre_production_interview",
+    "pre_production_review",
+    "production_ready",
+    "delivered",
+  ]);
   const isDemoVisible =
-    approvalPackage &&
-    (approvalPackage.status === "demo_deployed" ||
-      approvalPackage.status === "demo_revised");
+    !!approvalPackage && DEMO_VISIBLE_STATUSES.has(approvalPackage.status);
 
   if (!isDemoVisible) {
     notFound();
