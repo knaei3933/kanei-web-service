@@ -511,21 +511,24 @@ export default function IzakayaShowcase() {
           </div>
 
           <div className="grid gap-8 lg:grid-cols-2">
-            {/* 地図プレースホルダー */}
+            {/* Googleマップ埋め込み */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               className="aspect-square overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm"
             >
-              <div className="flex h-full items-center justify-center bg-gradient-to-br from-orange-50 to-red-50">
-                <div className="text-center">
-                  <MapPin className="mx-auto mb-4 h-16 w-16 text-orange-300" />
-                  <p className="text-base font-medium text-orange-700">
-                    地図は後で埋め込みます
-                  </p>
-                </div>
-              </div>
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3241.0470784890626!2d139.7016!3d35.6580!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x60188b3a7f8e8e8f%3A0x6b7f1e8e8e8e8e8!2z5rWq6K2b5p2x5Lqs6aeF!5e2m5qGF5biC5aSn6KiA5bqn6ZqS5bGL6aeF!3e0!3m2!1ja!4sjp!4v1696000000000!5m2!1ja!4sjp"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="テスト居酒屋の地図"
+                className="h-full w-full"
+              />
             </motion.div>
 
             {/* アクセス詳細 */}
@@ -618,15 +621,18 @@ export default function IzakayaShowcase() {
         </div>
 
         <div className="relative mx-auto max-w-container px-4 py-16 sm:py-24">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              ご予約・お問い合わせ
-            </h2>
-            <p className="mt-4 text-lg text-white/90">
-              お電話またはメールからお気軽にご連絡ください
-            </p>
+          <div className="mx-auto max-w-3xl">
+            <div className="mb-12 text-center">
+              <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                ご予約・お問い合わせ
+              </h2>
+              <p className="mt-4 text-lg text-white/90">
+                お電話、メール、またはフォームからお気軽にご連絡ください
+              </p>
+            </div>
 
-            <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            {/* 連絡先ボタン */}
+            <div className="mb-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button
                 asChild
                 size="lg"
@@ -650,14 +656,120 @@ export default function IzakayaShowcase() {
               </Button>
             </div>
 
-            <div className="mt-8 rounded-xl bg-white/10 p-6 backdrop-blur-sm">
-              <p className="text-sm font-medium text-white">
-                営業時間: {SHOP_INFO.businessHours}
-              </p>
-              <p className="mt-1 text-sm text-white/80">
-                定休日: {SHOP_INFO.closed}
-              </p>
-            </div>
+            {/* お問い合わせフォーム */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="rounded-2xl bg-white p-8 shadow-xl"
+            >
+              <h3 className="mb-6 text-center text-lg font-semibold text-gray-900">
+                お問い合わせフォーム
+              </h3>
+              <form
+                action="/api/contact"
+                method="POST"
+                className="space-y-6"
+              >
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-700">
+                      お名前 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      required
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                      placeholder="山田 太郎"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="mb-2 block text-sm font-medium text-gray-700">
+                      電話番号 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      required
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                      placeholder="03-1234-5678"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">
+                    メールアドレス <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    placeholder="example@email.com"
+                  />
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="date" className="mb-2 block text-sm font-medium text-gray-700">
+                      ご希望日
+                    </label>
+                    <input
+                      type="date"
+                      id="date"
+                      name="date"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="people" className="mb-2 block text-sm font-medium text-gray-700">
+                      ご人数
+                    </label>
+                    <select
+                      id="people"
+                      name="people"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    >
+                      <option value="">選択してください</option>
+                      <option value="1-2">1〜2名</option>
+                      <option value="3-4">3〜4名</option>
+                      <option value="5-8">5〜8名</option>
+                      <option value="9-12">9〜12名（個室）</option>
+                      <option value="13+">13名以上</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="message" className="mb-2 block text-sm font-medium text-gray-700">
+                    ご要望・お問い合わせ内容
+                  </label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    rows={4}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    placeholder="ご要望やご質問をご記入ください"
+                  />
+                </div>
+                <div className="rounded-lg bg-orange-50 p-4">
+                  <p className="text-sm text-orange-800">
+                    <strong className="text-orange-900">営業時間:</strong> {SHOP_INFO.businessHours}
+                    <br />
+                    <strong className="text-orange-900">定休日:</strong> {SHOP_INFO.closed}
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                >
+                  送信する
+                </Button>
+              </form>
+            </motion.div>
           </div>
         </div>
       </section>
