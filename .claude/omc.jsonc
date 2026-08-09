@@ -1,0 +1,37 @@
+{
+  // kanei-web-service project overrides
+  // NOTE:
+  // OMC upstream currently exposes only a single team maxAgents cap,
+  // not separate concurrency caps per model tier.
+  // To stay inside 대표님's glm-5.2 parallel limit safely,
+  // this project uses a conservative hard cap of 2 team workers.
+  // Lightweight tasks can still use non-team/single-session execution with glm-5.1.
+
+  "team": {
+    "ops": {
+      "maxAgents": 2,
+      "defaultAgentType": "claude"
+    },
+    "roleRouting": {
+      "orchestrator": { "model": "glm-5.2" },
+      "planner": { "provider": "claude", "model": "glm-5.2", "agent": "planner" },
+      "analyst": { "provider": "claude", "model": "glm-5.2", "agent": "analyst" },
+      "architect": { "provider": "claude", "model": "glm-5.2", "agent": "architect" },
+      "executor": { "provider": "claude", "model": "glm-5.2", "agent": "executor" },
+      "debugger": { "provider": "claude", "model": "glm-5.2", "agent": "debugger" },
+      "critic": { "provider": "claude", "model": "glm-5.2", "agent": "critic" },
+      "code-reviewer": { "provider": "claude", "model": "glm-5.2", "agent": "codeReviewer" },
+      "security-reviewer": { "provider": "claude", "model": "glm-5.2", "agent": "securityReviewer" },
+      "test-engineer": { "provider": "claude", "model": "glm-5.2", "agent": "testEngineer" },
+      "designer": { "provider": "claude", "model": "glm-5.2", "agent": "designer" },
+      "writer": { "provider": "claude", "model": "glm-5.1", "agent": "writer" },
+      "explore": { "provider": "claude", "model": "glm-5.1", "agent": "explore" },
+      "document-specialist": { "provider": "claude", "model": "glm-5.1", "agent": "documentSpecialist" }
+    }
+  },
+  "features": {
+    "parallelExecution": true,
+    "continuationEnforcement": true,
+    "autoContextInjection": true
+  }
+}

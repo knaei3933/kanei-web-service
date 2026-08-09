@@ -38,16 +38,22 @@ export interface DemoFeedbackData {
 }
 
 /**
+ * ラウンドの種類
+ */
+export type RoundKind = "revision" | "restore" | "reuse";
+
+/**
  * 修正ハンドオフデータ。
  * フィードバックを受信し、Claude Code への修正指示をまとめたもの。
+ * (Phase R3) restore/reuse に対応するため kind/parentRound/variantTag を拡張。
  */
 export interface RevisionHandoff {
   /** スキーマバージョン */
   schemaVersion: string;
   /** submission ID */
   submissionId: string;
-  /** 顧客フィードバック */
-  feedbackData: DemoFeedbackData;
+  /** 顧客フィードバック（revision の場合必須） */
+  feedbackData?: DemoFeedbackData;
   /** Claude Code に渡す修正プロンプト */
   revisionPrompt: string;
   /** ターゲットとなる showcase コンポーネント名 */
@@ -56,6 +62,12 @@ export interface RevisionHandoff {
   round: number;
   /** 作成日時（ISO8601） */
   createdAt: string;
+  /** (Phase R3) ラウンドの種類。省略時は "revision" */
+  kind?: RoundKind;
+  /** (Phase R3) 基点ラウンド（restore/reuse の場合のみ） */
+  parentRound?: number | null;
+  /** (Phase R3) バリアントタグ（reuse の場合、"A"/"B" 等） */
+  variantTag?: string | null;
 }
 
 /**

@@ -117,6 +117,44 @@ interface DemoStatusResponse {
 }
 
 /* ------------------------------------------------------------------ */
+/* Phase R4: Revision History Types                                    */
+/* ------------------------------------------------------------------ */
+
+interface RoundEntry {
+  round: number;
+  kind: "initial" | "revision" | "restore" | "reuse";
+  label: string;
+  snapshotKey: string;
+  hasComponentSource: boolean;
+  commitSha: string | null;
+  shortSha: string | null;
+  commitMessage: string | null;
+  committedAt: string | null;
+  capturedAt: string;
+  status: string;
+  customerFacingStatus: string | null;
+  parentRound: number | null;
+  variantTag: string | null;
+  isCurrent: boolean;
+  notes: string;
+}
+
+interface RevisionLineage {
+  schemaVersion: string;
+  submissionId: string;
+  targetComponent: string | null;
+  componentPath: string | null;
+  currentRound: number;
+  rounds: RoundEntry[];
+}
+
+interface RoundsApiResponse {
+  ok: boolean;
+  submissionId: string;
+  lineage: RevisionLineage | null;
+}
+
+/* ------------------------------------------------------------------ */
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -242,6 +280,16 @@ export default function AdminDetailPage() {
   const [startingInterview, setStartingInterview] = useState(false);
   const [gate3Acting, setGate3Acting] = useState(false);
   const [delivering, setDelivering] = useState(false);
+
+  /* Phase R4: Revision History */
+  const [roundsData, setRoundsData] = useState<RoundsApiResponse | null>(null);
+  const [roundsLoading, setRoundsLoading] = useState(false);
+  const [roundsError, setRoundsError] = useState<string | null>(null);
+  const [restoreActing, setRestoreActing] = useState<number | null>(null);
+  const [reuseActing, setReuseActing] = useState<number | null>(null);
+  const [showSourceModal, setShowSourceModal] = useState<RoundEntry | null>(null);
+  const [sourceLoading, setSourceLoading] = useState(false);
+  const [componentSource, setComponentSource] = useState<string | null>(null);
 
   /* auth + fetch */
   useEffect(() => {
@@ -563,6 +611,126 @@ export default function AdminDetailPage() {
     }
   }
 
+  /* Phase R4: リビジョン履歴アクションハンドラー */
+
+  // 復元（round N を新ラウンドとして復元）
+  async function handleRestore(round: number) {
+    const secret = sessionStorage.getItem("admin_secret");
+    if (!secret) return;
+    if (!confirm(`ラウンド ${round} を復元します。よろしいですか？\n\n現在の内容は新しいラウンドとして保存され、ラウンド ${round} の内容がliveになります。`)) {
+      return;
+    }
+    setRestoreActing(round);
+    setActionMsg(null);
+    try {
+      const res = await fetch(
+        `/api/admin/submissions/${encodeURIComponent(id)}/rounds/${round}/restore`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${secret}` },
+        },
+      );
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`復元に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
+      }
+      const json = await res.json();
+      setActionMsg(`ラウンド ${round} からラウンド ${json.newRound} として復元しました。`);
+      // リビジョン履歴を再読み込み
+      router.refresh();
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : "復元エラーが発生しました。");
+    } finally {
+      setRestoreActing(null);
+    }
+  }
+
+  // 再利用（round N を基点に新バリアント生成）
+  async function handleReuse(round: number, variantTag: string) {
+    const secret = sessionStorage.getItem("admin_secret");
+    if (!secret) return;
+    const revisionPrompt = prompt(`ラウンド ${round} を基点に新バリアントを作成します。\n\n修正指示を入力してください（空欄可）:`);
+    if (revisionPrompt === null) return; // キャンセル
+    setReuseActing(round);
+    setActionMsg(null);
+    try {
+      const res = await fetch(
+        `/api/admin/submissions/${encodeURIComponent(id)}/rounds/${round}/reuse`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${secret}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            revisionPrompt: revisionPrompt || "バリアント生成",
+            variantTag,
+          }),
+        },
+      );
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`再利用に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
+      }
+      const json = await res.json();
+      setActionMsg(`ラウンド ${round} からバリアント "${variantTag}"（ラウンド ${json.newRound}）を生成しました。`);
+      // リビジョン履歴を再読み込み
+      router.refresh();
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : "再利用エラーが発生しました。");
+    } finally {
+      setReuseActing(null);
+    }
+  }
+
+  // ソース確認（componentSource をモーダルで表示）
+  async function handleShowSource(round: RoundEntry) {
+    // hasComponentSource が false の場合は警告
+    if (!round.hasComponentSource) {
+      alert(`ラウンド ${round.round} の componentSource が欠損しています。\n\n手動で git から復元してください:\ngit show ${round.commitSha}:src/components/sections/`);
+      return;
+    }
+
+    setShowSourceModal(round);
+    setComponentSource(null);
+    setSourceLoading(true);
+
+    try {
+      const secret = sessionStorage.getItem("admin_secret");
+      if (!secret) return;
+
+      // スナップショット API から componentSource を取得
+      const res = await fetch(
+        `/api/submission-storage/${encodeURIComponent(id)}/snapshots/${encodeURIComponent(round.snapshotKey)}`,
+        { headers: { Authorization: `Bearer ${secret}` } },
+      );
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`スナップショット取得エラー (${res.status})${txt ? `: ${txt}` : ""}`);
+      }
+
+      const snapshot = await res.json() as {
+        componentSource?: string;
+        componentPath?: string | null;
+        commitSha?: string | null;
+      } | null;
+
+      if (!snapshot || !snapshot.componentSource) {
+        setComponentSource(null);
+        return;
+      }
+
+      // componentSource を表示
+      setComponentSource(snapshot.componentSource);
+    } catch (e: unknown) {
+      setComponentSource(null);
+      console.error("componentSource 取得エラー:", e);
+    } finally {
+      setSourceLoading(false);
+    }
+  }
+
   /* demoStatus取得 */
   useEffect(() => {
     const secret = sessionStorage.getItem("admin_secret");
@@ -594,6 +762,44 @@ export default function AdminDetailPage() {
       cancelled = true;
     };
   }, [id, apStatus]);
+
+  /* Phase R4: リビジョン履歴取得 */
+  useEffect(() => {
+    const secret = sessionStorage.getItem("admin_secret");
+    if (!secret || !id) return;
+
+    let cancelled = false;
+    setRoundsLoading(true);
+    setRoundsError(null);
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/submissions/${encodeURIComponent(id)}/rounds`,
+          { headers: { Authorization: `Bearer ${secret}` } },
+        );
+        if (cancelled) return;
+        if (res.ok) {
+          const json: RoundsApiResponse = await res.json();
+          setRoundsData(json);
+        } else if (res.status === 404) {
+          // lineage が存在しないのは正常（R4以前のsubmissions）
+          setRoundsData(null);
+        } else {
+          const txt = await res.text().catch(() => "");
+          setRoundsError(`取得エラー (${res.status})${txt ? `: ${txt}` : ""}`);
+        }
+      } catch (e: unknown) {
+        if (!cancelled) {
+          setRoundsError(e instanceof Error ? e.message : "不明なエラー");
+        }
+      } finally {
+        if (!cancelled) setRoundsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   /* ---------------------------------------------------------------- */
   /* Render                                                           */
@@ -933,6 +1139,172 @@ export default function AdminDetailPage() {
         </section>
       )}
 
+      {/* ---- Phase R4: リビジョン履歴 ---- */}
+      <section className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8">
+        <h2 className="mb-4 text-lg font-bold text-foreground">
+          リビジョン履歴
+          {roundsData?.lineage?.currentRound !== undefined && roundsData.lineage.currentRound >= 0 && (
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              （現在: ラウンド {roundsData.lineage.currentRound}）
+            </span>
+          )}
+        </h2>
+
+        {roundsLoading && (
+          <p className="text-sm text-muted-foreground">読み込み中...</p>
+        )}
+
+        {roundsError && (
+          <div className="rounded-xl bg-rose-50 px-4 py-3">
+            <p className="text-sm text-rose-700">⚠️ {roundsError}</p>
+          </div>
+        )}
+
+        {!roundsLoading && !roundsError && !roundsData?.lineage && (
+          <p className="text-sm text-muted-foreground">
+            リビジョン履歴がありません（R4以降のsubmissionのみ表示）。
+          </p>
+        )}
+
+        {!roundsLoading && !roundsError && roundsData?.lineage && (
+          <>
+            {/* ラウンド一覧テーブル */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="px-3 py-2 text-left font-medium text-foreground">ラウンド</th>
+                    <th className="px-3 py-2 text-left font-medium text-foreground">種類</th>
+                    <th className="px-3 py-2 text-left font-medium text-foreground">ラベル</th>
+                    <th className="px-3 py-2 text-left font-medium text-foreground">Commit</th>
+                    <th className="px-3 py-2 text-left font-medium text-foreground">作成日時</th>
+                    <th className="px-3 py-2 text-center font-medium text-foreground">状態</th>
+                    <th className="px-3 py-2 text-center font-medium text-foreground">アクション</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roundsData.lineage.rounds.map((r) => (
+                    <tr
+                      key={r.round}
+                      className={`border-b border-border ${r.isCurrent ? "bg-emerald-50" : ""}`}
+                    >
+                      <td className="px-3 py-2">
+                        <span className={`font-mono ${r.isCurrent ? "font-bold text-emerald-700" : ""}`}>
+                          {r.round}
+                        </span>
+                        {r.isCurrent && (
+                          <span className="ml-1 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                            現行
+                          </span>
+                        )}
+                        {r.parentRound !== null && (
+                          <span className="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
+                            ← {r.parentRound}
+                          </span>
+                        )}
+                        {r.variantTag && (
+                          <span className="ml-1 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                            {r.variantTag}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                            r.kind === "initial"
+                              ? "bg-purple-100 text-purple-700"
+                              : r.kind === "revision"
+                                ? "bg-orange-100 text-orange-700"
+                                : r.kind === "restore"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {r.kind === "initial" ? "初回" : r.kind === "revision" ? "修正" : r.kind === "restore" ? "復元" : "再利用"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{r.label}</td>
+                      <td className="px-3 py-2">
+                        {r.shortSha ? (
+                          <span className="font-mono text-xs text-muted-foreground">{r.shortSha}</span>
+                        ) : (
+                          <span className="text-xs text-rose-600">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.capturedAt)}</td>
+                      <td className="px-3 py-2 text-center">
+                        {!r.hasComponentSource && (
+                          <span className="inline-block rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
+                            ソース欠損
+                          </span>
+                        )}
+                        {r.hasComponentSource && r.isCurrent && (
+                          <span className="inline-block rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                            Live
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <div className="flex justify-center gap-1">
+                          {/* 復元ボタン */}
+                          {r.hasComponentSource && !r.isCurrent && (
+                            <button
+                              type="button"
+                              disabled={restoreActing === r.round}
+                              onClick={() => handleRestore(r.round)}
+                              className="rounded-lg bg-amber-600 px-2 py-1 text-[10px] font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+                              title="このラウンドを復元"
+                            >
+                              {restoreActing === r.round ? "..." : "復元"}
+                            </button>
+                          )}
+                          {/* 再利用ボタン */}
+                          {r.hasComponentSource && (
+                            <button
+                              type="button"
+                              disabled={reuseActing === r.round}
+                              onClick={() => {
+                                const tag = prompt(`バリアントタグを入力（例: A, B, C）:`);
+                                if (tag && tag.trim()) {
+                                  handleReuse(r.round, tag.trim());
+                                }
+                              }}
+                              className="rounded-lg bg-blue-600 px-2 py-1 text-[10px] font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                              title="このラウンドを基点にバリアントを作成"
+                            >
+                              {reuseActing === r.round ? "..." : "再利用"}
+                            </button>
+                          )}
+                          {/* ソース確認ボタン */}
+                          <button
+                            type="button"
+                            onClick={() => handleShowSource(r)}
+                            className="rounded-lg bg-gray-600 px-2 py-1 text-[10px] font-semibold text-white transition hover:bg-gray-700"
+                            title="コンポーネントソースを確認"
+                          >
+                            ソース
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 注意書き */}
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-xs font-semibold text-amber-700">💡 操作ガイド</p>
+              <ul className="mt-1 space-y-0.5 text-xs text-amber-800">
+                <li>• <strong>復元</strong>: 過去ラウンドの内容を新ラウンドとしてliveに戻す</li>
+                <li>• <strong>再利用</strong>: 過去ラウンドを基点に新しいバリアント（A案、B案等）を生成</li>
+                <li>• <strong>ソース欠損</strong>: componentSourceがないため手動でgitから復元が必要</li>
+              </ul>
+            </div>
+          </>
+        )}
+      </section>
+
       {/* ---- Approve / Actions ---- */}
       <section className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8">
         <h2 className="mb-4 text-lg font-bold text-foreground">アクション</h2>
@@ -1203,6 +1575,81 @@ export default function AdminDetailPage() {
       {actionMsg && (
         <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-medium text-white shadow-lg">
           {actionMsg}
+        </div>
+      )}
+
+      {/* ---- Phase R4: ソース確認モーダル ---- */}
+      {showSourceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="max-h-[80vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl">
+            {/* ヘッダー */}
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">
+                  コンポーネントソース（ラウンド {showSourceModal.round}）
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {showSourceModal.label} · {fmtDate(showSourceModal.capturedAt)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSourceModal(null);
+                  setComponentSource(null);
+                }}
+                className="rounded-lg bg-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-300"
+              >
+                閉じる
+              </button>
+            </div>
+
+            {/* メタ情報 */}
+            <div className="grid grid-cols-2 gap-4 border-b border-border bg-gray-50 px-6 py-3 text-xs">
+              <div>
+                <span className="font-medium text-foreground">種類:</span>{" "}
+                <span className="text-muted-foreground">
+                  {showSourceModal.kind === "initial" ? "初回" : showSourceModal.kind === "revision" ? "修正" : showSourceModal.kind === "restore" ? "復元" : "再利用"}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Commit:</span>{" "}
+                {showSourceModal.shortSha ? (
+                  <span className="font-mono text-muted-foreground">{showSourceModal.shortSha}</span>
+                ) : (
+                  <span className="text-rose-600">なし</span>
+                )}
+              </div>
+              {!showSourceModal.hasComponentSource && (
+                <div className="col-span-2 rounded bg-rose-100 px-3 py-2 text-rose-800">
+                  ⚠️ componentSource が欠損しています。git から手動復元してください:
+                  <br />
+                  <code className="font-mono">git show {showSourceModal.commitSha}:src/components/sections/</code>
+                </div>
+              )}
+            </div>
+
+            {/* ソースコード */}
+            <div className="max-h-[60vh] overflow-auto bg-gray-900 px-6 py-4">
+              {sourceLoading ? (
+                <p className="text-sm text-gray-400">読み込み中...</p>
+              ) : componentSource ? (
+                <pre className="text-xs text-gray-100">
+                  <code>{componentSource}</code>
+                </pre>
+              ) : (
+                <div className="rounded-lg bg-amber-900/50 px-4 py-3 text-sm text-amber-200">
+                  <p className="font-semibold">⚠️ ソースの読み取りに失敗しました</p>
+                  <p className="mt-1 text-xs">
+                    スナップショットが存在しないか、読み取りエラーが発生しました。
+                  </p>
+                  <code className="mt-2 block font-mono text-xs">
+                    git log --oneline | grep demo round {showSourceModal.round}
+                  </code>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
