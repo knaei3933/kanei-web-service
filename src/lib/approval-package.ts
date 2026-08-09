@@ -292,6 +292,10 @@ export interface ExecutionHandoff {
   planFilePath: string;
   /** ブリーフファイルの表示パス */
   briefFilePath: string;
+  /** この submission 専用の showcase コンポーネント名（拡張子なし） */
+  targetComponent?: string | null;
+  /** この submission 専用の showcase コンポーネントパス */
+  componentPath?: string | null;
   /** 実行前に満たす前提 */
   prerequisites: string[];
   /** 重要事項（serverless 非実行・内部専用など） */
@@ -760,6 +764,8 @@ function normalizeExecutionHandoff(
     metadataFilePath: asString(o.metadataFilePath),
     planFilePath: asString(o.planFilePath),
     briefFilePath: asString(o.briefFilePath),
+    targetComponent: asString(o.targetComponent) || null,
+    componentPath: asString(o.componentPath) || null,
     prerequisites: asStringArray(o.prerequisites),
     notices: asStringArray(o.notices),
     plannedStageIds: asStringArray(o.plannedStageIds),
@@ -1160,6 +1166,8 @@ export function buildExecutionPromptMarkdown(
 ): string {
   const id = pkg.submissionId;
   const rel = `${LOCAL_DISPLAY_ROOT}/${id}`;
+  const targetComponent = `${id}-showcase`;
+  const componentPath = `src/components/sections/${targetComponent}.tsx`;
   const lines: string[] = [];
   lines.push(`# 実行ハンドオフプロンプト — ${id}`);
   lines.push("");
@@ -1170,9 +1178,17 @@ export function buildExecutionPromptMarkdown(
   lines.push("");
   lines.push("## 前提");
   lines.push("- このプロンプトはリポジトリルートで実行することを想定しています。");
+  lines.push(`- 対象 submissionId: \`${id}\``);
+  lines.push(`- この作業で新規作成または更新すべき showcase コンポーネント: \`${componentPath}\``);
+  lines.push("- 他 submission の既存 showcase を流用したり、別 submission のファイルを更新してはいけません。");
   lines.push(`- ブリーフ: \`${rel}/brief.json\``);
   lines.push(`- 計画: \`${rel}/omc-plan.json\``);
   lines.push(`- 承認パッケージ: \`${rel}/approval-package.json\``);
+  lines.push("");
+  lines.push("## 出力契約（必須）");
+  lines.push(`- 最終的に \`${componentPath}\` を作成または更新すること。`);
+  lines.push(`- SHOWCASE_MAP には \`${id}\` のエントリだけを追加/更新し、loader は \`${targetComponent}\` を参照すること。`);
+  lines.push("- 作業完了時には、作成/更新したファイルパスを明示して検証結果を出すこと。");
   lines.push("");
   lines.push("## 事業要件の要点");
   lines.push(`- ${plan.briefSnapshot.businessSummary || "（要約なし）"}`);
@@ -1231,6 +1247,8 @@ export function buildExecutionHandoff(
   const id = pkg.submissionId;
   const rel = `${LOCAL_DISPLAY_ROOT}/${id}`;
   const promptFilePath = `${rel}/execution-prompt.md`;
+  const targetComponent = `${id}-showcase`;
+  const componentPath = `src/components/sections/${targetComponent}.tsx`;
   const notices: string[] = [
     "本番（Vercel/serverless）のリクエストハンドラからは Claude Code を実行しません（実行時間・実行環境の制約のため）。",
     "このハンドオフはローカル環境のオペレータが Claude Code で実行することを想定しています。",
@@ -1244,11 +1262,13 @@ export function buildExecutionHandoff(
     generatedAt: new Date().toISOString(),
     handoffMode: "local-operator",
     workingDirectory: ".",
-    claudeCommand: `claude "${promptFilePath} を読み、記載の計画に従ってローカルで実装を進めてください。brief.json / omc-plan.json を参照し、各ステップを順に進め、最後に検証してください。"`,
+    claudeCommand: `claude "${promptFilePath} を読み、submissionId=${id} 専用の showcase を ${componentPath} に実装してください。他 submission の showcase は再利用・更新せず、SHOWCASE_MAP には ${id} のエントリだけを追加/更新してください。brief.json / omc-plan.json を参照し、各ステップを順に進め、最後に検証してください。"`,
     promptFilePath,
     metadataFilePath: `${rel}/execution-handoff.json`,
     planFilePath: `${rel}/omc-plan.json`,
     briefFilePath: `${rel}/brief.json`,
+    targetComponent,
+    componentPath,
     prerequisites: plan.prerequisites,
     notices,
     plannedStageIds: plan.orderedStageIds,
