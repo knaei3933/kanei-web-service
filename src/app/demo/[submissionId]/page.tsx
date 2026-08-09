@@ -29,12 +29,6 @@ const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
     enterpriseName: "テスト製造株式会社",
     businessType: "製造業",
   },
-  "20260807-212213-8f41b1f6": {
-    loader: () =>
-      import("@/components/sections/phase2-manufacturing-showcase").then((m) => ({ default: m.default })),
-    enterpriseName: "金井Durable本番検証株式会社 20260807-211835",
-    businessType: "",
-  },
 };
 
 interface DemoPageProps {
