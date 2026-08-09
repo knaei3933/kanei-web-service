@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getAdminQuickLinks } from "@/lib/admin-navigation";
+import {
+  ADMIN_FILTER_GROUPS,
+  filterSubmissionsByStatus,
+  getAdminQuickLinkStyle,
+  getAdminQuickLinks,
+  type AdminFilterKey,
+} from "@/lib/admin-navigation";
 
 type Submission = {
   id: string;
@@ -172,11 +178,59 @@ function QuickLinks({ submissionId, status }: { submissionId: string; status: st
         <a
           key={l.key}
           href={l.href}
-          className="inline-flex items-center rounded-md border border-border bg-white px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:bg-slate-50 hover:text-foreground"
+          className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${getAdminQuickLinkStyle(l.key)}`}
         >
           {l.label}
         </a>
       ))}
+    </div>
+  );
+}
+
+/**
+ * 実務状態で一覧を絞り込むタブ。
+ * /admin はクライアント側で動くため、この要素をデスクトップ・モバイル両方で
+ * 共通して使う。各タブに該当件数を表示する。
+ */
+function FilterTabs({
+  active,
+  onChange,
+  counts,
+}: {
+  active: AdminFilterKey;
+  onChange: (key: AdminFilterKey) => void;
+  counts: Record<AdminFilterKey, number>;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap gap-2">
+      {ADMIN_FILTER_GROUPS.map((group) => {
+        const isActive = group.key === active;
+        const count = counts[group.key] ?? 0;
+        return (
+          <button
+            key={group.key}
+            type="button"
+            onClick={() => onChange(group.key)}
+            aria-pressed={isActive}
+            className={
+              isActive
+                ? "inline-flex items-center gap-1.5 rounded-full border border-indigo-300 bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition"
+                : "inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-slate-50 hover:text-foreground"
+            }
+          >
+            {group.label}
+            <span
+              className={
+                isActive
+                  ? "inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-white/20 px-1.5 text-[10px] font-bold tabular-nums text-white"
+                  : "inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-gray-100 px-1.5 text-[10px] font-bold tabular-nums text-gray-600"
+              }
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -188,6 +242,27 @@ export default function AdminListPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<AdminFilterKey>("all");
+
+  // 各フィルタタブの該当件数。submissions が変わったときだけ再計算する。
+  const filterCounts = useMemo<Record<AdminFilterKey, number>>(() => {
+    const result: Record<AdminFilterKey, number> = {
+      all: 0,
+      demo_generated: 0,
+      hearing_in_progress: 0,
+      production_ready: 0,
+    };
+    for (const group of ADMIN_FILTER_GROUPS) {
+      result[group.key] = filterSubmissionsByStatus(submissions, group.key).length;
+    }
+    return result;
+  }, [submissions]);
+
+  // 現在のタブで絞り込んだ一覧。デスクトップの表にもモバイルのカードにもこれを使う。
+  const visibleSubmissions = useMemo(
+    () => filterSubmissionsByStatus(submissions, activeFilter),
+    [submissions, activeFilter],
+  );
 
   useEffect(() => {
     const secret = typeof window !== "undefined" ? sessionStorage.getItem("admin_secret") : null;
@@ -288,94 +363,108 @@ export default function AdminListPage() {
           </div>
         ) : (
           <>
-            {/* Desktop table */}
-            <div className="hidden overflow-hidden rounded-3xl border border-border bg-white shadow-sm md:block">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-border bg-gray-50 text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">受信日時</th>
-                    <th className="px-6 py-4 font-medium">事業者名</th>
-                    <th className="px-6 py-4 font-medium">業種</th>
-                    <th className="px-6 py-4 font-medium">品質スコア</th>
-                    <th className="px-6 py-4 font-medium">状態</th>
-                    <th className="px-6 py-4 font-medium">操作</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {submissions.map((s) => (
-                    <tr key={s.id} className="transition hover:bg-gray-50">
-                      <td
-                        className="whitespace-nowrap px-6 py-4 text-muted-foreground cursor-pointer"
-                        onClick={() => router.push(`/admin/${s.id}`)}
-                      >
-                        {formatDate(s.receivedAt)}
-                      </td>
-                      <td
-                        className="px-6 py-4 font-medium text-foreground cursor-pointer"
-                        onClick={() => router.push(`/admin/${s.id}`)}
-                      >
-                        {s.companyName}
-                      </td>
-                      <td
-                        className="px-6 py-4 text-muted-foreground cursor-pointer"
-                        onClick={() => router.push(`/admin/${s.id}`)}
-                      >
-                        {s.businessType}
-                      </td>
-                      <td
-                        className="px-6 py-4 cursor-pointer"
-                        onClick={() => router.push(`/admin/${s.id}`)}
-                      >
-                        <ScoreBar score={s.score} />
-                      </td>
-                      <td
-                        className="px-6 py-4 cursor-pointer"
-                        onClick={() => router.push(`/admin/${s.id}`)}
-                      >
-                        <StatusBadge status={s.status} />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col items-start gap-2">
-                          <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
-                          <QuickLinks submissionId={s.id} status={s.status} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <FilterTabs
+              active={activeFilter}
+              onChange={setActiveFilter}
+              counts={filterCounts}
+            />
 
-            {/* Mobile cards */}
-            <div className="space-y-3 md:hidden">
-              {submissions.map((s) => (
-                <div
-                  key={s.id}
-                  className="rounded-3xl border border-border bg-white p-5 shadow-sm"
-                >
-                  <div
-                    className="cursor-pointer transition hover:bg-gray-50 -m-5 p-5 mb-2"
-                    onClick={() => router.push(`/admin/${s.id}`)}
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="font-semibold text-foreground">{s.companyName}</span>
-                      <StatusBadge status={s.status} />
-                    </div>
-                    <div className="mb-3 text-sm text-muted-foreground">{s.businessType}</div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">{formatDate(s.receivedAt)}</span>
-                      <ScoreBar score={s.score} />
-                    </div>
-                  </div>
-                  <div className="pt-2 border-t border-border space-y-2">
-                    <div className="flex justify-end">
-                      <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
-                    </div>
-                    <QuickLinks submissionId={s.id} status={s.status} />
-                  </div>
+            {visibleSubmissions.length === 0 ? (
+              <div className="rounded-3xl border border-border bg-white p-12 text-center shadow-sm">
+                <p className="text-muted-foreground">この条件に当てはまる相談はありません</p>
+              </div>
+            ) : (
+              <>
+                {/* Desktop table */}
+                <div className="hidden overflow-hidden rounded-3xl border border-border bg-white shadow-sm md:block">
+                  <table className="w-full text-left text-sm">
+                    <thead className="border-b border-border bg-gray-50 text-xs uppercase text-muted-foreground">
+                      <tr>
+                        <th className="px-6 py-4 font-medium">受信日時</th>
+                        <th className="px-6 py-4 font-medium">事業者名</th>
+                        <th className="px-6 py-4 font-medium">業種</th>
+                        <th className="px-6 py-4 font-medium">品質スコア</th>
+                        <th className="px-6 py-4 font-medium">状態</th>
+                        <th className="px-6 py-4 font-medium">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {visibleSubmissions.map((s) => (
+                        <tr key={s.id} className="transition hover:bg-gray-50">
+                          <td
+                            className="whitespace-nowrap px-6 py-4 text-muted-foreground cursor-pointer"
+                            onClick={() => router.push(`/admin/${s.id}`)}
+                          >
+                            {formatDate(s.receivedAt)}
+                          </td>
+                          <td
+                            className="px-6 py-4 font-medium text-foreground cursor-pointer"
+                            onClick={() => router.push(`/admin/${s.id}`)}
+                          >
+                            {s.companyName}
+                          </td>
+                          <td
+                            className="px-6 py-4 text-muted-foreground cursor-pointer"
+                            onClick={() => router.push(`/admin/${s.id}`)}
+                          >
+                            {s.businessType}
+                          </td>
+                          <td
+                            className="px-6 py-4 cursor-pointer"
+                            onClick={() => router.push(`/admin/${s.id}`)}
+                          >
+                            <ScoreBar score={s.score} />
+                          </td>
+                          <td
+                            className="px-6 py-4 cursor-pointer"
+                            onClick={() => router.push(`/admin/${s.id}`)}
+                          >
+                            <StatusBadge status={s.status} />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col items-start gap-2">
+                              <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
+                              <QuickLinks submissionId={s.id} status={s.status} />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
-            </div>
+
+                {/* Mobile cards */}
+                <div className="space-y-3 md:hidden">
+                  {visibleSubmissions.map((s) => (
+                    <div
+                      key={s.id}
+                      className="rounded-3xl border border-border bg-white p-5 shadow-sm"
+                    >
+                      <div
+                        className="cursor-pointer transition hover:bg-gray-50 -m-5 p-5 mb-2"
+                        onClick={() => router.push(`/admin/${s.id}`)}
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="font-semibold text-foreground">{s.companyName}</span>
+                          <StatusBadge status={s.status} />
+                        </div>
+                        <div className="mb-3 text-sm text-muted-foreground">{s.businessType}</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">{formatDate(s.receivedAt)}</span>
+                          <ScoreBar score={s.score} />
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-border space-y-2">
+                        <div className="flex justify-end">
+                          <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
+                        </div>
+                        <QuickLinks submissionId={s.id} status={s.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </main>

@@ -106,3 +106,91 @@ export function getAdminQuickLinks(
 
   return links;
 }
+
+/* ------------------------------------------------------------------ */
+/*  クイックリンクの配色（ボタン風）                                       */
+/* ------------------------------------------------------------------ */
+/*  各リンクを遷移先の役割ごとの色で強調し、一覧から一目で判別できるように   */
+/*  する。Tailwind がクラスを静的に検出できるよう、リテラル文字列で保持する。 */
+/* ------------------------------------------------------------------ */
+
+const QUICK_LINK_STYLES: Record<AdminQuickLinkKey, string> = {
+  detail: "border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:border-slate-300",
+  review: "border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100",
+  demo: "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100",
+  execution: "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100",
+  interview: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+};
+
+/**
+ * クイックリンクのキーに対応する配色（Tailwind クラス）を返す。
+ * 呼び出し側でベースの配置クラス（rounded-md や padding など）と組み合わせて使う。
+ */
+export function getAdminQuickLinkStyle(key: AdminQuickLinkKey): string {
+  return QUICK_LINK_STYLES[key];
+}
+
+/* ------------------------------------------------------------------ */
+/*  フィルタ（一覧の実務状態タブ）                                          */
+/* ------------------------------------------------------------------ */
+/*  代表が一覧でよく使う局面ごとにステータスを束ねた集合。                   */
+/*  各タブは独立したビューで、同じ相談が複数タブに含まれることがある。         */
+/*                                                                        */
+/*  - デモ生成済み     : デモが生成済みで表示可能な状態（DEMO_VISIBLE_STATUSES）*/
+/*  - ヒアリング進行中 : 顧客承認後〜本制作着手前の能動的なヒアリングループ   */
+/*                      （production_ready / delivered は着手済みのため除外） */
+/*  - 本制作可能       : 本制作に着手できる／完了した状態                   */
+/* ------------------------------------------------------------------ */
+
+export type AdminFilterKey =
+  | "all"
+  | "demo_generated"
+  | "hearing_in_progress"
+  | "production_ready";
+
+export interface AdminFilterGroup {
+  key: AdminFilterKey;
+  label: string;
+  /** undefined のときは「すべて」を意味し、ステータスで絞り込まない。 */
+  statuses?: Set<string>;
+}
+
+/**
+ * 一覧のフィルタタブ定義。配列順がそのままタブの表示順になる。
+ */
+export const ADMIN_FILTER_GROUPS: AdminFilterGroup[] = [
+  { key: "all", label: "すべて" },
+  {
+    key: "demo_generated",
+    label: "デモ生成済み",
+    statuses: DEMO_VISIBLE_STATUSES,
+  },
+  {
+    key: "hearing_in_progress",
+    label: "ヒアリング進行中",
+    statuses: new Set<string>([
+      "customer_approved",
+      "pre_production_interview",
+      "pre_production_review",
+    ]),
+  },
+  {
+    key: "production_ready",
+    label: "本制作可能",
+    statuses: new Set<string>(["production_ready", "delivered"]),
+  },
+];
+
+/**
+ * 相談一覧を指定フィルタで絞り込む。
+ * statuses が未定義（「すべて」）のときはそのまま返す。
+ * 判定はステータス集合への所属のみで行い、決定的かつ単純。
+ */
+export function filterSubmissionsByStatus<T extends { status: string }>(
+  submissions: T[],
+  filterKey: AdminFilterKey,
+): T[] {
+  const statuses = ADMIN_FILTER_GROUPS.find((g) => g.key === filterKey)?.statuses;
+  if (!statuses) return submissions;
+  return submissions.filter((s) => statuses.has(s.status));
+}
