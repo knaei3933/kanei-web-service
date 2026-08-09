@@ -39,6 +39,32 @@ interface ApprovalPackage {
   [key: string]: unknown;
 }
 
+interface InterviewQuestion {
+  id: string;
+  text: string;
+  required?: boolean;
+}
+
+interface InterviewAnswer {
+  questionId: string;
+  text: string;
+}
+
+interface PreProductionInterview {
+  requestedAt?: string;
+  questions?: InterviewQuestion[];
+  answers?: InterviewAnswer[] | null;
+  answeredAt?: string | null;
+  additionalMaterialCount?: number;
+}
+
+interface ProductionReadiness {
+  status?: "ready" | "needs_followup";
+  score?: number;
+  reasons?: string[];
+  assessedAt?: string;
+}
+
 interface SubmissionFile {
   filename?: string;
   url?: string;
@@ -296,6 +322,17 @@ export default function AdminDetailPage() {
   const allOk = checklist.length > 0 && checklist.filter((c) => c.required !== false).every((c) => c.status === "ok");
 
   const followupHistory = approval?.followupHistory ?? [];
+
+  // 本制作前ヒアリング（第3ゲート周辺）のサマリ用派生値。
+  // approvalPackage は API から完全なオブジェクトで返るため、
+  // preProductionInterview / productionReadiness もここで取り出す。
+  const interview =
+    (approval?.preProductionInterview ?? null) as PreProductionInterview | null;
+  const readiness =
+    (approval?.productionReadiness ?? null) as ProductionReadiness | null;
+  const interviewQuestionCount = interview?.questions?.length ?? 0;
+  const interviewAnswerCount = interview?.answers?.length ?? 0;
+  const additionalMaterialCount = interview?.additionalMaterialCount ?? 0;
 
   /* handlers */
   async function handleSendFollowup() {
@@ -804,6 +841,76 @@ export default function AdminDetailPage() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {/* ---- 本制作前ヒアリング状況（第3ゲート前後のサマリ） ---- */}
+      {interview && (
+        <section className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8">
+          <h2 className="mb-4 text-lg font-bold text-foreground">
+            本制作前ヒアリング状況
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <p className="text-xs text-muted-foreground">ヒアリング回答URL</p>
+              <Link
+                href={`/interview/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-block break-all font-mono text-xs text-blue-600 hover:underline"
+              >
+                /interview/{id}
+              </Link>
+            </div>
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <p className="text-xs text-muted-foreground">回答数</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {interviewAnswerCount} / {interviewQuestionCount} 件
+                {interview.answeredAt && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    （{fmtDate(interview.answeredAt)}）
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <p className="text-xs text-muted-foreground">追加素材</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {additionalMaterialCount} 件
+              </p>
+            </div>
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <p className="text-xs text-muted-foreground">本制作準備度</p>
+              {readiness ? (
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  <span
+                    className={
+                      readiness.status === "ready"
+                        ? "text-emerald-600"
+                        : "text-amber-600"
+                    }
+                  >
+                    {readiness.status === "ready" ? "進行可能" : "要フォロー"}
+                  </span>
+                  {" "}（スコア {readiness.score ?? 0}）
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">未評価</p>
+              )}
+            </div>
+          </div>
+          {readiness && readiness.reasons && readiness.reasons.length > 0 && (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <p className="mb-1 text-xs font-semibold text-amber-700">
+                準備度の判定理由
+              </p>
+              <ul className="space-y-0.5">
+                {readiness.reasons.map((r: string, i: number) => (
+                  <li key={i} className="text-sm text-amber-800">{r}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       )}
 

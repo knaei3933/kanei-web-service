@@ -141,7 +141,10 @@ export async function POST(
     attachmentCount: baseAttachmentCount,
   });
 
-  // 評価結果をキャッシュ（pkg + 単独成果物）
+  // 評価結果をキャッシュ（pkg + 単独成果物）。
+  // 単独成果物（production-readiness.json）の書き込みと pkg 本体の永続化は
+  // 独立させる: 単独成果物の書き込みが失敗しても（リレーのホワイトリスト差異等）、
+  // productionReadiness を approval-package.json へ確実に永続化する。
   pkg.productionReadiness = readiness;
   try {
     await writeArtifact(
@@ -149,9 +152,13 @@ export async function POST(
       "production-readiness.json",
       JSON.stringify(readiness, null, 2)
     );
+  } catch {
+    // 単独成果物の書き込み失敗でもパッケージ本体の永続化は進める
+  }
+  try {
     await writeApprovalPackage(pkg);
   } catch {
-    // キャッシュ書き込み失敗でも遷移自体は進める
+    // パッケージ本体の書き込み失敗でも遷移自体は進める
   }
 
   // ---- 第3ゲート遷移 ----

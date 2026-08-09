@@ -625,6 +625,8 @@ function readinessTone(readiness: ProductionReadiness): string {
 function PreProductionSection({ pkg }: { pkg: ApprovalPackage }) {
   const interview = pkg.preProductionInterview;
   const readiness = pkg.productionReadiness;
+  const questionCount = interview ? interview.questions.length : 0;
+  const answerCount = interview?.answers?.length ?? 0;
 
   return (
     <Section
@@ -646,6 +648,41 @@ function PreProductionSection({ pkg }: { pkg: ApprovalPackage }) {
             顧客のヒアリング回答・追加素材・本制作準備度を確認し、第3ゲートで
             本制作へ進めるかを判断します。起票日時: {interview.requestedAt || "不明"}
           </p>
+
+          {/* 状態サマリ（回答数・追加素材・準備度をひと目で） */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl bg-accent p-4">
+              <p className="text-xs font-bold text-muted-foreground">回答数</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {answerCount} / {questionCount} 件
+              </p>
+            </div>
+            <div className="rounded-2xl bg-accent p-4">
+              <p className="text-xs font-bold text-muted-foreground">追加素材</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {interview.additionalMaterialCount} 件
+              </p>
+            </div>
+            <div className="rounded-2xl bg-accent p-4">
+              <p className="text-xs font-bold text-muted-foreground">本制作準備度</p>
+              {readiness ? (
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  <span
+                    className={
+                      readiness.status === "ready"
+                        ? "text-emerald-700"
+                        : "text-amber-700"
+                    }
+                  >
+                    {readiness.status === "ready" ? "進行可能" : "要フォロー"}
+                  </span>
+                  {" "}（スコア {readiness.score}）
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">未評価</p>
+              )}
+            </div>
+          </div>
 
           {/* 質問と回答 */}
           <div className="mt-5">
