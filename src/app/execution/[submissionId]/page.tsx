@@ -18,6 +18,12 @@ const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
     enterpriseName: "テスト居酒屋",
     businessType: "飲食業",
   },
+  "20260809-061637-e59e74cc": {
+    loader: () =>
+      import("@/components/sections/manufacturing-showcase").then((m) => ({ default: m.default })),
+    enterpriseName: "テスト製造株式会社",
+    businessType: "製造業",
+  },
 };
 
 interface ExecutionPageProps {
