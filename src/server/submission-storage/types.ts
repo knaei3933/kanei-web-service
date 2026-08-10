@@ -42,6 +42,8 @@ export const ARTIFACT_FILE_NAMES = [
   "execution-handoff.json",
   "execution-prompt.md",
   "execution-section-prompts.md",
+  "monet-mapping.json",
+  "execution-conformance.json",
   "demo-feedback.json",
   "revision-handoff.json",
   "revision-lineage.json",

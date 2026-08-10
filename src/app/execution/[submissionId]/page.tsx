@@ -15,6 +15,10 @@ import {
   buildExecutionSectionPromptsMarkdown,
   readApprovalPackage,
   readExecutionSectionPromptsMarkdown,
+  readMonetMappingArtifact,
+  readExecutionConformanceArtifact,
+  type MonetMappingArtifact,
+  type ExecutionConformanceArtifact,
 } from "@/lib/approval-package";
 import {
   imageFallbackStatusLabel,
@@ -340,6 +344,102 @@ function ImageFallbackOperatorPanel({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Monetコンポーネントマッピング サマリ（内部専用・コンパクト）          */
+/* ------------------------------------------------------------------ */
+
+function MonetMappingCompactCard({
+  mapping,
+}: {
+  mapping: MonetMappingArtifact;
+}) {
+  return (
+    <section className="border-t border-indigo-200 bg-indigo-50/30">
+      <div className="mx-auto max-w-container px-4 py-6 sm:py-8">
+        <div className="rounded-2xl border border-indigo-300 bg-indigo-100/70 p-3 text-xs leading-relaxed text-indigo-900">
+          <span className="font-bold">内部オペレータ専用（顧客非公開）</span>
+          — Monetコンポーネントマッピング
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl bg-white p-3">
+            <p className="text-xs font-bold text-muted-foreground">再利用可能</p>
+            <p className="mt-1 text-sm font-semibold text-emerald-700">
+              {mapping.reusable.length}件
+            </p>
+            {mapping.reusable.slice(0, 3).map((c) => (
+              <p key={c.id} className="mt-1 text-xs text-foreground">
+                • {c.title}
+              </p>
+            ))}
+          </div>
+          <div className="rounded-xl bg-white p-3">
+            <p className="text-xs font-bold text-muted-foreground">要調整</p>
+            <p className="mt-1 text-sm font-semibold text-amber-700">
+              {mapping.needsAdjustment.length}件
+            </p>
+          </div>
+          <div className="rounded-xl bg-white p-3">
+            <p className="text-xs font-bold text-muted-foreground">カスタム実装</p>
+            <p className="mt-1 text-sm font-semibold text-rose-700">
+              {mapping.customOnly.length}件
+            </p>
+            {mapping.customOnly.slice(0, 3).map((s) => (
+              <p key={s.slot} className="mt-1 text-xs text-foreground">
+                • {s.slot}
+              </p>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  実行準拠性 サマリ（内部専用・コンパクト）                             */
+/* ------------------------------------------------------------------ */
+
+function ExecutionConformanceCompactCard({
+  conformance,
+}: {
+  conformance: ExecutionConformanceArtifact;
+}) {
+  return (
+    <section className="border-t border-rose-200 bg-rose-50/30">
+      <div className="mx-auto max-w-container px-4 py-6 sm:py-8">
+        <div className="rounded-2xl border border-rose-300 bg-rose-100/70 p-3 text-xs leading-relaxed text-rose-900">
+          <span className="font-bold">内部オペレータ専用（顧客非公開）</span>
+          — 実行準拠性アーティファクト
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl bg-white p-3">
+            <p className="text-xs font-bold text-muted-foreground">禁止行為・発明</p>
+            <p className="mt-1 text-sm font-semibold text-rose-700">
+              {conformance.forbiddenInventions.length}件
+            </p>
+            {conformance.forbiddenInventions.slice(0, 2).map((inv, i) => (
+              <p key={i} className="mt-1 text-xs text-foreground">
+                • {inv.category}: {inv.description.slice(0, 30)}...
+              </p>
+            ))}
+          </div>
+          <div className="rounded-xl bg-white p-3">
+            <p className="text-xs font-bold text-muted-foreground">資産使用ルール</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
+              {conformance.assetUsageRules.length}件
+            </p>
+            {conformance.assetUsageRules.slice(0, 2).map((rule, i) => (
+              <p key={i} className="mt-1 text-xs text-foreground">
+                • {rule.ruleType}: {rule.assetCategory}
+              </p>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  修正ハンドオフ サマリ（内部専用・Phase L）                             */
 /* ------------------------------------------------------------------ */
 /*  revision-handoff.json に保存されたセクション別フィードバックのサマリを */
@@ -542,6 +642,12 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
   // 該当セクションを取り出して Claude Code に渡せる。実行ハンドオフがあるときだけ読み、
   // 表示はオペレータ作業サーフェス（画像フォールバック / 修正ハンドオフ と同じ領域）に置く。
   const executionHandoff = approvalPackage?.executionHandoff ?? null;
+
+  // Monetコンポーネントマッピング（monet-mapping.json）を読み込む。
+  const monetMapping = await readMonetMappingArtifact(submissionId);
+
+  // 実行準拠性（execution-conformance.json）を読み込む。
+  const executionConformance = await readExecutionConformanceArtifact(submissionId);
   const sectionPromptsFilePath = executionHandoff?.sectionPromptsFilePath ?? "";
   // レガシー後方互換（pre-Phase-P）: Phase P より前に承認されたサブミッションは
   // execution-handoff.json / execution-prompt.md のみで execution-section-prompts.md を持たない。
@@ -623,6 +729,18 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
           submissionId={submissionId}
           fallbackAssets={fallbackAssets}
         />
+      )}
+
+      {/* ============================================================ */}
+      {/*  Monetコンポーネントマッピング サマリ（内部専用）               */}
+      {/* ============================================================ */}
+      {monetMapping && <MonetMappingCompactCard mapping={monetMapping} />}
+
+      {/* ============================================================ */}
+      {/*  実行準拠性 サマリ（内部専用）                                   */}
+      {/* ============================================================ */}
+      {executionConformance && (
+        <ExecutionConformanceCompactCard conformance={executionConformance} />
       )}
 
       {/* ============================================================ */}

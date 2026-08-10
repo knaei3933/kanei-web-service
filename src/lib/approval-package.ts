@@ -23,7 +23,7 @@
 import type { ConsultIntakeQuality } from "./consult-quality";
 import type { PromptStagePreview } from "./prompt-chain";
 import { buildPromptChainPreview } from "./prompt-chain";
-import { getMonetUseCase } from "@/generated/monet-catalog";
+import { getMonetUseCase, MONET_CATALOG } from "@/generated/monet-catalog";
 import { resolveUseCaseKey } from "@/lib/proposal";
 import {
   assessImageFallback,
@@ -155,10 +155,393 @@ export interface ApprovalDecision {
 /* ------------------------------------------------------------------ */
 
 /** 計画アーティファクトのスキーマバージョン */
-export const PLANNING_SCHEMA_VERSION = "1.0.0";
+export const PLANNING_SCHEMA_VERSION = "1.1.0";
 
 /** 実行ハンドオフのスキーマバージョン */
 export const EXECUTION_HANDOFF_SCHEMA_VERSION = "1.0.0";
+
+/** Monetマッピングアーティファクトのスキーマバージョン */
+export const MONET_MAPPING_SCHEMA_VERSION = "1.0.0";
+
+/** 実行準拠性アーティファクトのスキーマバージョン */
+export const EXECUTION_CONFORMANCE_SCHEMA_VERSION = "1.0.0";
+
+/* ------------------------------------------------------------------ */
+/*  Phase 2: Monetコンポーネントマッピングアーティファクト          */
+/* ------------------------------------------------------------------ */
+
+/** コンポーネントの再利用分類 */
+export type ComponentReuseType = "reusable" | "needs_adjustment" | "custom_only";
+
+/** Monet推奨セクションの候補コンポーネント（構造化データ） */
+export interface MonetCandidateComponent {
+  /** セクションID */
+  id: string;
+  /** 表示名 */
+  title: string;
+  /** カテゴリ（hero / pricing / faq 等） */
+  category: string;
+  /** Monetレポジトリ側のコンポーネントパス */
+  componentPath: string;
+  /** 再利用分類 */
+  reuseType: ComponentReuseType;
+  /** 再利用判断の理由（日本語） */
+  reuseReason: string;
+}
+
+/** Monet推奨セクション1件のマッピング情報 */
+export interface MonetRecommendedSection {
+  /** スロット名（例: "ヒーロー（技術と信頼のアピール）"） */
+  slot: string;
+  /** 対応するカテゴリ */
+  category: string;
+  /** 推奨根拠（日本語） */
+  rationale: string;
+  /** 候補コンポーネント（該当なしはnull） */
+  candidateComponent: MonetCandidateComponent | null;
+}
+
+/** Monetコンポーネントマッピングアーティファクト */
+export interface MonetMappingArtifact {
+  schemaVersion: string;
+  submissionId: string;
+  generatedAt: string;
+  /** 生成方式（決定論的であることの明示） */
+  generatedBy: "deterministic-planner";
+  /** 事業種 */
+  businessType: string;
+  /** Monet use case key */
+  useCaseKey: string;
+  /** Monet use case label（日本語） */
+  useCaseLabel: string;
+  /** 構成方針（日本語） */
+  useCaseDescription: string;
+  /** 推奨セクション構造 */
+  recommendedSections: MonetRecommendedSection[];
+  /** 再利用可能なコンポーネント一覧 */
+  reusable: MonetCandidateComponent[];
+  /** 調整が必要なコンポーネント一覧 */
+  needsAdjustment: MonetCandidateComponent[];
+  /** カスタム実装が必要なセクション一覧 */
+  customOnly: MonetRecommendedSection[];
+  /** マッピング全体の根拠（日本語） */
+  rationale: string[];
+  /** 参考ページ一覧（sourceURL付き） */
+  referencePages: Array<{
+    id: string;
+    title: string;
+    sourceUrl?: string;
+  }>;
+}
+
+/**
+ * Monetコンポーネントマッピングアーティファクトを構築する。
+ * 純粋関数・決定論的（同じ入力 → 同じ出力）。LLM不使用。
+ *
+ * 代表者がインテイクを承認したときに生成し、レビュー・実行ハンドオフで参照する。
+ */
+export function buildMonetMappingArtifact(pkg: ApprovalPackage): MonetMappingArtifact {
+  const businessType = extractBusinessTypeFromSummary(
+    pkg.reviewSummary.businessSummary
+  );
+  const useCase = getMonetUseCase(resolveUseCaseKey(businessType));
+
+  // 推奨セクション構造を構造化データに変換
+  const recommendedSections: MonetRecommendedSection[] = useCase.recommendedStructure.map((slot) => {
+    let reuseType: ComponentReuseType = "custom_only";
+    let reuseReason = "該当するMonetコンポーネントがないためカスタム実装が必要";
+
+    const candidateComponent: MonetCandidateComponent | null = slot.section
+      ? {
+          id: slot.section.id,
+          title: slot.section.title,
+          category: slot.section.category,
+          componentPath: slot.section.componentPath,
+          reuseType: "reusable",
+          reuseReason: "Monetカタログに完全一致するコンポーネントがあるため、そのまま再利用可能",
+        }
+      : null;
+
+    if (candidateComponent) {
+      reuseType = "reusable";
+      reuseReason = "Monetカタログに完全一致するコンポーネントがあるため、そのまま再利用可能";
+    }
+
+    return {
+      slot: slot.slot,
+      category: slot.category,
+      rationale: slot.rationale,
+      candidateComponent,
+    };
+  });
+
+  // 再利用分類でグルーピング
+  const reusable: MonetCandidateComponent[] = [];
+  const needsAdjustment: MonetCandidateComponent[] = [];
+  const customOnly: MonetRecommendedSection[] = [];
+
+  for (const section of recommendedSections) {
+    if (section.candidateComponent) {
+      // 今のところ「あるかないか」の二択だが、将来「要調整」を追加できる設計
+      reusable.push(section.candidateComponent);
+    } else {
+      customOnly.push(section);
+    }
+  }
+
+  // 参考ページのsourceUrlだけを抽出
+  const referencePages = useCase.referencePages.map((p) => ({
+    id: p.id,
+    title: p.title,
+    sourceUrl: p.sourceUrl,
+  }));
+
+  const rationale: string[] = [
+    `Monetカタログ（${MONET_CATALOG.sourceVersion}）から業種「${useCase.label}」の構成案を抽出。`,
+    `推奨セクション数: ${recommendedSections.length}件（再利用可能: ${reusable.length}件、カスタム実装: ${customOnly.length}件）。`,
+  ];
+  if (pkg.referenceAnalysis.referenceUrls.length > 0) {
+    rationale.push(
+      `顧客指定の参考サイト: ${pkg.referenceAnalysis.referenceUrls.join("・")}。表現はそのまま複製せず、日本語の自然な商談導線に再構成する。`
+    );
+  }
+
+  return {
+    schemaVersion: MONET_MAPPING_SCHEMA_VERSION,
+    submissionId: pkg.submissionId,
+    generatedAt: new Date().toISOString(),
+    generatedBy: "deterministic-planner",
+    businessType,
+    useCaseKey: useCase.key,
+    useCaseLabel: useCase.label,
+    useCaseDescription: useCase.description,
+    recommendedSections,
+    reusable,
+    needsAdjustment,
+    customOnly,
+    rationale,
+    referencePages,
+  };
+}
+
+/** Monetマッピングアーティファクトの表示用パス */
+export function monetMappingPathFor(submissionId: string): string {
+  return artifactDisplayPath(submissionId, "monet-mapping.json");
+}
+
+/**
+ * Monetマッピングアーティファクトを読み込む。
+ * ファイル不在・形式不正時はnullを返す。
+ */
+export async function readMonetMappingArtifact(
+  submissionId: string
+): Promise<MonetMappingArtifact | null> {
+  if (!isSafeSubmissionId(submissionId)) return null;
+  try {
+    const raw = await readArtifact(submissionId, "monet-mapping.json");
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw);
+    // 簡易的な正規化
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      parsed.schemaVersion === MONET_MAPPING_SCHEMA_VERSION &&
+      parsed.submissionId === submissionId
+    ) {
+      return parsed as MonetMappingArtifact;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Phase 2: 実行準拠性アーティファクト（execution-conformance.json）   */
+/* ------------------------------------------------------------------ */
+
+/** 禁止されている行為・発明のカテゴリ */
+export type ForbiddenInventionCategory =
+  | "legal"
+  | "medical_advice"
+  | "financial_guarantee"
+  | "defamatory"
+  | "infringement"
+  | "misleading_price"
+  | "other";
+
+/** 禁止されている行為・発明1件 */
+export interface ForbiddenInvention {
+  /** カテゴリ */
+  category: ForbiddenInventionCategory;
+  /** 検出・推測された内容（日本語） */
+  description: string;
+  /** 該当箇所（mustInclude または brief の該当テキスト） */
+  source: string;
+}
+
+/** 資産使用ルールの種類 */
+export type AssetUsageRuleType =
+  | "ai_generated_credit"
+  | "stock_attribution"
+  | "copyright_notice"
+  | "permission_required"
+  | "other";
+
+/** 資産使用ルール1件 */
+export interface AssetUsageRule {
+  /** ルール種類 */
+  ruleType: AssetUsageRuleType;
+  /** 適用条件・説明（日本語） */
+  description: string;
+  /** 該当資産カテゴリ（画像・テキスト・音楽等） */
+  assetCategory: string;
+}
+
+/**
+ * 実行準拠性アーティファクト。
+ * 計画承認時に生成され、実行時の準拠要件をまとめる。
+ * - 禁止されている行為・発明（リスク回避）
+ * - 資産使用ルール（AI生成・ストック写真等の帰属）
+ */
+export interface ExecutionConformanceArtifact {
+  schemaVersion: string;
+  submissionId: string;
+  generatedAt: string;
+  /** 生成方式（決定論的） */
+  generatedBy: "deterministic-planner";
+  /** 禁止されている行為・発明リスト */
+  forbiddenInventions: ForbiddenInvention[];
+  /** 資産使用ルールリスト */
+  assetUsageRules: AssetUsageRule[];
+  /** 準拠要件の全体要約（日本語） */
+  rationale: string[];
+}
+
+/**
+ * 実行準拠性アーティファクトを構築する。
+ * 純粋関数・決定論的（同じ入力 → 同じ出力）。LLM不使用。
+ */
+export function buildExecutionConformanceArtifact(
+  pkg: ApprovalPackage,
+  monetMapping: MonetMappingArtifact | null
+): ExecutionConformanceArtifact {
+  const forbiddenInventions: ForbiddenInvention[] = [];
+  const assetUsageRules: AssetUsageRule[] = [];
+  const rationale: string[] = [];
+
+  // 禁止行為・発明の検出（mustInclude から高リスクな表現を抽出）
+  const mustInclude = pkg.reviewSummary.mustIncludeSummary;
+  const businessSummary = pkg.reviewSummary.businessSummary;
+
+  // 医療・法律・金融保証に関する高リスク表現を検出
+  const medicalKeywords = ["治療", "効果", "症状", "改善", "予防", "診断", "療法"];
+  const legalKeywords = ["訴訟", "裁判", "法的", "違法", "責任", "賠償"];
+  const financialKeywords = ["保証", "確実", "安全", "無リスク", "必ず"];
+
+  for (const item of mustInclude) {
+    for (const kw of medicalKeywords) {
+      if (item.includes(kw)) {
+        forbiddenInventions.push({
+          category: "medical_advice",
+          description: `医療表現「${item}」が含まれています。医療行為・治療効果の表明は医療法規制の対象となり得ます。`,
+          source: item,
+        });
+        break;
+      }
+    }
+    for (const kw of legalKeywords) {
+      if (item.includes(kw)) {
+        forbiddenInventions.push({
+          category: "legal",
+          description: `法的表現「${item}」が含まれています。具体的な法的権利・義務の表明は弁護士確認が必要です。`,
+          source: item,
+        });
+        break;
+      }
+    }
+    for (const kw of financialKeywords) {
+      if (item.includes(kw)) {
+        forbiddenInventions.push({
+          category: "financial_guarantee",
+          description: `保証表現「${item}」が含まれています。確実な利益・無リスクの表明は景品表示法等の規制対象となり得ます。`,
+          source: item,
+        });
+        break;
+      }
+    }
+  }
+
+  // 資産使用ルールの生成（画像フォールバック状況に基づく）
+  const fb = pkg.imageFallback;
+  if (fb && fb.status !== "not_needed") {
+    assetUsageRules.push({
+      ruleType: "ai_generated_credit",
+      description: `AI生成画像（${fb.assetTraceability.prefix} プレフィックス）を利用する場合、顧客にその旨を明示し、実物受領後に差し替える必要があります。`,
+      assetCategory: "画像",
+    });
+  }
+
+  if (pkg.materialsAnalysis.availableAttachments.length > 0) {
+    const hasImages = pkg.materialsAnalysis.availableAttachments.some(
+      (a) => a.kind === "画像"
+    );
+    if (hasImages) {
+      assetUsageRules.push({
+        ruleType: "copyright_notice",
+        description: "顧客提供の画像は著作権・肖像権の確認が必要です。無断使用を避けてください。",
+        assetCategory: "画像",
+      });
+    }
+  }
+
+  rationale.push("実行準拠性アーティファクトは、実行時の法令・著作権・資産運用ルールをまとめるものです。");
+  rationale.push(`禁止行為検出: ${forbiddenInventions.length}件、資産使用ルール: ${assetUsageRules.length}件。`);
+  if (forbiddenInventions.length > 0) {
+    rationale.push("高リスク表現が検出された場合、実行前に専門家の確認を強く推奨します。");
+  }
+
+  return {
+    schemaVersion: EXECUTION_CONFORMANCE_SCHEMA_VERSION,
+    submissionId: pkg.submissionId,
+    generatedAt: new Date().toISOString(),
+    generatedBy: "deterministic-planner",
+    forbiddenInventions,
+    assetUsageRules,
+    rationale,
+  };
+}
+
+/** 実行準拠性アーティファクトの表示用パス */
+export function executionConformancePathFor(submissionId: string): string {
+  return artifactDisplayPath(submissionId, "execution-conformance.json");
+}
+
+/**
+ * 実行準拠性アーティファクトを読み込む。
+ * ファイル不在・形式不正時はnullを返す。
+ */
+export async function readExecutionConformanceArtifact(
+  submissionId: string
+): Promise<ExecutionConformanceArtifact | null> {
+  if (!isSafeSubmissionId(submissionId)) return null;
+  try {
+    const raw = await readArtifact(submissionId, "execution-conformance.json");
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      parsed.schemaVersion === EXECUTION_CONFORMANCE_SCHEMA_VERSION &&
+      parsed.submissionId === submissionId
+    ) {
+      return parsed as ExecutionConformanceArtifact;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 /** 計画1ステージ分（OMC 計画アーティファクトの構成要素） */
 export interface PlanningStage {
@@ -297,6 +680,8 @@ export interface ExecutionHandoff {
   promptFilePath: string;
   /** セクション別実行プロンプトファイルの表示パス（execution-section-prompts.md・Phase P） */
   sectionPromptsFilePath: string;
+  /** Monetコンポーネントマッピングアーティファクトの表示パス */
+  monetMappingFilePath: string;
   /** ハンドオフメタデータファイルの表示パス */
   metadataFilePath: string;
   /** 計画アーティファクトファイルの表示パス */
@@ -340,6 +725,8 @@ export interface ApprovalPackage {
   approval: ApprovalDecision;
   /** OMC 計画アーティファクト（代表承認後に生成・未生成時は null） */
   planningArtifact: PlanningArtifact | null;
+  /** Monetコンポーネントマッピングアーティファクト（計画生成時に作成・未生成時は null） */
+  monetMapping: MonetMappingArtifact | null;
   /** 計画承認（第2ゲート）の判定 */
   planApproval: PlanApprovalDecision;
   /** 実行ハンドオフ（計画承認後に生成・内部専用・未生成時は null） */
@@ -1284,6 +1671,8 @@ export function buildApprovalPackage(
       memo: null,
     },
     executionHandoff: null,
+    // Phase 2: Monetマッピングアーティファクトは計画生成時に作成・未生成時はnull
+    monetMapping: null,
     // Phase A: 本制作前ヒアリング・第3ゲート・準備度は受領時点では未実施
     preProductionInterview: null,
     preProductionApproval: {
@@ -1405,6 +1794,8 @@ function normalizeExecutionHandoff(
             "execution-section-prompts.md"
           )
         : ""),
+    // 旧パッケージ（Monetマッピング追加前）には monetMappingFilePath がないため空文字で補う
+    monetMappingFilePath: asString(o.monetMappingFilePath) || "",
     metadataFilePath: asString(o.metadataFilePath),
     planFilePath: asString(o.planFilePath),
     briefFilePath: asString(o.briefFilePath),
@@ -1414,6 +1805,27 @@ function normalizeExecutionHandoff(
     notices: asStringArray(o.notices),
     plannedStageIds: asStringArray(o.plannedStageIds),
   };
+}
+
+/** 読み込んだ生 JSON から Monetマッピングアーティファクトを正規化する。不在・形式不正時は null。 */
+function normalizeMonetMappingArtifact(
+  raw: unknown,
+  submissionId: string
+): MonetMappingArtifact | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const o = asObject(raw);
+  const sv = asString(o.schemaVersion);
+  const sid = asString(o.submissionId);
+  if (
+    sv !== MONET_MAPPING_SCHEMA_VERSION ||
+    sid !== submissionId
+  ) {
+    return null;
+  }
+  // 簡易的正規化 — 主要なフィールドのみ検証
+  const useCaseKey = asString(o.useCaseKey);
+  if (!useCaseKey) return null;
+  return raw as MonetMappingArtifact;
 }
 
 /** 読み込んだ生 JSON から本制作前ヒアリングの質問を正規化する */
@@ -1687,6 +2099,7 @@ function normalizeApprovalPackage(
     planningArtifact: normalizePlanningArtifact(o.planningArtifact, id),
     planApproval: normalizePlanApproval(o.planApproval),
     executionHandoff: normalizeExecutionHandoff(o.executionHandoff, id),
+    monetMapping: normalizeMonetMappingArtifact(o.monetMapping, id),
     preProductionInterview: normalizePreProductionInterview(o.preProductionInterview),
     preProductionApproval: normalizePlanApproval(o.preProductionApproval),
     productionReadiness: normalizeProductionReadiness(o.productionReadiness),
@@ -2040,6 +2453,7 @@ export function buildExecutionHandoff(
       : `claude "${promptFilePath} を読み、submissionId=${id} 専用の showcase を安定した意味的なファイル名（数字で始まらない・submissionId を使わない）で新規実装し、SHOWCASE_MAP に ${id} エントリを追加してください。brief.json / omc-plan.json を参照し、各ステップを順に進め、最後に検証してください。"`,
     promptFilePath,
     sectionPromptsFilePath,
+    monetMappingFilePath: `${rel}/monet-mapping.json`,
     metadataFilePath: `${rel}/execution-handoff.json`,
     planFilePath: `${rel}/omc-plan.json`,
     briefFilePath: `${rel}/brief.json`,
@@ -2138,8 +2552,17 @@ export async function approveRepresentativeReview(
   };
   pkg.executionHandoff = null;
 
+  // Monetコンポーネントマッピングアーティファクトを生成・保存
+  const monetMapping = buildMonetMappingArtifact(pkg);
+  pkg.monetMapping = monetMapping;
+
   try {
     await writePlanningArtifactFile(plan);
+    await writeArtifact(
+      submissionId,
+      "monet-mapping.json",
+      JSON.stringify(monetMapping, null, 2)
+    );
   } catch {
     // ファイル書き出し失敗でもパッケージ本体の更新を優先する
   }
@@ -2190,6 +2613,9 @@ export async function approvePlan(
   const sectionPromptsMarkdown = buildExecutionSectionPromptsMarkdown(pkg, plan);
   pkg.executionHandoff = handoff;
 
+  // 実行準拠性アーティファクトを生成・保存
+  const executionConformance = buildExecutionConformanceArtifact(pkg, pkg.monetMapping);
+
   try {
     await writePlanningArtifactFile(plan);
     await writeExecutionHandoffFiles(
@@ -2197,6 +2623,11 @@ export async function approvePlan(
       handoff,
       promptMarkdown,
       sectionPromptsMarkdown
+    );
+    await writeArtifact(
+      submissionId,
+      "execution-conformance.json",
+      JSON.stringify(executionConformance, null, 2)
     );
   } catch {
     // ファイル書き出し失敗でもパッケージ本体の更新を優先する

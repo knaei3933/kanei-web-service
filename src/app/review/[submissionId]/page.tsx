@@ -5,6 +5,8 @@ import {
   readApprovalPackage,
   readExecutionPromptMarkdown,
   readExecutionSectionPromptsMarkdown,
+  readMonetMappingArtifact,
+  readExecutionConformanceArtifact,
   type ApprovalStatus,
   type ApprovalPackage,
   type PlanningArtifact,
@@ -12,6 +14,8 @@ import {
   type ApprovalDecision,
   type PlanApprovalDecision,
   type ProductionReadiness,
+  type MonetMappingArtifact,
+  type ExecutionConformanceArtifact,
 } from "@/lib/approval-package";
 import { readArtifact } from "@/server/submission-storage";
 import {
@@ -1079,6 +1083,175 @@ function ImageFallbackSection({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Monetコンポーネントマッピング サマリ（内部専用）                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Monetコンポーネントマッピングアーティファクトを、内部レビュー用に
+ * コンパクトなカードで出す。再利用可能・要調整・カスタム実装の分類と
+ * 推奨セクション構造を一目で分かるようにする。
+ */
+function MonetMappingSection({
+  mapping,
+}: {
+  mapping: MonetMappingArtifact;
+}) {
+  return (
+    <Section
+      title="Monetコンポーネントマッピング（内部専用）"
+      badge={
+        <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-800">
+          決定論的生成
+        </span>
+      }
+    >
+      <div className="rounded-2xl border border-border bg-accent p-4 text-sm leading-relaxed text-muted-foreground">
+        Monetカタログ（{mapping.generatedBy}）から抽出した業種「{mapping.useCaseLabel}」の
+        推奨セクション構造とコンポーネント対応付けです。生成日時: {mapping.generatedAt}
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div>
+          <p className="mb-2 text-sm font-bold text-foreground">再利用可能</p>
+          {mapping.reusable.length > 0 ? (
+            <ul className="space-y-1">
+              {mapping.reusable.map((c) => (
+                <li key={c.id} className="text-sm">
+                  <span className="font-semibold text-foreground">{c.title}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">({c.id})</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">該当なし</p>
+          )}
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-bold text-foreground">カスタム実装が必要</p>
+          {mapping.customOnly.length > 0 ? (
+            <ul className="space-y-1">
+              {mapping.customOnly.map((s) => (
+                <li key={s.slot} className="text-sm">
+                  <span className="font-semibold text-foreground">{s.slot}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">該当なし</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="mb-2 text-sm font-bold text-foreground">要調整</p>
+        {mapping.needsAdjustment.length > 0 ? (
+          <ul className="space-y-1">
+            {mapping.needsAdjustment.map((c) => (
+              <li key={c.id} className="text-sm">
+                <span className="font-semibold text-foreground">{c.title}</span>
+                <span className="ml-2 text-xs text-muted-foreground">({c.id})</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">該当なし</p>
+        )}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-border bg-accent p-4">
+        <p className="text-xs font-bold text-muted-foreground">判定根拠</p>
+        <BulletList items={mapping.rationale} />
+      </div>
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  実行準拠性 サマリ（内部専用）                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 実行準拠性アーティファクトを、内部レビュー用にコンパクトなカードで出す。
+ * 禁止されている行為・発明と資産使用ルールを一目で分かるようにする。
+ */
+function ExecutionConformanceSection({
+  conformance,
+}: {
+  conformance: ExecutionConformanceArtifact;
+}) {
+  return (
+    <Section
+      title="実行準拠性（内部専用）"
+      badge={
+        <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800">
+          ⚠ 顧客非公開
+        </span>
+      }
+    >
+      <div className="rounded-2xl border border-border bg-accent p-4 text-sm leading-relaxed text-muted-foreground">
+        実行時の法令・著作権・資産運用ルールをまとめたものです。
+        禁止行為検出: {conformance.forbiddenInventions.length}件、
+        資産使用ルール: {conformance.assetUsageRules.length}件。
+        生成日時: {conformance.generatedAt}
+      </div>
+
+      {conformance.forbiddenInventions.length > 0 && (
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-bold text-rose-700">
+            禁止されている行為・発明（{conformance.forbiddenInventions.length}件）
+          </p>
+          <ul className="space-y-2">
+            {conformance.forbiddenInventions.map((inv, index) => (
+              <li
+                key={index}
+                className="rounded-2xl border border-rose-200 bg-rose-50 p-3"
+              >
+                <p className="text-sm font-semibold text-rose-900">
+                  {inv.category}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-rose-800/90">
+                  {inv.description}
+                </p>
+                <p className="mt-1 text-xs text-rose-700">
+                  該当箇所: {inv.source}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {conformance.assetUsageRules.length > 0 && (
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-bold text-foreground">
+            資産使用ルール（{conformance.assetUsageRules.length}件）
+          </p>
+          <ul className="space-y-2">
+            {conformance.assetUsageRules.map((rule, index) => (
+              <li
+                key={index}
+                className="rounded-2xl border border-border bg-white p-3 text-sm"
+              >
+                <p className="font-semibold text-foreground">{rule.ruleType}</p>
+                <p className="mt-1 text-muted-foreground">{rule.description}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  対象: {rule.assetCategory}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-4 rounded-2xl border border-border bg-accent p-4">
+        <p className="text-xs font-bold text-muted-foreground">全体要約</p>
+        <BulletList items={conformance.rationale} />
+      </div>
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  デモフィードバック サマリ（内部専用・セクション別）                  */
 /* ------------------------------------------------------------------ */
 
@@ -1756,6 +1929,14 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
         : null)
     : null;
 
+  // Monetコンポーネントマッピング（monet-mapping.json）を読み込む。
+  // 第1ゲート承認後に生成される。存在すれば内部レビュー用にサマリ表示。
+  const monetMapping = await readMonetMappingArtifact(submissionId);
+
+  // 実行準拠性（execution-conformance.json）を読み込む。
+  // 第2ゲート承認後に生成される。存在すれば内部レビュー用にサマリ表示。
+  const executionConformance = await readExecutionConformanceArtifact(submissionId);
+
   // デモフィードバック履歴（demo-feedback.json）を読み込む。
   // 顧客がデモページから修正要望を送った履歴。存在すれば内部レビュー用にサマリ表示。
   // ステータスによらず過去のフィードバックを確認できるよう、常に読み込みを試みる。
@@ -2010,6 +2191,16 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               submissionId={pkg.submissionId}
               assets={fallbackAssets}
             />
+          )}
+
+          {/* Monetコンポーネントマッピング サマリ（内部専用） */}
+          {monetMapping && (
+            <MonetMappingSection mapping={monetMapping} />
+          )}
+
+          {/* 実行準拠性 サマリ（内部専用） */}
+          {executionConformance && (
+            <ExecutionConformanceSection conformance={executionConformance} />
           )}
 
           {/* デモフィードバック サマリ（内部専用・Phase F セクション別承認状況） */}
