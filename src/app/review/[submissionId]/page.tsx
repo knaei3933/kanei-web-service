@@ -25,6 +25,11 @@ import {
   type DemoFeedbackHistory,
 } from "@/lib/demo-feedback-loop";
 import { DEMO_SECTION_OPTIONS, demoSectionName } from "@/lib/demo-sections";
+import {
+  readLineage,
+  type RevisionLineage,
+  type RoundEntry,
+} from "@/lib/revision-lineage";
 import { FollowupEditForm } from "./FollowupEditForm";
 
 interface ReviewPageProps {
@@ -1152,6 +1157,280 @@ function DemoFeedbackReviewSection({
 }
 
 /* ------------------------------------------------------------------ */
+/*  デモフィードバック ↔ リビジョンラウンド 対比（内部専用）              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 最新のデモフィードバック（セクション別修正要望）と、現行のリビジョン
+ * ラウンド（revision-lineage.json）を1箇所で対比する内部確認用ビュー。
+ *
+ * ねらい: 「どのセクションが修正依頼されたか」「現行リビジョンはどのラウンドか」
+ * 「そのフィードバック以降に修正ラウンドが記録されているか」を、オペレータが
+ * 一目で追跡できるようにする。
+ *
+ * 【真実性の制約】ラインデータにはセクション単位の修正完了状態は含まれない
+ * （revisionPrompt はテキストの塊）。したがってこのビューは「追跡性・確認支援」
+ * であり、自動的な正否判定ではない。特定セクションが修正済みかは主張しない。
+ *
+ * 内部専用。顧客向け画面・メールには一切出さない。
+ */
+
+/**
+ * 最新フィードバックの送信日時以降（capturedAt >= submittedAt）に記録された
+ * revision ラウンドが存在するかを判定する。
+ *
+ * タイムスタンプが欠落・非解析可能なときは determinable: false にして、
+ * 偽の判定を出さない。truthfulness を優先するため、round 数の比較は副次的な
+ * 参考情報にとどめ、存在判定には時刻の実比較のみを用いる。
+ */
+function revisionRoundAfterFeedback(
+  revisionRounds: RoundEntry[],
+  feedbackSubmittedAt: string | undefined
+): { exists: boolean; determinable: boolean; round: RoundEntry | null } {
+  if (!feedbackSubmittedAt) {
+    return { exists: false, determinable: false, round: null };
+  }
+  const fbTs = Date.parse(feedbackSubmittedAt);
+  if (!Number.isFinite(fbTs)) {
+    return { exists: false, determinable: false, round: null };
+  }
+  if (revisionRounds.length === 0) {
+    return { exists: false, determinable: true, round: null };
+  }
+  // 最新フィードバック以降の revision ラウンドを抽出し、最新の1件を返す
+  const after = revisionRounds
+    .filter((r) => {
+      const ts = Date.parse(r.capturedAt);
+      return Number.isFinite(ts) && ts >= fbTs;
+    })
+    .sort((a, b) => Date.parse(b.capturedAt) - Date.parse(a.capturedAt));
+  return {
+    exists: after.length > 0,
+    determinable: true,
+    round: after[0] ?? null,
+  };
+}
+
+function DemoFeedbackRevisionComparisonSection({
+  history,
+  lineage,
+}: {
+  history: DemoFeedbackHistory;
+  lineage: RevisionLineage;
+}) {
+  const latest = history.latest;
+  if (!latest) return null;
+
+  // フィードバックで修正依頼されたセクション / 修正対象外（承認相当）
+  const flagged = latest.sections ?? [];
+  const flaggedIds = new Set(flagged.map((s) => s.sectionId));
+  const approvedSections = DEMO_SECTION_OPTIONS.filter(
+    (s) => !flaggedIds.has(s.id)
+  );
+
+  // フィードバック履歴の最新ラウンド番号（1-indexed）
+  const entries = history.history;
+  const latestFeedbackRound =
+    entries.length > 0 ? entries[entries.length - 1].round : null;
+
+  // 現行リビジョンラウンド（isCurrent を優先、なければ currentRound で照合）
+  const currentRoundEntry =
+    lineage.rounds.find((r) => r.isCurrent) ??
+    (lineage.currentRound >= 0
+      ? lineage.rounds.find((r) => r.round === lineage.currentRound)
+      : undefined);
+
+  // revision 系譜と「フィードバック以降に修正ラウンドがあるか」の判定
+  const revisionRounds = lineage.rounds.filter((r) => r.kind === "revision");
+  const afterStatus = revisionRoundAfterFeedback(
+    revisionRounds,
+    latest.submittedAt
+  );
+
+  return (
+    <Section
+      title="デモフィードバック ↔ リビジョンラウンド 対比（内部専用）"
+      badge={
+        <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800">
+          ⚠ 顧客非公開
+        </span>
+      }
+    >
+      <div className="rounded-2xl border border-border bg-accent p-4 text-sm leading-relaxed text-muted-foreground">
+        最新のデモフィードバックと現行リビジョンラウンドを対比する、オペレータ追跡用ビューです。
+        <strong className="text-foreground">自動的な正否判定ではありません</strong>。
+        セクション単位の修正完了状態はラインデータから判定できないため、revisionPrompt の全文と
+        実画面で最終確認してください。顧客向け画面・メールには出しません。
+      </div>
+
+      {/* 3 カラムサマリ: フィードバック / 現行ラウンド / 対比ステータス */}
+      <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl bg-accent p-4">
+          <p className="text-xs font-bold text-muted-foreground">最新フィードバック</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {latestFeedbackRound !== null
+              ? `${latestFeedbackRound} 回目の修正依頼`
+              : "修正依頼（ラウンド不明）"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            評価 ★ {latest.rating} / 送信 {latest.submittedAt || "不明"}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-accent p-4">
+          <p className="text-xs font-bold text-muted-foreground">現行リビジョン</p>
+          {currentRoundEntry ? (
+            <>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {currentRoundEntry.label}
+              </p>
+              <p className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
+                {currentRoundEntry.snapshotKey}
+                {currentRoundEntry.shortSha
+                  ? ` · ${currentRoundEntry.shortSha}`
+                  : ""}
+              </p>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">—</p>
+          )}
+        </div>
+        <div className="rounded-2xl bg-accent p-4">
+          <p className="text-xs font-bold text-muted-foreground">対比ステータス</p>
+          {afterStatus.determinable ? (
+            <p
+              className={`mt-1 text-sm font-semibold ${
+                afterStatus.exists ? "text-emerald-700" : "text-amber-700"
+              }`}
+            >
+              {afterStatus.exists
+                ? "修正ラウンドがフィードバック以降に記録済み"
+                : "修正ラウンドはまだ記録されていない"}
+            </p>
+          ) : (
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+              タイムスタンプから判定不可
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* 現行ラウンド 詳細 */}
+      {currentRoundEntry && (
+        <div className="mt-5">
+          <p className="mb-2 text-sm font-bold text-foreground">現行ラウンド詳細</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-2xl bg-accent p-3 text-sm">
+              <p className="text-xs font-bold text-muted-foreground">ラウンド / 種別</p>
+              <p className="mt-1 font-semibold text-foreground">
+                round {currentRoundEntry.round}（{currentRoundEntry.kind}）
+              </p>
+            </div>
+            <div className="rounded-2xl bg-accent p-3 text-sm">
+              <p className="text-xs font-bold text-muted-foreground">snapshotKey</p>
+              <p className="mt-1 break-all font-mono text-[11px] text-foreground">
+                {currentRoundEntry.snapshotKey}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-accent p-3 text-sm">
+              <p className="text-xs font-bold text-muted-foreground">commit</p>
+              <p className="mt-1 font-mono text-[11px] text-foreground">
+                {currentRoundEntry.shortSha ?? "（コミットなし）"}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-accent p-3 text-sm">
+              <p className="text-xs font-bold text-muted-foreground">status</p>
+              <p className="mt-1 font-semibold text-foreground">
+                {currentRoundEntry.status}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-accent p-3 text-sm">
+              <p className="text-xs font-bold text-muted-foreground">キャプチャ日時</p>
+              <p className="mt-1 text-foreground">{currentRoundEntry.capturedAt}</p>
+            </div>
+            {currentRoundEntry.committedAt && (
+              <div className="rounded-2xl bg-accent p-3 text-sm">
+                <p className="text-xs font-bold text-muted-foreground">コミット日時</p>
+                <p className="mt-1 text-foreground">{currentRoundEntry.committedAt}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* セクション対比: 修正依頼 / 修正対象外 */}
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <div>
+          <p className="mb-2 text-sm font-bold text-rose-700">
+            修正依頼あり（{flagged.length}件）
+          </p>
+          {flagged.length === 0 ? (
+            <p className="text-sm text-muted-foreground">該当なし</p>
+          ) : (
+            <ul className="space-y-2">
+              {flagged.map((s) => (
+                <li
+                  key={s.sectionId}
+                  className="rounded-2xl border border-rose-200 bg-rose-50 p-3"
+                >
+                  <p className="text-sm font-semibold text-rose-900">
+                    {demoSectionName(s.sectionId, s.sectionName)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-bold text-emerald-700">
+            修正対象外（{approvedSections.length}件・承認相当）
+          </p>
+          {approvedSections.length === 0 ? (
+            <p className="text-sm text-muted-foreground">該当なし</p>
+          ) : (
+            <ul className="flex flex-wrap gap-2">
+              {approvedSections.map((s) => (
+                <li
+                  key={s.id}
+                  className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
+                >
+                  {s.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* フィードバック後の修正ラウンド情報（truthful・副次的な件数参考付き） */}
+      <div className="mt-5 rounded-2xl border border-border bg-white p-4">
+        <p className="text-sm font-bold text-foreground">フィードバック後の修正ラウンド</p>
+        {afterStatus.determinable && afterStatus.exists && afterStatus.round ? (
+          <p className="mt-2 text-sm leading-relaxed text-foreground">
+            最新フィードバック（{latest.submittedAt || "日時不明"}）以降に、
+            <strong> {afterStatus.round.label} </strong>
+            （round {afterStatus.round.round} / {afterStatus.round.capturedAt}）
+            が記録されています。各セクションが実際に修正されたかは、
+            revisionPrompt の全文と実画面で確認してください。
+          </p>
+        ) : afterStatus.determinable && !afterStatus.exists ? (
+          <p className="mt-2 text-sm leading-relaxed text-foreground">
+            最新フィードバック以降の修正ラウンドは、まだ系譜に記録されていません。
+            （revision ラウンド {revisionRounds.length} 件 / フィードバック {entries.length} 件）
+          </p>
+        ) : (
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            フィードバック送信日時またはラウンドのキャプチャ日時が取得できないため、
+            タイムスタンプによる対比は判定できません。手動で revision-lineage と
+            demo-feedback の時系列を照合してください。
+            （revision ラウンド {revisionRounds.length} 件 / フィードバック {entries.length} 件）
+          </p>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  フォローアップの繰り返しループ進捗（needs_followup 時に表示）         */
 /* ------------------------------------------------------------------ */
 
@@ -1222,6 +1501,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   // 顧客がデモページから修正要望を送った履歴。存在すれば内部レビュー用にサマリ表示。
   // ステータスによらず過去のフィードバックを確認できるよう、常に読み込みを試みる。
   const demoFeedbackHistory = await readDemoFeedbackHistory(submissionId);
+
+  // リビジョン系譜（revision-lineage.json）を読み込む。
+  // 全ラウンドの round↔commit↔snapshotKey 相関。フィードバックとの対比表示に使う。
+  // 不在時は空 rounds の初期状態を返すため、存在判定は rounds.length で行う。
+  const revisionLineage = await readLineage(submissionId);
 
   // AIフォールバック資産レジストリ（ai-fallback-assets.json）を読み込む。
   // オペレータが登録した AI仮画像の追跡メタデータ。存在すれば内部レビュー用にサマリ表示。
@@ -1469,6 +1753,16 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
           {demoFeedbackHistory?.latest && (
             <DemoFeedbackReviewSection history={demoFeedbackHistory} />
           )}
+
+          {/* デモフィードバック ↔ リビジョンラウンド 対比（内部専用・追跡性）
+              両方存在時のみ表示: 最新フィードバック + ライン系譜に1件以上のラウンド */}
+          {demoFeedbackHistory?.latest &&
+            revisionLineage.rounds.length > 0 && (
+              <DemoFeedbackRevisionComparisonSection
+                history={demoFeedbackHistory}
+                lineage={revisionLineage}
+              />
+            )}
 
           <Section title="内部プロンプトチェーン（代表専用）">
             <div className="space-y-4">
