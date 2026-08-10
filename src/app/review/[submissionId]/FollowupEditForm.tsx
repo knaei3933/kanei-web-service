@@ -5,6 +5,10 @@ import { useState, useTransition } from "react";
 /* ------------------------------------------------------------------ */
 /*  顧客向け追加情報入力フォーム（needs_followup 時に表示）              */
 /*  サーバーコンポーネントの review ページから clsx なしで組み込み可能   */
+/*                                                                      */
+/*  このフォームは「繰り返し可能なフォローアップループ」の1ステップ。    */
+/*  どの項目が足りないか・今どれくらい埋まったかをその場で分かるように   */
+/*  進捗サマリ・「まず埋めるべき項目」の案内・各項目の入力状態を表示する */
 /* ------------------------------------------------------------------ */
 
 /** 品質評価でチェックされる戦略項目のキーとラベル（consult-quality.ts と同期） */
@@ -28,6 +32,27 @@ const FEATURE_OPTIONS = [
   { value: "testimonial", label: "お客様の声" },
   { value: "multi_language", label: "多言語対応" },
 ] as const;
+
+/** 戦略項目が「意味のある長さ」とみなす最小文字数（consult-quality.ts と同じ基準） */
+const MIN_STRATEGY_LEN = 6;
+
+type FieldState = "filled" | "partial" | "empty";
+
+/**
+ * 入力値の充実度を分類する（consult-quality.ts の classifyField と同じ基準）。
+ * フォーム上で「入力済み / もう少し / 未入力」をその場で分けるために使う。
+ */
+function classifyFieldValue(value: string): FieldState {
+  const v = value.trim();
+  if (v.length === 0) return "empty";
+  if (v.length < MIN_STRATEGY_LEN) return "partial";
+  return "filled";
+}
+
+/** 依頼項目リストの中に、指定ラベルの項目が含まれるか（ラベル部分一致で判定） */
+function isRequestedField(label: string, requestedItems: string[]): boolean {
+  return requestedItems.some((item) => item.includes(label));
+}
 
 interface FollowupEditFormProps {
   submissionId: string;
@@ -121,16 +146,90 @@ export function FollowupEditForm({
     });
   }
 
+  /* ---- 現在の入力状態から、進捗と「まず埋めるべき項目」を計算 ---- */
+  const fieldValues: Record<string, string> = {
+    targetCustomer,
+    sellingPoints,
+    mustIncludeInfo,
+    desiredImage,
+  };
+  const fieldStates = STRATEGY_FIELDS.map((f) => ({
+    key: f.key,
+    label: f.label,
+    state: classifyFieldValue(fieldValues[f.key]),
+    requested: isRequestedField(f.label, requestedItems),
+  }));
+
+  // 機能（features）の依頼有無と現在の選択数
+  const featuresRequested = requestedItems.some((item) => /ページ・機能|機能/.test(item));
+  const featuresAddressed = features.size > 0;
+
+  // 進捗カウント：戦略4項目 +（機能が依頼されていれば）機能1枠
+  const strategyFilled = fieldStates.filter((s) => s.state === "filled").length;
+  const totalSlots = 4 + (featuresRequested ? 1 : 0);
+  const filledSlots = strategyFilled + (featuresRequested && featuresAddressed ? 1 : 0);
+  const progressPct =
+    totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
+
+  // 「まず埋めるべき項目」：依頼されているのにまだ埋まっていない項目
+  const fillFirst: string[] = [];
+  for (const s of fieldStates) {
+    if (!s.requested || s.state === "filled") continue;
+    fillFirst.push(
+      s.state === "empty"
+        ? `「${s.label}」`
+        : `「${s.label}」（もう少し具体的に）`
+    );
+  }
+  if (featuresRequested && !featuresAddressed) {
+    fillFirst.push("ご希望のページ・機能");
+  }
+
   const scoreImproved = result?.ok && typeof result.newScore === "number" && result.newScore > initialScore;
   const transitionedToReview =
     result?.ok && result.newStatus === "awaiting_representative_approval";
 
   return (
     <div className="space-y-5">
-      {/* フォローアップ要求内容 */}
+      {/* フォローアップ要求内容 + 進捗サマリ */}
       {(requestedItems.length > 0 || followupQuestions.length > 0) && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <p className="text-sm font-bold text-amber-900">追加情報のお願い</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-bold text-amber-900">追加情報のお願い</p>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-800">
+                依頼項目 {requestedItems.length} 件
+              </span>
+              <span className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-800">
+                質問 {followupQuestions.length} 件
+              </span>
+              <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-semibold text-emerald-800">
+                入力済み {filledSlots} / {totalSlots}
+              </span>
+            </div>
+          </div>
+
+          {/* 進捗バー（入力に合わせて伸びる） */}
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-amber-100">
+            <div
+              className="h-full rounded-full bg-amber-500 transition-all"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+
+          {/* 「まず埋めるべき項目」の案内 */}
+          {fillFirst.length > 0 ? (
+            <p className="mt-3 text-xs leading-relaxed text-amber-900">
+              <span className="font-bold">まず埋めるべき:</span>{" "}
+              {fillFirst.join("・")}
+              を入力するとスコアが大きく上がります。
+            </p>
+          ) : (
+            <p className="mt-3 text-xs leading-relaxed text-emerald-800">
+              依頼された項目は一通り入力済みです。「情報を更新する」で送信してください。
+            </p>
+          )}
+
           {requestedItems.length > 0 && (
             <div className="mt-3">
               <p className="text-xs font-bold text-amber-800">不足している項目:</p>
@@ -155,7 +254,7 @@ export function FollowupEditForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* 戦略項目（4項目） */}
+        {/* 戦略項目（4項目） — 入力状態バッジ付き */}
         {STRATEGY_FIELDS.map((field) => {
           const value =
             field.key === "targetCustomer"
@@ -174,11 +273,29 @@ export function FollowupEditForm({
                   ? setMustIncludeInfo
                   : setDesiredImage;
 
+          const state = classifyFieldValue(value);
+          const requested = isRequestedField(field.label, requestedItems);
+
           return (
             <div key={field.key}>
-              <label className="block text-sm font-bold text-foreground">
-                {field.label}
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="block text-sm font-bold text-foreground">
+                  {field.label}
+                </label>
+                {state === "filled" ? (
+                  <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                    入力済み
+                  </span>
+                ) : requested ? (
+                  <span className="rounded-full border border-rose-200 bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                    {state === "empty" ? "要入力" : "もう少し具体的に"}
+                  </span>
+                ) : (
+                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                    任意
+                  </span>
+                )}
+              </div>
               <textarea
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -190,11 +307,22 @@ export function FollowupEditForm({
           );
         })}
 
-        {/* features（チェックボックス） */}
+        {/* features（チェックボックス） — 選択状態バッジ付き */}
         <div>
-          <label className="block text-sm font-bold text-foreground">
-            必要なページ・機能
-          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="block text-sm font-bold text-foreground">
+              必要なページ・機能
+            </label>
+            {features.size > 0 ? (
+              <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                {features.size} 件選択中
+              </span>
+            ) : featuresRequested ? (
+              <span className="rounded-full border border-rose-200 bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                要選択
+              </span>
+            ) : null}
+          </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {FEATURE_OPTIONS.map((opt) => (
               <label

@@ -223,6 +223,16 @@ export async function PATCH(
     // 品質評価を更新
     existingPkg.intakeQuality = newQuality;
 
+    // フォローアップ（追加情報の再提出）のラウンドを記録する。
+    // 顧客が needs_followup 状態で情報を更新するたびに +1 し、
+    // 直近の日時とスコアを残す（繰り返しフォローアップの進捗を追跡）。
+    // 状態遷移の判定より前に行い、この PATCH がフォローアップ応答か確実に判定する。
+    if (existingPkg.status === "needs_followup") {
+      existingPkg.followupRounds = existingPkg.followupRounds + 1;
+      existingPkg.lastFollowupAt = new Date().toISOString();
+      existingPkg.lastFollowupScore = newQuality.score;
+    }
+
     // status が needs_followup のとき、品質が ready になったら自動遷移
     if (
       existingPkg.status === "needs_followup" &&

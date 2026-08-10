@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { assessConsultIntake } from "@/lib/consult-quality";
+import { assessImageFallback, type ImageFallbackAssessment } from "@/lib/image-fallback";
 import {
   buildApprovalPackage,
   writeApprovalPackage,
@@ -418,6 +419,14 @@ interface ConsultBrief {
     contentDrafting: string[];
     manualReview: string[];
   };
+
+  /**
+   * AI画像フォールバック計画（Phase D・決定論的）。
+   * 顧客提供素材が不足しているとき、AI生成の仮画像で運用すべきかを判定し、
+   * 生成優先順位・生成経路（/usr/bin/codex -m gpt-5.5）・顧客向け注記を保持する。
+   * brief.json がこの計画を保持することで、生成物はトレーサブルになる。
+   */
+  imageFallbackPlan: ImageFallbackAssessment;
 }
 
 /**
@@ -763,6 +772,23 @@ function buildBrief(
     manualReview.push("既存サイトあり。引き継ぐべきコンテンツ/資産を精査する。");
   if (manualReview.length === 0) manualReview.push("入力は網羅的。通常どおり進行可能。");
 
+  /* ---- AI画像フォールバック計画（決定論的） ---- */
+  // 顧客提供素材が不足しているとき、AI生成の仮画像で運用すべきかを判定する。
+  // 生成経路は /usr/bin/codex -m gpt-5.5（ローカルオペレータ実行・serverless 非実行）。
+  const imageFallbackPlan = assessImageFallback({
+    missingAssets: inferredMissingLabels,
+    usableAssets: assetChecklistLabels,
+    attachmentKinds: byKind.map((k) => k.kind),
+    attachmentCount: savedFiles.length,
+    requiredMustInclude: requiredMustIncludeInfo,
+    requiredPagesOrFeatures,
+    hasImageReference: interpretedSites.some((s) => s.typeRaw === "image"),
+    desiredImage,
+    colorSchemeRaw,
+    supplementRaw,
+    allowEditRaw,
+  });
+
   /* ---- Brief の組み立て ---- */
   return {
     schemaVersion: BRIEF_SCHEMA_VERSION,
@@ -850,6 +876,8 @@ function buildBrief(
       contentDrafting,
       manualReview,
     },
+
+    imageFallbackPlan,
   };
 }
 

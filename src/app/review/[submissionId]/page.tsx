@@ -12,6 +12,10 @@ import {
   type ProductionReadiness,
 } from "@/lib/approval-package";
 import { readArtifact } from "@/server/submission-storage";
+import {
+  imageFallbackStatusLabel,
+  type ImageFallbackAssessment,
+} from "@/lib/image-fallback";
 import { FollowupEditForm } from "./FollowupEditForm";
 
 interface ReviewPageProps {
@@ -825,6 +829,125 @@ function PreProductionSection({ pkg }: { pkg: ApprovalPackage }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  AI画像フォールバック方針表示（内部専用・コンパクト）                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Phase D の画像フォールバック評価を、内部レビュー用にコンパクトなカードで出す。
+ * ステータス・不足画像カテゴリ・内部生成経路（/usr/bin/codex -m gpt-5.5）・
+ * 顧客向け注記を一目で分かるようにする。生成経路・運用規則は内部専用。
+ */
+function ImageFallbackSection({ fb }: { fb: ImageFallbackAssessment }) {
+  const isNeeded = fb.status !== "not_needed";
+  const toneClass =
+    fb.status === "recommended"
+      ? "border-rose-200 bg-rose-50 text-rose-900"
+      : fb.status === "allowed"
+        ? "border-amber-200 bg-amber-50 text-amber-900"
+        : "border-slate-200 bg-slate-50 text-slate-700";
+
+  return (
+    <Section
+      title="AI画像フォールバック方針（内部専用）"
+      badge={
+        <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800">
+          ⚠ 顧客非公開
+        </span>
+      }
+    >
+      <div className={`rounded-2xl border p-4 text-sm leading-relaxed ${toneClass}`}>
+        <p className="font-bold">{imageFallbackStatusLabel(fb.status)}</p>
+        <p className="mt-2">
+          {isNeeded
+            ? "顧客提供素材では画像が足りないため、AI生成の仮画像で運用します。実物受領後に順次差し替えます。"
+            : "顧客提供の写真・ロゴで画像は概ね足りています。AI仮画像は不要です。"}
+        </p>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div>
+          <p className="mb-2 text-sm font-bold text-foreground">不足画像カテゴリ</p>
+          {fb.missingImageCategories.length > 0 ? (
+            <BulletList items={fb.missingImageCategories} />
+          ) : (
+            <p className="text-sm text-muted-foreground">該当なし</p>
+          )}
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-bold text-foreground">内部生成経路</p>
+          <p className="break-all rounded-2xl bg-accent p-3 font-mono text-sm text-foreground">
+            {fb.generationPath.tool} -m {fb.generationPath.model}
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            serverless では実行せず、ローカルオペレータが実行します。生成物は{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px]">
+              {fb.assetTraceability.prefix}
+            </code>{" "}
+            プレフィックスで保存し、AI生成資産として顧客提供素材と区別します。
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-border bg-accent p-4">
+        <p className="text-xs font-bold text-muted-foreground">顧客向け扱い（参考）</p>
+        <p className="mt-1 text-sm leading-relaxed text-foreground">
+          {fb.customerFacingNote}
+        </p>
+      </div>
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  フォローアップの繰り返しループ進捗（needs_followup 時に表示）         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * needs_followup 状態のとき、追加情報の再提出が「繰り返しループ」であることを
+ * 一目で分かるようにする。ラウンド数・直近の更新日時・スコア・次のステップを表示する。
+ * データは approval-package の followupRounds / lastFollowupAt / lastFollowupScore から。
+ */
+function FollowupLoopProgress({
+  rounds,
+  lastFollowupAt,
+  lastFollowupScore,
+  currentScore,
+}: {
+  rounds: number;
+  lastFollowupAt: string | null;
+  lastFollowupScore: number | null;
+  currentScore: number;
+}) {
+  return (
+    <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+        <span className="font-bold text-amber-900">
+          フォローアップ {rounds} ラウンド目
+        </span>
+        <span className="text-amber-800">
+          現在のスコア:{" "}
+          <span className="font-semibold text-amber-900">{currentScore}</span>
+        </span>
+        {lastFollowupScore !== null && (
+          <span className="text-amber-800">
+            前回更新後スコア:{" "}
+            <span className="font-semibold text-amber-900">{lastFollowupScore}</span>
+          </span>
+        )}
+        {lastFollowupAt && (
+          <span className="text-amber-800">前回の更新: {lastFollowupAt}</span>
+        )}
+      </div>
+      <p className="mt-2 text-xs leading-relaxed text-amber-800/90">
+        {rounds === 0
+          ? "不足している情報を入力して「情報を更新する」を押してください。すべての必須項目が揃うと、自動的に社内レビューへ進みます。"
+          : "まだ必須項目が揃っていません。引き続き不足分を補足して更新してください。スコアが基準に達すると、自動的に社内レビューへ進みます。"}
+      </p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  メイン                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -1025,6 +1148,12 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                 「情報を更新する」をクリックしてください。すべての必須項目が充足されると、
                 自動的に社内レビューへ進みます。
               </p>
+              <FollowupLoopProgress
+                rounds={pkg.followupRounds}
+                lastFollowupAt={pkg.lastFollowupAt}
+                lastFollowupScore={pkg.lastFollowupScore}
+                currentScore={pkg.intakeQuality.score}
+              />
               <FollowupEditForm
                 submissionId={pkg.submissionId}
                 initialPayload={initialPayload}
@@ -1067,6 +1196,9 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               </div>
             </div>
           </Section>
+
+          {/* AI画像フォールバック方針（内部専用・Phase D 評価の可視化） */}
+          {pkg.imageFallback && <ImageFallbackSection fb={pkg.imageFallback} />}
 
           <Section title="内部プロンプトチェーン（代表専用）">
             <div className="space-y-4">

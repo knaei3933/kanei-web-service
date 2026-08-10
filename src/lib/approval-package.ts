@@ -26,6 +26,11 @@ import { buildPromptChainPreview } from "./prompt-chain";
 import { getMonetUseCase } from "@/generated/monet-catalog";
 import { resolveUseCaseKey } from "@/lib/proposal";
 import {
+  assessImageFallback,
+  type GenerationPriorityLevel,
+  type ImageFallbackAssessment,
+} from "./image-fallback";
+import {
   writeArtifact,
   readArtifact,
   artifactDisplayPath,
@@ -341,6 +346,23 @@ export interface ApprovalPackage {
   preProductionApproval: PlanApprovalDecision;
   /** 本制作準備度評価のキャッシュ（assessProductionReadiness 結果・未評価時は null） */
   productionReadiness: ProductionReadiness | null;
+  /**
+   * AI画像フォールバック評価（assessImageFallback 結果）。
+   * 顧客提供素材が不足しているとき、AI生成の仮画像で運用すべきかを判定し、
+   * 内部ガイド・生成経路（/usr/bin/codex -m gpt-5.5）・顧客向け注記を保持する。
+   * 評価は決定論的。未評価時は null。
+   */
+  imageFallback: ImageFallbackAssessment | null;
+  /**
+   * フォローアップ（追加情報の再提出）が行われたラウンド数。
+   * 顧客が needs_followup 状態で情報を更新するたびに +1 される（0 = まだ一度も無い）。
+   * 繰り返しループを分かりやすくするためのカウンタ。
+   */
+  followupRounds: number;
+  /** 直近のフォローアップ日時（ISO8601・未実施時は null） */
+  lastFollowupAt: string | null;
+  /** 直近のフォローアップ後の品質スコア（未実施時は null） */
+  lastFollowupScore: number | null;
 }
 
 /** buildApprovalPackage に渡す、保存済みファイルの軽量メタデータ */
@@ -430,6 +452,70 @@ function buildMonetExecutionNotes(
     );
     lines.push("");
   });
+
+  return lines;
+}
+
+/**
+ * AI画像フォールバック評価を実行プロンプト用の Markdown 行に変換する（内部専用）。
+ * 顧客提供素材が不足しているとき、どの画像を・どの優先度で・どの経路（codex）で
+ * 生成すべきかを、ローカルオペレータが実行できる形でまとめる。
+ * serverless から codex は起動せず、あくまでオペレータ向けのガイド。
+ */
+function buildImageFallbackPromptLines(pkg: ApprovalPackage): string[] {
+  const fb = pkg.imageFallback;
+  const lines: string[] = [];
+
+  if (!fb || fb.status === "not_needed") {
+    lines.push("## AI画像フォールバック方針（内部専用）");
+    lines.push(
+      "- 判定: AI仮画像は不要。顧客提供の写真・ロゴをそのまま使用する。"
+    );
+    lines.push("");
+    return lines;
+  }
+
+  lines.push("## AI画像フォールバック方針（内部専用）");
+  lines.push(
+    `- 判定: ${fb.status === "recommended" ? "AI仮画像を推奨" : "AI仮画像を許容（差し替え前提）"}`
+  );
+  if (fb.rationale.length > 0) {
+    lines.push("- 判定根拠:");
+    for (const r of fb.rationale) lines.push(`  - ${r}`);
+  }
+  if (fb.missingImageCategories.length > 0) {
+    lines.push(`- 不足画像カテゴリ: ${fb.missingImageCategories.join("・")}`);
+  }
+  lines.push("");
+  lines.push("### 生成優先順位（高い順）");
+  for (const t of fb.generationPriority) {
+    lines.push(
+      `- 【${t.priority === "high" ? "高" : t.priority === "medium" ? "中" : "低"}】${t.category} — ${t.reason}`
+    );
+  }
+  lines.push("");
+  lines.push("### 生成経路（重要）");
+  lines.push(
+    `- serverless では画像生成を行わない。ローカルオペレータが以下の経路で生成する。`
+  );
+  lines.push(`- 経路: \`${fb.generationPath.tool} -m ${fb.generationPath.model}\``);
+  lines.push("- コマンド例（コピー実行用）:");
+  lines.push(`  \`\`\``);
+  lines.push(`  ${fb.generationPath.exampleCommand}`);
+  lines.push(`  \`\`\``);
+  lines.push("");
+  lines.push("### カテゴリ別プロンプト断片");
+  for (const block of fb.promptBlocks) {
+    lines.push(`- ${block.replace(/\n/g, " ")}`);
+  }
+  lines.push("");
+  lines.push("### トレーサビリティ");
+  lines.push(`- ${fb.assetTraceability.rule}`);
+  lines.push(`- ファイル名プレフィックス: \`${fb.assetTraceability.prefix}\` / メタデータフラグ: \`${fb.assetTraceability.marker}\``);
+  lines.push("");
+  lines.push("### 顧客向け扱い");
+  lines.push(`- ${fb.customerFacingNote}`);
+  lines.push("");
 
   return lines;
 }
@@ -680,6 +766,33 @@ export function buildApprovalPackage(
     referenceCount: referenceUrls.length,
   });
 
+  /* ---- AI画像フォールバック評価（決定論的） ---- */
+  // 顧客提供素材が不足しているとき、AI生成の仮画像で運用すべきかを判定。
+  // シグナルは payload + materialsAnalysis + referenceAnalysis から取り出す。
+  const fallbackFeatures = asStringArray(payload.features);
+  const fallbackHasImageReference = rawReferenceSites.some((raw) => {
+    const o = asObject(raw);
+    const type = asString(o.type);
+    const whatToReference = asString(o.whatToReference);
+    return (
+      type === "image" ||
+      /写真|画像|ビジュアル|image/i.test(`${type} ${whatToReference}`)
+    );
+  });
+  const imageFallback = assessImageFallback({
+    missingAssets,
+    usableAssets,
+    attachmentKinds: availableAttachments.map((a) => a.kind),
+    attachmentCount: availableAttachments.length,
+    requiredMustInclude: mustInclude,
+    requiredPagesOrFeatures: fallbackFeatures,
+    hasImageReference: fallbackHasImageReference,
+    desiredImage,
+    colorSchemeRaw: asString(payload.colorScheme),
+    supplementRaw: asString(payload.supplement),
+    allowEditRaw: asString(payload.allowEdit),
+  });
+
   return {
     schemaVersion: APPROVAL_SCHEMA_VERSION,
     submissionId,
@@ -716,6 +829,12 @@ export function buildApprovalPackage(
       memo: null,
     },
     productionReadiness: null,
+    // Phase D/E: 画像フォールバック評価は受領時に計算済み。
+    // フォローアップ系カウンタは受領時点では未実施。
+    imageFallback,
+    followupRounds: 0,
+    lastFollowupAt: null,
+    lastFollowupScore: null,
   };
 }
 
@@ -892,6 +1011,70 @@ function normalizeProductionReadiness(raw: unknown): ProductionReadiness | null 
 }
 
 /**
+ * 読み込んだ生 JSON から AI画像フォールバック評価を正規化する。
+ * 不在・形式不正時は null。信頼できない入力でも安全に扱えるよう、
+ * 各フィールドを安全な既定値で補う。
+ */
+function normalizeImageFallback(raw: unknown): ImageFallbackAssessment | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const o = asObject(raw);
+  const status = asString(o.status);
+  if (
+    status !== "recommended" &&
+    status !== "allowed" &&
+    status !== "not_needed"
+  ) {
+    return null;
+  }
+
+  const gp = asObject(o.generationPath);
+  const at = asObject(o.assetTraceability);
+  const targetsRaw = Array.isArray(o.generationPriority)
+    ? o.generationPriority
+    : [];
+
+  return {
+    status,
+    customerAssetsInsufficient: o.customerAssetsInsufficient === true,
+    rationale: asStringArray(o.rationale),
+    missingImageCategories: asStringArray(o.missingImageCategories),
+    generationPriority: targetsRaw
+      .map((t) => {
+        const to = asObject(t);
+        const category = asString(to.category);
+        if (!category) return null;
+        const priority = asString(to.priority);
+        const priorityLevel: GenerationPriorityLevel =
+          priority === "high" || priority === "medium" || priority === "low"
+            ? priority
+            : "medium";
+        return {
+          category,
+          reason: asString(to.reason),
+          priority: priorityLevel,
+          promptFragment: asString(to.promptFragment),
+        };
+      })
+      .filter((t): t is NonNullable<typeof t> => t !== null),
+    generationPath: {
+      tool: asString(gp.tool) || "/usr/bin/codex",
+      model: asString(gp.model) || "gpt-5.5",
+      commandTemplate: asString(gp.commandTemplate),
+      exampleCommand: asString(gp.exampleCommand),
+      notice: asString(gp.notice),
+    },
+    promptBlocks: asStringArray(o.promptBlocks),
+    customerFacingNote: asString(o.customerFacingNote),
+    assetTraceability: {
+      prefix: asString(at.prefix) || "ai-fallback-",
+      marker: asString(at.marker) || "ai-generated",
+      rule: asString(at.rule),
+    },
+    assessedAt: asString(o.assessedAt),
+  };
+}
+
+/**
  * 読み込んだ生 JSON を ApprovalPackage の形へ正規化する。
  * 信頼できない入力（古い形式・手編集）でも安全に扱えるように、
  * 必須フィールドを欠損時は安全な既定値で補う。
@@ -1033,6 +1216,14 @@ function normalizeApprovalPackage(
     preProductionInterview: normalizePreProductionInterview(o.preProductionInterview),
     preProductionApproval: normalizePlanApproval(o.preProductionApproval),
     productionReadiness: normalizeProductionReadiness(o.productionReadiness),
+    imageFallback: normalizeImageFallback(o.imageFallback),
+    followupRounds:
+      typeof o.followupRounds === "number" && o.followupRounds >= 0
+        ? o.followupRounds
+        : 0,
+    lastFollowupAt: typeof o.lastFollowupAt === "string" ? o.lastFollowupAt : null,
+    lastFollowupScore:
+      typeof o.lastFollowupScore === "number" ? o.lastFollowupScore : null,
   };
 }
 
@@ -1258,6 +1449,11 @@ export function buildExecutionPromptMarkdown(
   for (const note of buildMonetExecutionNotes(pkg, plan)) {
     lines.push(note);
   }
+
+  for (const fbLine of buildImageFallbackPromptLines(pkg)) {
+    lines.push(fbLine);
+  }
+
   if (plan.prerequisites.length > 0) {
     lines.push("## 実行前に確認する前提");
     for (const p of plan.prerequisites) lines.push(`- ${p}`);
@@ -1310,6 +1506,15 @@ export function buildExecutionHandoff(
     "コマンドはリポジトリルートで実行してください。",
     "顧客向けに公開する文言はすべて日本語にしてください。プロンプト/コマンドの詳細は顧客に公開しないでください（内部専用）。",
   ];
+
+  // 画像が不足しているとき、AI生成の経路（codex）を notices に明記する。
+  // 実行プロンプト本文に詳細ブロックがあるが、ハンドオフの目立つ場所にも出す。
+  const fb = pkg.imageFallback;
+  if (fb && fb.status !== "not_needed") {
+    notices.push(
+      `画像の不足部分は AI仮画像で運用します（判定: ${fb.status === "recommended" ? "推奨" : "許容"}）。生成は serverless ではなくローカルオペレータが ${fb.generationPath.tool} -m ${fb.generationPath.model} で行います。生成物は ${fb.assetTraceability.prefix} プレフィックスで保存し、AI生成資産として顧客提供素材と区別してください。`
+    );
+  }
 
   return {
     schemaVersion: EXECUTION_HANDOFF_SCHEMA_VERSION,
