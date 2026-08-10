@@ -1,7 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Sparkles, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft,
+  Sparkles,
+  ExternalLink,
+  AlertTriangle,
+  Wrench,
+  ImagePlus,
+  ListChecks,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { readApprovalPackage } from "@/lib/approval-package";
+import {
+  imageFallbackStatusLabel,
+  generationPriorityLabel,
+  type ImageFallbackAssessment,
+  type GenerationPriorityLevel,
+} from "@/lib/image-fallback";
+import { CopyButton } from "./CopyButton";
 
 // showcase コンポーネントの静的マップ
 // 新しい showcase が追加されたらここにエントリを追加
@@ -55,6 +71,256 @@ function DemoNotGeneratedPlaceholder() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  AI画像フォールバック — オペレータ作業ガイド（内部専用）              */
+/* ------------------------------------------------------------------ */
+/*  Phase G: レビューで確定した AI画像フォールバック方針を実装担当の       */
+/*  オペレータがすぐ使える「作業サーフェス」として実行ページに露出する。   */
+/*  serverless から画像生成は行わず、ローカルオペレータが codex で仮画像を  */
+/*  生成し、実物受領後に差し替える前提。顧客向け画面・メールには出さない。  */
+/* ------------------------------------------------------------------ */
+
+/** 生成優先度のバッジ（高=ローズ / 中=アンバー / 低=スレート） */
+function PriorityBadge({ priority }: { priority: GenerationPriorityLevel }) {
+  const tone =
+    priority === "high"
+      ? "bg-rose-100 text-rose-800 border-rose-200"
+      : priority === "medium"
+        ? "bg-amber-100 text-amber-800 border-amber-200"
+        : "bg-slate-100 text-slate-700 border-slate-200";
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${tone}`}
+    >
+      優先度: {generationPriorityLabel(priority)}
+    </span>
+  );
+}
+
+/** 実践的なオペレータ作業チェックリスト */
+function OperatorChecklist({ prefix }: { prefix: string }) {
+  const steps: { title: string; body: string }[] = [
+    {
+      title: "不足カテゴリだけ仮画像を生成する",
+      body: "上記の「不足画像カテゴリ」に対してのみ、コマンド例で AI 仮画像を生成します。顧客提供素材（logo-/photo- 等）は作り直しません。",
+    },
+    {
+      title: `${prefix} プレフィックスで保存する`,
+      body: `生成物は必ず ${prefix} 付きのファイル名で保存し、メタデータに aiGenerated:true を付けます。AI 生成資産として顧客提供素材と区別します。`,
+    },
+    {
+      title: "実物受領後に差し替える",
+      body: "顧客から本素材を受け取ったら、仮画像を本素材で順次差し替えます。仮画像は本公開前に必ずすべて入れ替えます。",
+    },
+  ];
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center gap-2">
+        <ListChecks className="h-4 w-4 text-rose-600" />
+        <p className="text-sm font-bold text-foreground">
+          オペレータ作業チェックリスト
+        </p>
+      </div>
+      <ol className="mt-3 space-y-2">
+        {steps.map((step, index) => (
+          <li
+            key={index}
+            className="flex gap-3 rounded-2xl border border-border bg-white p-3"
+          >
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700">
+              {index + 1}
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {step.title}
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                {step.body}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/**
+ * AI画像フォールバックのオペレータガイドパネル（内部専用）。
+ * 状態・不足カテゴリ・生成優先順位・codex コマンド例・プロンプト断片・
+ * トレーサビリティ規則・作業チェックリストをまとめて表示する。
+ * 画像生成そのものは行わず、オペレータがローカルで実行するためのガイド。
+ */
+function ImageFallbackOperatorPanel({ fb }: { fb: ImageFallbackAssessment }) {
+  return (
+    <section className="border-t border-rose-200 bg-rose-50/40">
+      <div className="mx-auto max-w-container px-4 py-10 sm:py-12">
+        {/* 内部専用バナー */}
+        <div className="rounded-2xl border border-rose-300 bg-rose-100/70 p-4 text-sm leading-relaxed text-rose-900">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <div>
+              <p className="font-bold">
+                内部オペレータ専用の作業ガイド（顧客非公開）
+              </p>
+              <p className="mt-1 text-xs leading-relaxed">
+                このパネルは実装担当者向けです。サーバー（Vercel/serverless）からは画像生成を行いません。
+                ローカル環境のオペレータが codex で仮画像を生成し、実物受領後に差し替えます。
+                以下の内容は顧客向け画面・メールには絶対に出さないでください。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 状態 + 不足カテゴリ */}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-white p-4">
+            <p className="text-xs font-bold text-muted-foreground">
+              フォールバック状態
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
+              {imageFallbackStatusLabel(fb.status)}
+            </p>
+            {fb.assessedAt && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                評価日時: {fb.assessedAt}
+              </p>
+            )}
+          </div>
+          <div className="rounded-2xl border border-border bg-white p-4">
+            <p className="text-xs font-bold text-muted-foreground">
+              不足画像カテゴリ
+            </p>
+            {fb.missingImageCategories.length > 0 ? (
+              <p className="mt-1 text-sm text-foreground">
+                {fb.missingImageCategories.join("・")}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-muted-foreground">該当なし</p>
+            )}
+          </div>
+        </div>
+
+        {/* 判定根拠 */}
+        {fb.rationale.length > 0 && (
+          <div className="mt-4">
+            <p className="mb-2 text-sm font-bold text-foreground">判定根拠</p>
+            <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-foreground">
+              {fb.rationale.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* 生成優先順位 */}
+        <div className="mt-8">
+          <div className="flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-rose-600" />
+            <p className="text-sm font-bold text-foreground">
+              生成優先順位（高い順）
+            </p>
+          </div>
+          <ul className="mt-3 space-y-3">
+            {fb.generationPriority.map((target) => (
+              <li
+                key={target.category}
+                className="rounded-2xl border border-border bg-white p-4"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <PriorityBadge priority={target.priority} />
+                  <span className="text-sm font-bold text-foreground">
+                    {target.category}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {target.reason}
+                </p>
+                <p className="mt-2 whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-foreground">
+                  {target.promptFragment}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* 生成経路・コマンド例 */}
+        <div className="mt-8">
+          <div className="flex items-center gap-2">
+            <ImagePlus className="h-4 w-4 text-rose-600" />
+            <p className="text-sm font-bold text-foreground">
+              生成経路・コマンド例（コピー実行用）
+            </p>
+          </div>
+          <div className="mt-3 rounded-2xl border border-border bg-white p-4">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              経路:{" "}
+              <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px]">
+                {fb.generationPath.tool} -m {fb.generationPath.model}
+              </code>
+            </p>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <p className="text-xs font-bold text-muted-foreground">
+                コマンド例
+              </p>
+              <CopyButton value={fb.generationPath.exampleCommand} />
+            </div>
+            <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded-xl bg-slate-900 p-3 font-mono text-xs leading-relaxed text-slate-100">
+{fb.generationPath.exampleCommand}
+            </pre>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {fb.generationPath.notice}
+            </p>
+          </div>
+        </div>
+
+        {/* プロンプト断片（生成ヒント） */}
+        {fb.promptBlocks.length > 0 && (
+          <div className="mt-8">
+            <p className="text-sm font-bold text-foreground">
+              プロンプト断片（生成ヒント）
+            </p>
+            <ul className="mt-3 space-y-2">
+              {fb.promptBlocks.map((block, index) => (
+                <li
+                  key={index}
+                  className="whitespace-pre-wrap rounded-xl border border-border bg-white p-3 text-xs leading-relaxed text-foreground"
+                >
+                  {block}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* トレーサビリティ規則 */}
+        <div className="mt-8 rounded-2xl border border-border bg-white p-4">
+          <p className="text-sm font-bold text-foreground">
+            トレーサビリティ規則
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {fb.assetTraceability.rule}
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            ファイル名プレフィックス:{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px]">
+              {fb.assetTraceability.prefix}
+            </code>{" "}
+            / メタデータフラグ:{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px]">
+              {fb.assetTraceability.marker}
+            </code>
+          </p>
+        </div>
+
+        {/* オペレータ作業チェックリスト */}
+        <OperatorChecklist prefix={fb.assetTraceability.prefix} />
+      </div>
+    </section>
+  );
+}
+
 export default async function ExecutionPage({ params }: ExecutionPageProps) {
   const { submissionId } = await params;
 
@@ -72,6 +338,14 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
     : null;
   const enterpriseName = showcaseEntry?.enterpriseName ?? "企業名";
   const businessType = showcaseEntry?.businessType ?? "業種";
+
+  // 承認パッケージを読み込み、AI画像フォールバックが「必要」な案件では
+  // オペレータ向けの内部作業ガイドを表示する。
+  // 画像生成そのものは serverless では行わず、ローカルオペレータが実行する前提。
+  const approvalPackage = await readApprovalPackage(submissionId);
+  const imageFallback = approvalPackage?.imageFallback ?? null;
+  const showFallbackPanel =
+    imageFallback !== null && imageFallback.status !== "not_needed";
 
   return (
     <div className="bg-slate-50">
@@ -124,6 +398,15 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
         <ShowcaseComponent />
       ) : (
         <DemoNotGeneratedPlaceholder />
+      )}
+
+      {/* ============================================================ */}
+      {/*  AI画像フォールバック — オペレータ作業ガイド（内部専用）            */}
+      {/* ============================================================ */}
+      {/*  画像が不足している案件でのみ表示。既存のプレビューフローは維持し、  */}
+      {/*  内部ガイドは顧客向けコンテンツと明確に区別して下部に置く。          */}
+      {showFallbackPanel && imageFallback && (
+        <ImageFallbackOperatorPanel fb={imageFallback} />
       )}
 
       {/* ============================================================ */}
