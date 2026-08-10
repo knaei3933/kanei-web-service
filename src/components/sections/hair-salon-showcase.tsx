@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MapPin, Phone, Mail, Clock, Calendar, Scissors, Sparkles, ShieldCheck, Leaf, CheckCircle2, MessageCircle, Menu, X } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Calendar, Scissors, Sparkles, ShieldCheck, Leaf, CheckCircle2, MessageCircle, Menu, X, User } from "lucide-react";
 import { Section } from "../ui/section";
 import { Button } from "../ui/button";
 import { useState } from "react";
@@ -15,54 +15,15 @@ import { useState } from "react";
 
 const SALON_INFO = {
   name: "HAIR SALON TANAKA",
-  phone: "026-224-7890",
-  email: "tanaka.misaki@example.com",
-  address: "長野県長野市〇〇1-2-3",
+  phone: "（電話番号は現在準備中です）",
+  email: "（メールアドレスは現在準備中です）",
+  address: "長野県長野市〇〇（詳細住所は現在準備中です）",
   access: "長野駅徒歩8分",
-  parking: "専用駐車場3台分（予約可）",
+  parking: "駐車場情報は現在確認中です",
   businessHours: "10:00〜19:00（木曜定休）",
   reservation: "完全予約制",
-  instagram: "salon_tanaka_nagano",
 };
 
-const STYLISTS = [
-  {
-    name: "田中 美咲",
-    position: "オーナースタイリスト",
-    experience: "15年",
-    license: "日本美容技術検定1級",
-    specialty: "ナチュラルショート、レイヤースタイル、くせ毛カット",
-    image: "/generated/photos-real/salon-about.jpg",
-    message: "お一人おひとりの髪質・生活スタイルに合わせて、 Everyday が楽しくなるスタイルをご提案いたします。",
-  },
-  {
-    name: "佐藤 優子",
-    position: "シニアスタイリスト",
-    experience: "12年",
-    license: "日本美容技術検定1級",
-    specialty: "カラー、パーマ、ヘアアレンジ",
-    image: "/generated/photos-real/salon-gallery1.jpg",
-    message: "お客様の理想を形にするのが私の喜びです。細やかなカウンセリングで安心して任せていただけます。",
-  },
-  {
-    name: "高橋 真一",
-    position: "スタイリスト",
-    experience: "8年",
-    license: "日本美容技術検定1級",
-    specialty: "メンズスタイル、グラデーションカット",
-    image: "/generated/photos-real/salon-gallery2.jpg",
-    message: "清潔感ありつつトレンド感のあるスタイルを提案します。ご不明な点は何でもお気軽にどうぞ。",
-  },
-  {
-    name: "山田 舞",
-    position: "スタイリスト",
-    experience: "6年",
-    license: "日本美容技術検定1級",
-    specialty: "前髪カット、髪質改善、内巻きアレンジ",
-    image: "/generated/photos-real/salon-new.jpg",
-    message: "働くママ目線で、おしゃれで手入れやすいスタイルをご提案します。お子様連れもぜひご相談ください。",
-  },
-];
 
 const COURSES = [
   {
@@ -122,49 +83,7 @@ const STRENGTHS = [
   },
 ];
 
-const TESTIMONIALS = [
-  {
-    name: "A.Mさん（30代・女性）",
-    beforeAfter: "前髪がうまく決まらない悩みを解消",
-    content: "初めてのお店だったけど、カウンセリングが丁寧で安心しました。スタイリストの山田さんが、忙しいママでも手入れできるスタイルを提案してくれて、毎朝のスタイリングが楽しくなりました！",
-    rating: 5,
-  },
-  {
-    name: "S.Kさん（40代・女性）",
-    beforeAfter: "初めてのグレーchalange",
-    content: "ブリーチ歴が長く髪が痛んでいましたが、オーガニックカラーなら安心と教えてくれました。仕上がりは期待以上で、艶のある落ち着いた色に。セルフでも持ちが良いです。",
-    rating: 5,
-  },
-  {
-    name: "T.Hさん（20代・女性）",
-    beforeAfter: "初めてのショートカット",
-    content: "ロングからのショートカットを迷っていたけど、田中さんが顔形に合わせて最適な長さを提案してくれました。失敗したと思ったけど、毎日鏡を見るのが楽しいです！",
-    rating: 5,
-  },
-];
 
-const FAQS = [
-  {
-    q: "初めてですが大丈夫ですか？",
-    a: "もちろん！初めてのお客様も多数いらっしゃいます。スタイルの好みや普段のお手入れの仕方など、丁寧にお話を伺ってからご提案しますので安心してください。",
-  },
-  {
-    q: "お子様連れでも来店できますか？",
-    a: "はい、お子様連れも大歓迎です。ご予約時にお子様同伴であることをお伝えいただければ、お子様が遊べるスペースをご用意します。",
-  },
-  {
-    q: "キャンセル料はかかりますか？",
-    a: "前日までのキャンセルは無料です。当日キャンセル・無断欠席は、施術料金の50%をキャンセル料としてお願いいたします。",
-  },
-  {
-    q: "支払い方法はありますか？",
-    a: "現金、クレジットカード（主要カード）、電子マネー、PayPayに対応しています。",
-  },
-  {
-    q: "駐車場はありますか？",
-    a: "はい、専用駐車場3台分をご用意しています。ご予約時に駐車場のご利用もお伝えいただければ、確保いたします。",
-  },
-];
 
 const MENU_ITEMS = [
   {
@@ -368,7 +287,7 @@ export default function HairSalonShowcase() {
                   size="lg"
                   className="bg-gradient-to-r from-stone-700 to-stone-600 hover:from-stone-800 hover:to-stone-700"
                 >
-                  <a href={`tel:${SALON_INFO.phone.replace(/[^0-9]/g, "")}`}>
+                  <a href="#contact">
                     <Phone className="mr-2 h-4 w-4" />
                     今すぐ予約する
                   </a>
@@ -387,12 +306,13 @@ export default function HairSalonShowcase() {
               className="relative"
             >
               <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-2xl">
-                <img
-                  src="/generated/photos-real/salon-gpt.jpg"
-                  alt={`${SALON_INFO.name} - 店内の様子`}
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-900/10 to-transparent" />
+                <div className="absolute inset-0 flex items-center justify-center bg-stone-100">
+                  <div className="text-center p-8">
+                    <Scissors className="h-16 w-16 mx-auto mb-4 text-stone-300" />
+                    <p className="text-stone-400 text-sm">店舗画像は現在準備中です</p>
+                    <p className="text-stone-300 text-xs mt-2">※ デモ用プレースホルダー</p>
+                  </div>
+                </div>
               </div>
 
               {/* 浮かぶ情報カード */}
@@ -507,59 +427,28 @@ export default function HairSalonShowcase() {
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            {STYLISTS.map((stylist, index) => (
-              <motion.div
-                key={stylist.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm"
-              >
-                {/* 写真エリア */}
-                <div className="aspect-[3/4] overflow-hidden bg-stone-100">
-                  <img
-                    src={stylist.image}
-                    alt={`${stylist.name} - ${stylist.position}`}
-                    loading="lazy"
-                    decoding="async"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-
-                {/* プロフィールエリア */}
-                <div className="p-6">
-                  <div className="mb-3">
-                    <p className="text-xs font-semibold text-stone-600">{stylist.position}</p>
-                    <h3 className="text-lg font-bold">{stylist.name}</h3>
-                  </div>
-
-                  <div className="mb-3 space-y-1 text-xs text-muted-foreground">
-                    <p>経験 {stylist.experience} / {stylist.license}</p>
-                    <p>得意: {stylist.specialty}</p>
-                  </div>
-
-                  <p className="text-sm leading-relaxed text-stone-700">
-                    {stylist.message}
-                  </p>
-
-                  <div className="mt-4 pt-4 border-t border-stone-100">
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                    >
-                      <a href={`tel:${SALON_INFO.phone.replace(/[^0-9]/g, "")}`}>
-                        {stylist.name}さんを指名する
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          {/* プレースホルダーセクション */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border-2 border-dashed border-stone-300 bg-stone-50 p-12 text-center"
+          >
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-stone-200">
+              <User className="h-10 w-10 text-stone-400" />
+            </div>
+            <h3 className="mb-3 text-xl font-bold text-stone-700">
+              スタッフ紹介は現在準備中です
+            </h3>
+            <p className="max-w-lg mx-auto text-sm leading-relaxed text-stone-600">
+              スタッフの顔写真・経歴・得意スタイルなどの情報は、
+              <br />
+              公式素材を受領次第、反映させていただきます。
+            </p>
+            <p className="mt-4 text-xs text-stone-400">
+              ※ 現在、全スタッフが日本美容技術検定1級を取得していることは確定情報です
+            </p>
+          </motion.div>
         </div>
       </Section>
 
@@ -678,47 +567,27 @@ export default function HairSalonShowcase() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               お客様の声
             </h2>
-            <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
-              実際にご来店いただいたお客様の満足度5.0の声をご紹介します。
+          </div>
+
+          {/* プレースホルダーセクション */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border-2 border-dashed border-stone-300 bg-stone-50 p-12 text-center"
+          >
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-stone-200">
+              <Sparkles className="h-10 w-10 text-stone-400" />
+            </div>
+            <h3 className="mb-3 text-xl font-bold text-stone-700">
+              お客様の声は素材受領後に掲載予定です
+            </h3>
+            <p className="max-w-lg mx-auto text-sm leading-relaxed text-stone-600">
+              実際にご来店いただいたお客様の声を掲載する予定です。
+              <br />
+              公式素材を受領次第、反映させていただきます。
             </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
-            {TESTIMONIALS.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
-              >
-                {/* 星評価 */}
-                <div className="mb-3 flex gap-1">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <svg key={i} className="h-4 w-4 fill-amber-400 text-amber-400" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-
-                {/* ビフォーアフター */}
-                <div className="mb-3 rounded-lg bg-stone-50 px-3 py-2 text-xs font-medium text-stone-700">
-                  {testimonial.beforeAfter}
-                </div>
-
-                {/* お客様の声 */}
-                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-                  {testimonial.content}
-                </p>
-
-                {/* お客様名 */}
-                <p className="text-sm font-semibold text-stone-700">
-                  {testimonial.name}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+          </motion.div>
         </div>
       </Section>
 
@@ -731,30 +600,27 @@ export default function HairSalonShowcase() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               よくある質問
             </h2>
-            <p className="mt-2 text-muted-foreground">
-              ご予約・ご来店前にご確認ください
-            </p>
           </div>
 
-          <div className="space-y-4">
-            {FAQS.map((faq, index) => (
-              <motion.div
-                key={faq.q}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
-              >
-                <h3 className="mb-2 font-semibold text-foreground">
-                  Q. {faq.q}
-                </h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  A. {faq.a}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+          {/* プレースホルダーセクション */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-3xl border-2 border-dashed border-stone-300 bg-white p-12 text-center"
+          >
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-stone-100">
+              <MessageCircle className="h-10 w-10 text-stone-400" />
+            </div>
+            <h3 className="mb-3 text-xl font-bold text-stone-700">
+              よくある質問は現在整理中です
+            </h3>
+            <p className="max-w-lg mx-auto text-sm leading-relaxed text-stone-600">
+              よくある質問と回答を現在整理中です。
+              <br />
+              最終的なQ&Aは、お客様からのヒアリング後に反映させていただきます。
+            </p>
+          </motion.div>
         </div>
       </Section>
 
@@ -773,24 +639,18 @@ export default function HairSalonShowcase() {
           </div>
 
           <div className="grid gap-8 lg:grid-cols-2">
-            {/* Googleマップ埋め込み */}
+            {/* 地図プレースホルダー */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="aspect-square overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm"
+              className="aspect-square overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 flex items-center justify-center"
             >
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3241.0470784890626!2d138.1806!3d36.6513!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNsKwMzknMDQuOCJOIDEzOMKwMTAnNTAuMiJF!5e2m5qGF5biC5aSn6KiA5bqn6ZqS5bGL6aeF!3e0!3m2!1ja!4sjp!4v1696000000000!5m2!1ja!4sjp"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title={`${SALON_INFO.name}の地図`}
-                className="h-full w-full"
-              />
+              <div className="text-center p-8">
+                <MapPin className="h-16 w-16 mx-auto mb-4 text-stone-300" />
+                <p className="text-stone-400 text-sm">地図は現在準備中です</p>
+                <p className="text-stone-300 text-xs mt-2">※ デモ用プレースホルダー</p>
+              </div>
             </motion.div>
 
             {/* アクセス詳細 */}
@@ -853,167 +713,54 @@ export default function HairSalonShowcase() {
                 ご予約・お問い合わせ
               </h2>
               <p className="mt-4 text-lg text-white/90">
-                お電話、Instagram DM、またはフォームからお気軽にご連絡ください
+                予約方法・連絡先は現在準備中です
               </p>
             </div>
 
-            {/* 連絡先ボタン */}
-            <div className="mb-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button
-                asChild
-                size="lg"
-                className="bg-white text-stone-700 hover:bg-white/90"
-              >
-                <a href={`tel:${SALON_INFO.phone.replace(/[^0-9]/g, "")}`}>
-                  <Phone className="mr-2 h-4 w-4" />
-                  {SALON_INFO.phone}
-                </a>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white/10"
-              >
-                <a href={`https://instagram.com/${SALON_INFO.instagram}`} target="_blank" rel="noopener noreferrer">
-                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                  </svg>
-                  Instagram DM
-                </a>
-              </Button>
-            </div>
-
-            {/* お問い合わせフォーム */}
+            {/* プレースホルダーカード */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="rounded-2xl bg-white p-8 shadow-xl"
+              className="rounded-2xl bg-white/10 p-8 backdrop-blur-sm border border-white/20"
             >
-              <h3 className="mb-6 text-center text-lg font-semibold text-gray-900">
-                お問い合わせフォーム
-              </h3>
-              <form
-                action="/api/contact"
-                method="POST"
-                className="space-y-6"
-              >
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-700">
-                      お名前 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      required
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500/20"
-                      placeholder="山田 花子"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="mb-2 block text-sm font-medium text-gray-700">
-                      電話番号 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      required
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500/20"
-                      placeholder="026-123-4567"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">
-                    メールアドレス <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500/20"
-                    placeholder="example@email.com"
-                  />
-                </div>
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="date" className="mb-2 block text-sm font-medium text-gray-700">
-                      ご希望日
-                    </label>
-                    <input
-                      type="date"
-                      id="date"
-                      name="date"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500/20"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="stylist" className="mb-2 block text-sm font-medium text-gray-700">
-                      ご希望スタイリスト
-                    </label>
-                    <select
-                      id="stylist"
-                      name="stylist"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500/20"
-                    >
-                      <option value="">指名なし</option>
-                      {STYLISTS.map((stylist) => (
-                        <option key={stylist.name} value={stylist.name}>
-                          {stylist.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="course" className="mb-2 block text-sm font-medium text-gray-700">
-                    ご希望コース
-                  </label>
-                  <select
-                    id="course"
-                    name="course"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500/20"
-                  >
-                    <option value="">選択してください</option>
-                    {COURSES.map((course) => (
-                      <option key={course.name} value={course.name}>
-                        {course.name}（{course.price}）
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="message" className="mb-2 block text-sm font-medium text-gray-700">
-                    ご要望・お問い合わせ内容
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    rows={4}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-500/20"
-                    placeholder="ご要望やご質問をご記入ください"
-                  />
-                </div>
-                <div className="rounded-lg bg-stone-50 p-4">
-                  <p className="text-sm text-stone-800">
-                    <strong className="text-stone-900">営業時間:</strong> {SALON_INFO.businessHours}
-                    <br />
-                    <strong className="text-stone-900">定休日:</strong> 木曜日
+              <div className="text-center">
+                <Phone className="h-12 w-12 mx-auto mb-4 text-white/60" />
+                <h3 className="mb-3 text-xl font-bold text-white">
+                  予約・お問い合わせは現在準備中です
+                </h3>
+                <p className="text-sm text-white/80 mb-6">
+                  電話番号・メールアドレス・Instagramアカウントなどの<br />
+                  連絡先情報は、公式素材を受領次第、反映させていただきます。
+                </p>
+                <div className="rounded-lg bg-white/10 p-4">
+                  <p className="text-xs text-white/70">
+                    <strong className="text-white">確定情報:</strong><br />
+                    ・完全予約制<br />
+                    ・営業時間: {SALON_INFO.businessHours}<br />
+                    ・定休日: 木曜日
                   </p>
                 </div>
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full bg-gradient-to-r from-stone-700 to-stone-600 hover:from-stone-800 hover:to-stone-700"
-                >
-                  送信する
-                </Button>
-              </form>
+              </div>
+            </motion.div>
+
+            {/* Instagram プレースホルダー */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="mt-6 rounded-2xl bg-white/10 p-6 backdrop-blur-sm border border-white/20 text-center"
+            >
+              <svg className="h-8 w-8 mx-auto mb-3 text-white/60" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z" />
+              </svg>
+              <p className="text-sm font-semibold text-white">
+                Instagram掲載内容を反映予定
+              </p>
+              <p className="text-xs text-white/70 mt-1">
+                Instagramアカウント情報は準備中です
+              </p>
             </motion.div>
           </div>
         </div>
@@ -1059,41 +806,23 @@ export default function HairSalonShowcase() {
               </ul>
             </div>
 
-            {/* 連絡先 */}
+            {/* SNSプレースホルダー */}
             <div>
-              <h4 className="mb-3 text-sm font-semibold text-white">ご予約・SNS</h4>
-              <ul className="space-y-3 text-sm text-slate-400">
-                <li className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-stone-500" />
-                  {SALON_INFO.phone}
-                </li>
-                <li className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-stone-500" />
-                  {SALON_INFO.email}
-                </li>
-              </ul>
+              <h4 className="mb-3 text-sm font-semibold text-white">SNS</h4>
+              <p className="text-sm text-slate-400 mb-3">
+                SNSアカウントは現在準備中です
+              </p>
               <div className="mt-4 flex gap-3">
-                <a
-                  href={`https://instagram.com/${SALON_INFO.instagram}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-400 transition-colors hover:bg-pink-600 hover:text-white"
-                  aria-label="Instagram"
-                >
-                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                  </svg>
-                </a>
-                <a
-                  href={`https://line.me/ti/p/${SALON_INFO.instagram}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-400 transition-colors hover:bg-green-600 hover:text-white"
-                  aria-label="LINE"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                </a>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+                  <span className="text-xs">IG</span>
+                </div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+                  <span className="text-xs">LINE</span>
+                </div>
               </div>
+              <p className="mt-2 text-xs text-slate-600">
+                ※ アカウント情報は素材受領次第反映予定
+              </p>
             </div>
           </div>
 
