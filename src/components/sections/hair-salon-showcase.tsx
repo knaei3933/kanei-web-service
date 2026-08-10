@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MapPin, Phone, Mail, Clock, Calendar, Scissors, Sparkles, ShieldCheck, Leaf, CheckCircle2, MessageCircle } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Calendar, Scissors, Sparkles, ShieldCheck, Leaf, CheckCircle2, MessageCircle, Menu, X } from "lucide-react";
 import { Section } from "../ui/section";
 import { Button } from "../ui/button";
+import { useState } from "react";
 
 /**
  * HAIR SALON TANAKA - 白と木のぬくもりを活かしたナチュラルテイストの美容室
@@ -31,7 +32,7 @@ const STYLISTS = [
     experience: "15年",
     license: "日本美容技術検定1級",
     specialty: "ナチュラルショート、レイヤースタイル、くせ毛カット",
-    image: "/generated/photos-real/stylist-female.jpg",
+    image: "/generated/photos-real/salon-about.jpg",
     message: "お一人おひとりの髪質・生活スタイルに合わせて、 Everyday が楽しくなるスタイルをご提案いたします。",
   },
   {
@@ -40,7 +41,7 @@ const STYLISTS = [
     experience: "12年",
     license: "日本美容技術検定1級",
     specialty: "カラー、パーマ、ヘアアレンジ",
-    image: "/generated/photos-real/stylist-female2.jpg",
+    image: "/generated/photos-real/salon-gallery1.jpg",
     message: "お客様の理想を形にするのが私の喜びです。細やかなカウンセリングで安心して任せていただけます。",
   },
   {
@@ -49,7 +50,7 @@ const STYLISTS = [
     experience: "8年",
     license: "日本美容技術検定1級",
     specialty: "メンズスタイル、グラデーションカット",
-    image: "/generated/photos-real/stylist-male.jpg",
+    image: "/generated/photos-real/salon-gallery2.jpg",
     message: "清潔感ありつつトレンド感のあるスタイルを提案します。ご不明な点は何でもお気軽にどうぞ。",
   },
   {
@@ -58,7 +59,7 @@ const STYLISTS = [
     experience: "6年",
     license: "日本美容技術検定1級",
     specialty: "前髪カット、髪質改善、内巻きアレンジ",
-    image: "/generated/photos-real/stylist-female3.jpg",
+    image: "/generated/photos-real/salon-new.jpg",
     message: "働くママ目線で、おしゃれで手入れやすいスタイルをご提案します。お子様連れもぜひご相談ください。",
   },
 ];
@@ -201,8 +202,116 @@ const MENU_ITEMS = [
 ];
 
 export default function HairSalonShowcase() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navItems = [
+    { label: "ホーム", href: "#" },
+    { label: "スタイリスト", href: "#stylists" },
+    { label: "料金", href: "#courses" },
+    { label: "お客様の声", href: "#testimonials" },
+    { label: "アクセス", href: "#access" },
+    { label: "お問い合わせ", href: "#contact" },
+  ];
+
   return (
     <div className="bg-white">
+      {/* ============================================================ */}
+      {/*  デモ用ヘッダー/ナビゲーション                                    */}
+      {/* ============================================================ */}
+      <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/95 backdrop-blur-sm">
+        <div className="mx-auto max-w-container px-4">
+          <div className="flex h-16 items-center justify-between">
+            {/* ロゴ */}
+            <a href="#" className="flex items-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-800">
+                <Scissors className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-lg font-bold text-stone-900">
+                {SALON_INFO.name}
+              </span>
+            </a>
+
+            {/* デスクトップナビゲーション */}
+            <nav className="hidden md:flex items-center gap-6">
+              {navItems.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+
+            {/* CTAボタン（デスクトップ） */}
+            <div className="hidden md:flex items-center gap-3">
+              <Button
+                asChild
+                size="sm"
+                className="bg-stone-800 hover:bg-stone-900"
+              >
+                <a href={`tel:${SALON_INFO.phone.replace(/[^0-9]/g, "")}`}>
+                  <Phone className="mr-2 h-3.5 w-3.5" />
+                  予約する
+                </a>
+              </Button>
+            </div>
+
+            {/* モバイルメニューボタン */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+              aria-label="メニューを開く"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-5 w-5 text-stone-700" />
+              ) : (
+                <Menu className="h-5 w-5 text-stone-700" />
+              )}
+            </button>
+          </div>
+
+          {/* モバイルメニュー */}
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:hidden border-t border-stone-200 py-4"
+            >
+              <nav className="flex flex-col space-y-3">
+                {navItems.map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900 rounded-lg transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+                <div className="pt-2 border-t border-stone-200">
+                  <Button
+                    asChild
+                    size="sm"
+                    className="w-full bg-stone-800 hover:bg-stone-900"
+                  >
+                    <a
+                      href={`tel:${SALON_INFO.phone.replace(/[^0-9]/g, "")}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Phone className="mr-2 h-3.5 w-3.5" />
+                      今すぐ予約する
+                    </a>
+                  </Button>
+                </div>
+              </nav>
+            </motion.div>
+          )}
+        </div>
+      </header>
+
       {/* ============================================================ */}
       {/*  ヒーローセクション                                             */}
       {/* ============================================================ */}
@@ -279,7 +388,7 @@ export default function HairSalonShowcase() {
             >
               <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-gradient-to-br from-stone-100 to-stone-200 shadow-2xl">
                 <img
-                  src="/generated/photos-real/salon-interior.jpg"
+                  src="/generated/photos-real/salon-gpt.jpg"
                   alt={`${SALON_INFO.name} - 店内の様子`}
                   className="h-full w-full object-cover"
                 />
@@ -457,7 +566,7 @@ export default function HairSalonShowcase() {
       {/* ============================================================ */}
       {/*  コース・料金表                                                */}
       {/* ============================================================ */}
-      <Section className="bg-stone-50">
+      <Section id="courses" className="bg-stone-50">
         <div className="mx-auto max-w-container px-4">
           <div className="mb-12 text-center">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -563,7 +672,7 @@ export default function HairSalonShowcase() {
       {/* ============================================================ */}
       {/*  お客様の声                                                    */}
       {/* ============================================================ */}
-      <Section>
+      <Section id="testimonials">
         <div className="mx-auto max-w-container px-4">
           <div className="mb-12 text-center">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -652,7 +761,7 @@ export default function HairSalonShowcase() {
       {/* ============================================================ */}
       {/*  アクセス・地図                                                 */}
       {/* ============================================================ */}
-      <Section>
+      <Section id="access">
         <div className="mx-auto max-w-container px-4">
           <div className="mb-12 text-center">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -731,7 +840,7 @@ export default function HairSalonShowcase() {
       {/* ============================================================ */}
       {/*  お問い合わせ・予約 CTA                                         */}
       {/* ============================================================ */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-stone-700 to-stone-600">
+      <section id="contact" className="relative overflow-hidden bg-gradient-to-br from-stone-700 to-stone-600">
         <div className="absolute inset-0">
           <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
           <div className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
