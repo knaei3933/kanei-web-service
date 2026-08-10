@@ -8,6 +8,7 @@ import {
   Wrench,
   ImagePlus,
   ListChecks,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { readApprovalPackage } from "@/lib/approval-package";
@@ -18,6 +19,11 @@ import {
   type GenerationPriorityLevel,
 } from "@/lib/image-fallback";
 import { readAiFallbackAssets, type AiFallbackAsset } from "@/lib/ai-fallback-assets";
+import {
+  readRevisionHandoff,
+  type RevisionHandoff,
+  type SectionFeedbackSummary,
+} from "@/lib/demo-feedback-loop";
 import { CopyButton } from "./CopyButton";
 import { FallbackAssetTracker } from "./FallbackAssetTracker";
 
@@ -340,6 +346,98 @@ function ImageFallbackOperatorPanel({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  修正ハンドオフ サマリ（内部専用・Phase L）                             */
+/* ------------------------------------------------------------------ */
+/*  revision-handoff.json に保存されたセクション別フィードバックのサマリを */
+/*  オペレータ作業サーフェスに compact に露出する。修正依頼/承認相当の内訳と */
+/*  全体評価・コメントを一目で分かるようにする。                          */
+/*                                                                        */
+/*  真実性: これは「入力サマリ」であり、セクション別の修正完了を証明しない。*/
+/*  画像生成・修正実行そのものは行わない。顧客向け画面・メールには出さない。*/
+/* ------------------------------------------------------------------ */
+
+function RevisionHandoffSummaryCard({
+  summary,
+  round,
+}: {
+  summary: SectionFeedbackSummary;
+  round: number;
+}) {
+  const requested = summary.requestedSections;
+  const approved = summary.approvedSections;
+  const commentDigest =
+    summary.overallComment && summary.overallComment.length > 200
+      ? `${summary.overallComment.slice(0, 200)}…`
+      : summary.overallComment;
+
+  return (
+    <div className="rounded-2xl border border-border bg-white p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-indigo-600" />
+          <p className="text-sm font-bold text-foreground">
+            修正ハンドオフ サマリ（{round}回目の修正依頼）
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          評価 <span className="font-bold text-amber-600">★ {summary.rating}</span> / 5
+        </p>
+      </div>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+        {summary.note}
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl bg-accent p-3 text-sm">
+          <p className="text-xs font-bold text-muted-foreground">
+            修正依頼あり（{requested.length}件）
+          </p>
+          {requested.length === 0 ? (
+            <p className="mt-1 text-muted-foreground">該当なし</p>
+          ) : (
+            <ul className="mt-1 space-y-1">
+              {requested.map((s) => (
+                <li key={s.sectionId} className="text-foreground">
+                  <span className="font-semibold">{s.sectionName}</span>
+                  {s.feedback && (
+                    <span className="text-muted-foreground"> — {s.feedback}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="rounded-xl bg-accent p-3 text-sm">
+          <p className="text-xs font-bold text-muted-foreground">
+            修正対象外（{approved.length}件・承認相当）
+          </p>
+          {approved.length === 0 ? (
+            <p className="mt-1 text-muted-foreground">該当なし</p>
+          ) : (
+            <p className="mt-1 text-muted-foreground">
+              {approved.map((s) => s.sectionName).join("・")}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {commentDigest && (
+        <div className="mt-3">
+          <p className="mb-1 text-xs font-bold text-muted-foreground">全体コメント</p>
+          <p className="whitespace-pre-wrap rounded-xl bg-accent p-3 text-sm leading-relaxed text-foreground">
+            {commentDigest}
+          </p>
+        </div>
+      )}
+
+      <p className="mt-3 break-all rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-muted-foreground">
+        {summary.summaryText}
+      </p>
+    </div>
+  );
+}
+
 export default async function ExecutionPage({ params }: ExecutionPageProps) {
   const { submissionId } = await params;
 
@@ -372,6 +470,13 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
     ? await readAiFallbackAssets(submissionId)
     : null;
   const fallbackAssets = fallbackRegistry?.assets ?? [];
+
+  // 保存済みの修正ハンドオフ（revision-handoff.json）を読み込む。
+  // 顧客フィードバックから生成された修正指示 + セクション別サマリ（Phase L）。
+  // オペレータ作業サーフェス用。修正完了証明ではなく入力参考。
+  const revisionHandoff: RevisionHandoff | null =
+    await readRevisionHandoff(submissionId);
+  const handoffSummary = revisionHandoff?.sectionFeedbackSummary ?? null;
 
   return (
     <div className="bg-slate-50">
@@ -437,6 +542,35 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
           submissionId={submissionId}
           fallbackAssets={fallbackAssets}
         />
+      )}
+
+      {/* ============================================================ */}
+      {/*  修正ハンドオフ サマリ（内部専用・Phase L）                         */}
+      {/* ============================================================ */}
+      {/*  顧客フィードバック由来の修正指示サマリをオペレータ作業サーフェスに  */}
+      {/*  compact に露出する。修正完了証明ではなく入力参考。                  */}
+      {handoffSummary && revisionHandoff && (
+        <section className="border-t border-indigo-200 bg-indigo-50/30">
+          <div className="mx-auto max-w-container px-4 py-10 sm:py-12">
+            <div className="mb-6 rounded-2xl border border-indigo-300 bg-indigo-100/70 p-4 text-sm leading-relaxed text-indigo-900">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
+                <div>
+                  <p className="font-bold">内部オペレータ専用（顧客非公開）</p>
+                  <p className="mt-1 text-xs leading-relaxed">
+                    顧客フィードバックから自動生成した修正ハンドオフのサマリです。
+                    セクション別の修正完了を証明するものではなく、作業の入力参考です。
+                    顧客向け画面・メールには絶対に出さないでください。
+                  </p>
+                </div>
+              </div>
+            </div>
+            <RevisionHandoffSummaryCard
+              summary={handoffSummary}
+              round={revisionHandoff.round}
+            />
+          </div>
+        </section>
       )}
 
       {/* ============================================================ */}

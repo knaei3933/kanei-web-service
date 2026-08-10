@@ -1431,6 +1431,140 @@ function DemoFeedbackRevisionComparisonSection({
 }
 
 /* ------------------------------------------------------------------ */
+/*  リビジョンラウンド履歴（内部専用・Phase K トレーサビリティ）          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * revision-lineage.json の全ラウンドを、内部確認用にコンパクトなカードで出す。
+ * 現行ラウンド（round / kind / snapshotKey / shortSha / commitMessage / status /
+ * キャプチャ日時）と、全ラウンドの履歴一覧を一目で追えるようにする。
+ *
+ * フィードバックの有無にかかわらず、ラウンドが1件でもあれば表示する。
+ * 真の SoT は git と snapshots であり、lineage は再生成可能な派生物である点に注意。
+ *
+ * 内部専用。顧客向け画面・メールには一切出さない。
+ */
+function RevisionLineageSection({ lineage }: { lineage: RevisionLineage }) {
+  const rounds = lineage.rounds;
+  if (rounds.length === 0) return null;
+
+  // 現行ラウンド（isCurrent を優先、なければ最新）
+  const current = rounds.find((r) => r.isCurrent) ?? rounds[rounds.length - 1];
+
+  // 履歴は新しい順で表示
+  const ordered = [...rounds].sort((a, b) => b.round - a.round);
+
+  return (
+    <Section
+      title="リビジョンラウンド履歴（内部専用）"
+      badge={
+        <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800">
+          ⚠ 顧客非公開
+        </span>
+      }
+    >
+      <div className="rounded-2xl border border-border bg-accent p-4 text-sm leading-relaxed text-muted-foreground">
+        デモ生成・修正の全ラウンドを round ↔ snapshotKey ↔ commit で追跡する、
+        オペレータ確認用のビューです。現行ラウンドとコミット対応を確認してください。
+        顧客向け画面・メールには出しません。
+      </div>
+
+      {/* 現行ラウンド */}
+      <div className="mt-5">
+        <p className="mb-2 text-sm font-bold text-foreground">現行ラウンド</p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-2xl bg-accent p-3 text-sm">
+            <p className="text-xs font-bold text-muted-foreground">ラウンド / 種別</p>
+            <p className="mt-1 font-semibold text-foreground">
+              {current.label}（round {current.round}・{current.kind}）
+            </p>
+          </div>
+          <div className="rounded-2xl bg-accent p-3 text-sm">
+            <p className="text-xs font-bold text-muted-foreground">snapshotKey</p>
+            <p className="mt-1 break-all font-mono text-[11px] text-foreground">
+              {current.snapshotKey}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-accent p-3 text-sm">
+            <p className="text-xs font-bold text-muted-foreground">commit</p>
+            <p className="mt-1 font-mono text-[11px] text-foreground">
+              {current.shortSha ?? "（コミットなし）"}
+            </p>
+            {current.commitMessage && (
+              <p className="mt-1 break-all text-xs text-muted-foreground">
+                {current.commitMessage}
+              </p>
+            )}
+          </div>
+          <div className="rounded-2xl bg-accent p-3 text-sm">
+            <p className="text-xs font-bold text-muted-foreground">status</p>
+            <p className="mt-1 font-semibold text-foreground">{current.status}</p>
+          </div>
+          <div className="rounded-2xl bg-accent p-3 text-sm">
+            <p className="text-xs font-bold text-muted-foreground">キャプチャ日時</p>
+            <p className="mt-1 text-foreground">{current.capturedAt}</p>
+          </div>
+          {current.committedAt && (
+            <div className="rounded-2xl bg-accent p-3 text-sm">
+              <p className="text-xs font-bold text-muted-foreground">コミット日時</p>
+              <p className="mt-1 text-foreground">{current.committedAt}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 全ラウンド履歴 */}
+      <div className="mt-5">
+        <p className="mb-2 text-sm font-bold text-foreground">
+          ラウンド履歴（{ordered.length}件・新しい順）
+        </p>
+        <ul className="space-y-2">
+          {ordered.map((r) => (
+            <li
+              key={`${r.round}-${r.snapshotKey}`}
+              className={`rounded-2xl border p-3 text-sm ${
+                r.isCurrent
+                  ? "border-rose-200 bg-rose-50"
+                  : "border-border bg-white"
+              }`}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {r.isCurrent && (
+                  <span className="inline-flex items-center rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
+                    現行
+                  </span>
+                )}
+                <span className="font-bold text-foreground">{r.label}</span>
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  round {r.round}・{r.kind}
+                </span>
+                <span className="break-all font-mono text-[11px] text-muted-foreground">
+                  {r.snapshotKey}
+                </span>
+                {r.shortSha && (
+                  <span className="font-mono text-[11px] text-muted-foreground">
+                    · {r.shortSha}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {r.status} ／ キャプチャ {r.capturedAt}
+                {r.committedAt ? ` ／ コミット ${r.committedAt}` : ""}
+              </p>
+              {r.commitMessage && (
+                <p className="mt-0.5 break-all text-xs text-foreground">
+                  {r.commitMessage}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  フォローアップの繰り返しループ進捗（needs_followup 時に表示）         */
 /* ------------------------------------------------------------------ */
 
@@ -1752,6 +1886,12 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
           {/* デモフィードバック サマリ（内部専用・Phase F セクション別承認状況） */}
           {demoFeedbackHistory?.latest && (
             <DemoFeedbackReviewSection history={demoFeedbackHistory} />
+          )}
+
+          {/* リビジョンラウンド履歴（内部専用・Phase K トレーサビリティ）
+              ラウンドが1件でもあれば表示。フィードバックの有無に依存しない。 */}
+          {revisionLineage.rounds.length > 0 && (
+            <RevisionLineageSection lineage={revisionLineage} />
           )}
 
           {/* デモフィードバック ↔ リビジョンラウンド 対比（内部専用・追跡性）

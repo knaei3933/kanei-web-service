@@ -13,6 +13,7 @@ import {
 import { readApprovalPackage } from "@/lib/approval-package";
 import { resolveMailProvider } from "@/server/mail";
 import type { MailResult, SendMailInput } from "@/server/mail/types";
+import { DEMO_SECTION_OPTIONS, demoSectionName } from "@/lib/demo-sections";
 
 /* ------------------------------------------------------------------ */
 /*  型定義                                                              */
@@ -45,6 +46,34 @@ export interface DemoFeedbackData {
 export type RoundKind = "revision" | "restore" | "reuse";
 
 /**
+ * (Phase L) セクション別フィードバック由来の構造化サマリ。
+ * buildRevisionHandoff が revision-handoff.json に保存する「修正依頼 / 承認相当」の
+ * コンパクトな内訳。最新フィードバックを入力として機械的に集計したものであり、
+ * セクション別の「修正完了」を証明するものではない（note 参照）。
+ */
+export interface SectionFeedbackSummary {
+  /** サマリ生成元の最新ラウンドの全体評価（1-5） */
+  rating: number;
+  /** 最新の全体コメント（原文・長い場合は表示側で切り詰め） */
+  overallComment: string;
+  /** 修正依頼ありセクション（顧客が修正対象として選択した箇所） */
+  requestedSections: Array<{
+    sectionId: string;
+    sectionName: string;
+    feedback: string;
+  }>;
+  /** 修正対象外（選択されなかった＝承認相当）セクション */
+  approvedSections: Array<{
+    sectionId: string;
+    sectionName: string;
+  }>;
+  /** 機械処理・一覧用のコンパクトなテキストダイジェスト */
+  summaryText: string;
+  /** 真実性の注意書き（修正完了証明ではないことの明示） */
+  note: string;
+}
+
+/**
  * 修正ハンドオフデータ。
  * フィードバックを受信し、Claude Code への修正指示をまとめたもの。
  * (Phase R3) restore/reuse に対応するため kind/parentRound/variantTag を拡張。
@@ -70,6 +99,8 @@ export interface RevisionHandoff {
   parentRound?: number | null;
   /** (Phase R3) バリアントタグ（reuse の場合、"A"/"B" 等） */
   variantTag?: string | null;
+  /** (Phase L) セクション別フィードバック由来の構造化サマリ（修正完了証明ではない・入力用） */
+  sectionFeedbackSummary?: SectionFeedbackSummary;
 }
 
 /**
@@ -380,6 +411,72 @@ export function generateRevisionPrompt(
   return lines.join("\n");
 }
 
+/* ------------------------------------------------------------------ */
+/*  (Phase L) セクション別フィードバック由来の構造化サマリ                  */
+/* ------------------------------------------------------------------ */
+
+/** ダイジェスト用に文字列を安全に切り詰める */
+function truncateForDigest(value: string, max: number): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= max) return trimmed;
+  return `${trimmed.slice(0, max)}…`;
+}
+
+/**
+ * (Phase L) 最新のセクション別フィードバックから、ハンドオフ確認用の
+ * 構造化サマリを組み立てる。純粋関数（同じ入力 → 同じ出力）。
+ *
+ * 顧客が修正対象として選択したセクション（修正依頼）と、選択されなかった
+ * セクション（修正対象外＝承認相当）の内訳を DEMO_SECTION_OPTIONS マスターと
+ * 照合して組み立てる。
+ *
+ * 【真実性の制約】これは「どのセクションが修正依頼されたか / されなかったか」の
+ * 入力サマリであり、修正が完了したことを証明するものではない（note に明記）。
+ * セクション単位の完了状態はラインデータから判定できないため、完成主張はしない。
+ */
+export function buildSectionFeedbackSummary(
+  feedbackData: DemoFeedbackData
+): SectionFeedbackSummary {
+  const flagged = Array.isArray(feedbackData.sections) ? feedbackData.sections : [];
+  const flaggedIds = new Set(flagged.map((s) => s.sectionId));
+
+  const requestedSections = flagged.map((s) => ({
+    sectionId: s.sectionId,
+    sectionName: demoSectionName(s.sectionId, s.sectionName),
+    feedback: s.feedback,
+  }));
+
+  const approvedSections = DEMO_SECTION_OPTIONS.filter(
+    (s) => !flaggedIds.has(s.id)
+  ).map((s) => ({ sectionId: s.id, sectionName: s.name }));
+
+  const requestedText =
+    requestedSections.map((s) => s.sectionName).join("・") || "（なし）";
+  const approvedText =
+    approvedSections.map((s) => s.sectionName).join("・") || "（なし）";
+  const commentDigest = feedbackData.comment
+    ? truncateForDigest(feedbackData.comment, 200)
+    : "（なし）";
+
+  const summaryText =
+    `評価 ${feedbackData.rating}/5。` +
+    `修正依頼: ${requestedText}。` +
+    `修正対象外（承認相当）: ${approvedText}。` +
+    `全体コメント: ${commentDigest}`;
+
+  const note =
+    "最新フィードバックからの入力サマリであり、セクション別の修正完了を証明するものではありません。";
+
+  return {
+    rating: feedbackData.rating,
+    overallComment: feedbackData.comment,
+    requestedSections,
+    approvedSections,
+    summaryText,
+    note,
+  };
+}
+
 /**
  * 修正ハンドオフ JSON を生成して保存する。
  *
@@ -423,6 +520,8 @@ export async function buildRevisionHandoff(
     targetComponent,
     round,
     createdAt: new Date().toISOString(),
+    // (Phase L) セクション別フィードバック由来の構造化サマリ（修正完了証明ではない）
+    sectionFeedbackSummary: buildSectionFeedbackSummary(feedbackData),
   };
 
   // revision-handoff.json として保存
@@ -507,6 +606,28 @@ export async function readDemoFeedbackHistory(
     if (!raw) return null;
     const parsed = JSON.parse(raw) as DemoFeedbackHistory;
     return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * (Phase L) 保存済みの revision-handoff.json を読み込む。
+ * 不在・パース失敗時は null。実行/レビュー画面でハンドオフサマリを表示するために使う。
+ */
+export async function readRevisionHandoff(
+  submissionId: string
+): Promise<RevisionHandoff | null> {
+  if (!isSafeSubmissionId(submissionId)) return null;
+
+  try {
+    const raw = await readArtifact(submissionId, "revision-handoff.json");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return null;
+    }
+    return parsed as RevisionHandoff;
   } catch {
     return null;
   }

@@ -69,10 +69,38 @@ export function FallbackAssetTracker({
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // 保存ファイル名入力へフォーカスを戻すための参照（クイック選択後に使う）
+  const suffixRef = React.useRef<HTMLInputElement>(null);
+
   const apiPath = `/api/execution/${submissionId}/fallback-assets`;
 
   const pending = assets.filter((a) => a.status === "generated");
   const replaced = assets.filter((a) => a.status === "replaced");
+
+  /**
+   * クイック選択用のカテゴリ候補。
+   * フォールバック評価の「不足画像カテゴリ」と、既に登録済みのカテゴリを
+   * 統合し、重複を除いて順を保つ。よく使うカテゴリを1タップで入力できる。
+   */
+  const quickPicks = React.useMemo(() => {
+    const seen = new Set<string>();
+    const list: string[] = [];
+    for (const c of categoryOptions) {
+      const trimmed = c.trim();
+      if (trimmed && !seen.has(trimmed)) {
+        seen.add(trimmed);
+        list.push(trimmed);
+      }
+    }
+    for (const a of assets) {
+      const trimmed = a.category.trim();
+      if (trimmed && !seen.has(trimmed)) {
+        seen.add(trimmed);
+        list.push(trimmed);
+      }
+    }
+    return list;
+  }, [categoryOptions, assets]);
 
   /** API を呼び、戻ってきたレジストリで一覧を同期する */
   const mutate = React.useCallback(
@@ -132,6 +160,20 @@ export function FallbackAssetTracker({
     await mutate({ action: "replace", assetId });
   };
 
+  /**
+   * 実物を一括で受領したときなど、仮画像（generated）をすべて
+   * 「差し替え済み」にする。サーバーのレジストリを都度同期する。
+   */
+  const handleReplaceAll = async () => {
+    const pendingIds = assets
+      .filter((a) => a.status === "generated")
+      .map((a) => a.id);
+    for (const id of pendingIds) {
+      const ok = await mutate({ action: "replace", assetId: id });
+      if (!ok) break;
+    }
+  };
+
   const handleRemove = async (assetId: string) => {
     await mutate({ action: "remove", assetId });
   };
@@ -164,6 +206,32 @@ export function FallbackAssetTracker({
         onSubmit={handleAdd}
         className="mt-4 grid gap-3 sm:grid-cols-2"
       >
+        {quickPicks.length > 0 && (
+          <div className="sm:col-span-2">
+            <p className="mb-1 text-[11px] font-bold text-muted-foreground">
+              クイック選択（カテゴリ）
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {quickPicks.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => {
+                    setCategory(c);
+                    suffixRef.current?.focus();
+                  }}
+                  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                    category === c
+                      ? "border-rose-400 bg-rose-100 text-rose-800"
+                      : "border-border bg-white text-foreground hover:border-rose-300 hover:bg-rose-50"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div>
           <label className="mb-1 block text-xs font-bold text-foreground">
             カテゴリ
@@ -190,6 +258,7 @@ export function FallbackAssetTracker({
               {prefix}
             </span>
             <input
+              ref={suffixRef}
               value={suffix}
               onChange={(e) => setSuffix(e.target.value)}
               placeholder="hero.png"
@@ -225,6 +294,21 @@ export function FallbackAssetTracker({
           )}
         </div>
       </form>
+
+      {/* 一括差し替え（実物をまとめて受領したとき用） */}
+      {pending.length > 0 && (
+        <div className="mt-4 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={handleReplaceAll}
+            disabled={busy}
+            className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            仮画像をすべて差し替え済みにする（{pending.length}件）
+          </button>
+        </div>
+      )}
 
       {/* 資産一覧 */}
       {assets.length === 0 ? (
