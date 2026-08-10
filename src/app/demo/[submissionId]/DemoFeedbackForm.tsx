@@ -7,23 +7,13 @@ import {
   MessageSquare,
   CheckCircle2,
   Link2,
+  PencilLine,
 } from "lucide-react";
+import { DEMO_SECTION_OPTIONS } from "@/lib/demo-sections";
 
 interface DemoFeedbackFormProps {
   submissionId: string;
 }
-
-const SECTION_OPTIONS = [
-  { id: "header", name: "헤더 / 네비게이션" },
-  { id: "hero", name: "메인 비주얼 / 히어로" },
-  { id: "trust", name: "신뢰요소 / 강점 소개" },
-  { id: "services", name: "서비스 / 제품 소개" },
-  { id: "content", name: "본문 콘텐츠 / 문구" },
-  { id: "cta", name: "문의 유도 / CTA" },
-  { id: "footer", name: "푸터 / 연락처" },
-] as const;
-
-type SectionOption = (typeof SECTION_OPTIONS)[number];
 
 interface FeedbackState {
   rating: number;
@@ -53,6 +43,12 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
     message: "",
   });
   const [isPending, startTransition] = useTransition();
+
+  // 選択中の修正対象セクション（ライブサマリ表示用）
+  const selectedSections = DEMO_SECTION_OPTIONS.filter((section) =>
+    feedback.selectedSectionIds.includes(section.id)
+  );
+  const selectedCount = selectedSections.length;
 
   const handleRatingChange = (rating: number) => {
     setFeedback((prev) => ({ ...prev, rating }));
@@ -93,7 +89,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
   };
 
   const buildPayload = (action: "approve" | "revision") => {
-    const selectedSections = SECTION_OPTIONS.filter((section) =>
+    const selectedSectionsPayload = DEMO_SECTION_OPTIONS.filter((section) =>
       feedback.selectedSectionIds.includes(section.id)
     ).map((section) => ({
       sectionId: section.id,
@@ -110,7 +106,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       action,
       rating: feedback.rating,
       comment: feedback.comment.trim(),
-      sections: selectedSections,
+      sections: selectedSectionsPayload,
       referenceImages,
     };
   };
@@ -119,7 +115,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
     if (feedback.rating === 0) {
       setFormState({
         status: "error",
-        message: "평가를 선택해 주세요",
+        message: "全体の評価（星）を選択してください。",
       });
       return;
     }
@@ -138,7 +134,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       setFormState({
         status: "error",
         message:
-          "수정 요청 시에는 전체 코멘트, 수정할 요소 선택, 요소별 메모, 참고 이미지 URL 중 하나 이상 입력해 주세요",
+          "修正依頼の場合は、全体コメント・修正する箇所の選択・箇所ごとのメモ・参考画像URLのいずれかを入力してください。",
       });
       return;
     }
@@ -164,8 +160,8 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           status: "success",
           message:
             action === "approve"
-              ? "ご承認ありがとうございます。制作に進みます。"
-              : "요소별 피드백을 접수했습니다. 수정 후 다시 안내드리겠습니다.",
+              ? "ご承認ありがとうございます。このまま制作に進みます。"
+              : "修正のご要望を受け付けました。修正後に改めてご案内します。",
         });
       } catch {
         setFormState({
@@ -196,8 +192,31 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         デモをご確認いただき、ありがとうございます。
       </h3>
       <p className="mb-6 text-center text-sm text-amber-800">
-        전체 승인뿐 아니라, 요소별 수정 요청과 참고 이미지 URL도 함께 남길 수 있습니다.
+        ご確認後、以下のどちらかの方法でご回答をお願いします。
       </p>
+
+      {/* 2つの回答モードの説明（全体承認 vs 箇所別修正） */}
+      <div className="mb-6 space-y-2 rounded-2xl border border-amber-200 bg-white/70 p-4 text-sm text-amber-900">
+        <p className="font-semibold">ご回答はどちらでも構いません</p>
+        <ul className="space-y-1.5">
+          <li className="flex items-start gap-2">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+            <span>
+              全体で問題なければ「<b>このまま進める</b>」で承認してください。
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <PencilLine className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <span>
+              直したい箇所があれば、下で<b>該当箇所を選んで</b>「
+              <b>選択した箇所を修正依頼</b>」を押してください。
+              <span className="text-amber-700">
+                （選んでいない箇所は、そのまま承認扱いで進みます）
+              </span>
+            </span>
+          </li>
+        </ul>
+      </div>
 
       <div className="mb-6">
         <label className="mb-2 block text-sm font-medium text-amber-900">
@@ -230,7 +249,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           htmlFor="comment"
           className="mb-2 block text-sm font-medium text-amber-900"
         >
-          전체 의견 / 요청사항
+          全体のご意見 / ご要望
         </label>
         <textarea
           id="comment"
@@ -240,7 +259,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           rows={4}
           maxLength={1000}
           className="w-full rounded-lg border-amber-200 bg-white px-4 py-3 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
-          placeholder="전체적으로 수정하고 싶은 점이나 방향성을 적어 주세요"
+          placeholder="全体的に修正したい点や、進め方のご希望があればご記入ください"
         />
         <p className="mt-1 text-xs text-amber-600">
           {feedback.comment.length}/1000文字
@@ -248,17 +267,31 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       </div>
 
       <div className="mb-6 rounded-2xl border border-amber-200 bg-white/80 p-4">
-        <div className="mb-3">
-          <p className="text-sm font-semibold text-amber-900">수정하고 싶은 요소 선택</p>
-          <p className="mt-1 text-xs text-amber-700">
-            헤더, 메인, 푸터 등 원하는 부분만 골라서 피드백할 수 있습니다.
-          </p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold text-amber-900">
+              修正したい箇所を選択
+            </p>
+            <p className="mt-1 text-xs text-amber-700">
+              ヘッダー・メインビジュアル・フッターなど、気になる部分だけを選んで、箇所ごとにメモを残せます。
+            </p>
+          </div>
+          {selectedCount > 0 && (
+            <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+              {selectedCount}件 選択中
+            </span>
+          )}
         </div>
         <div className="space-y-3">
-          {SECTION_OPTIONS.map((section) => {
+          {DEMO_SECTION_OPTIONS.map((section) => {
             const checked = feedback.selectedSectionIds.includes(section.id);
             return (
-              <div key={section.id} className="rounded-xl border border-amber-100 bg-white p-3">
+              <div
+                key={section.id}
+                className={`rounded-xl border bg-white p-3 transition ${
+                  checked ? "border-amber-400 ring-1 ring-amber-300" : "border-amber-100"
+                }`}
+              >
                 <label className="flex items-start gap-3">
                   <input
                     type="checkbox"
@@ -268,7 +301,14 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
                     className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-amber-950">{section.name}</div>
+                    <div className="text-sm font-medium text-amber-950">
+                      {section.name}
+                      {checked && (
+                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                          修正対象
+                        </span>
+                      )}
+                    </div>
                     <div className="mt-2">
                       <textarea
                         value={feedback.sectionFeedback[section.id] ?? ""}
@@ -279,7 +319,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
                         rows={2}
                         maxLength={400}
                         className="w-full rounded-lg border-amber-200 bg-white px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder={`${section.name}에서 수정할 점을 적어 주세요`}
+                        placeholder={`${section.name}の修正したい点をご記入ください`}
                       />
                     </div>
                   </div>
@@ -296,7 +336,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           className="mb-2 flex items-center gap-2 text-sm font-medium text-amber-900"
         >
           <Link2 className="h-4 w-4" />
-          참고 이미지 / 스크린샷 URL
+          参考画像 / スクリーンショット URL
         </label>
         <textarea
           id="referenceImageUrls"
@@ -305,10 +345,10 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           disabled={isSubmitting}
           rows={3}
           className="w-full rounded-lg border-amber-200 bg-white px-4 py-3 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
-          placeholder="https://... 형식으로 한 줄에 하나씩 넣어 주세요"
+          placeholder="https://... 形式で1行に1つずつご入力ください"
         />
         <p className="mt-1 text-xs text-amber-700">
-          예: 참고 사이트 스크린샷, 원하는 레이아웃 이미지, 컬러 레퍼런스 등
+          例: 参考サイトのスクリーンショット、ご希望のレイアウト画像、カラーの参考など
         </p>
       </div>
 
@@ -318,24 +358,44 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </div>
       )}
 
+      {/* 修正対象の確認サマリ（選択中のときだけ表示） */}
+      {selectedCount > 0 && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-100/70 p-3 text-sm text-amber-900">
+          <p className="font-semibold">
+            修正対象（{selectedCount}件）:{" "}
+            <span className="font-normal">
+              {selectedSections.map((s) => s.name).join("、")}
+            </span>
+          </p>
+          <p className="mt-1 text-xs text-amber-700">
+            上記以外の箇所は、そのまま承認扱いで制作に進みます。
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
           type="button"
           onClick={() => handleSubmit("approve")}
           disabled={isSubmitting || feedback.rating === 0}
-          className="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ThumbsUp className="h-4 w-4" />
-          このまま進めてください
+          このまま進める（すべて承認）
         </button>
         <button
           type="button"
           onClick={() => handleSubmit("revision")}
           disabled={isSubmitting || feedback.rating === 0}
-          className="flex items-center justify-center gap-2 rounded-full border border-amber-400 bg-white px-6 py-3 font-medium text-amber-900 transition-all hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-amber-400 bg-white px-6 py-3 font-medium text-amber-900 transition-all hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <MessageSquare className="h-4 w-4" />
-          요소별 수정 요청 보내기
+          選択した箇所を修正依頼
+          {selectedCount > 0 && (
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">
+              {selectedCount}
+            </span>
+          )}
         </button>
       </div>
 

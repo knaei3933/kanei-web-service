@@ -16,6 +16,11 @@ import {
   imageFallbackStatusLabel,
   type ImageFallbackAssessment,
 } from "@/lib/image-fallback";
+import {
+  readDemoFeedbackHistory,
+  type DemoFeedbackHistory,
+} from "@/lib/demo-feedback-loop";
+import { DEMO_SECTION_OPTIONS, demoSectionName } from "@/lib/demo-sections";
 import { FollowupEditForm } from "./FollowupEditForm";
 
 interface ReviewPageProps {
@@ -899,6 +904,194 @@ function ImageFallbackSection({ fb }: { fb: ImageFallbackAssessment }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  デモフィードバック サマリ（内部専用・セクション別）                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 顧客がデモページから送信した修正要望（セクション単位）を、内部確認用に
+ * まとめる。最新ラウンドの評価・コメント・セクション別の修正/承認内訳・
+ * 参考画像URL・修正ラウンド履歴を一目で分かるようにする。
+ *
+ * データは demo-feedback.json（demo-feedback-loop が管理）。承認（approve）
+ * は履歴に追記されないため、履歴の各エントリは「修正要望」ラウンド。
+ * したがって「セクションが選択されている＝修正依頼」「選択されていない＝
+ * 修正対象外（承認相当）」として内訳を表示する。
+ *
+ * 内部専用。顧客向け画面・メールには一切出さない。
+ */
+function DemoFeedbackReviewSection({
+  history,
+}: {
+  history: DemoFeedbackHistory;
+}) {
+  const latest = history.latest;
+  if (!latest) return null;
+
+  const entries = history.history;
+  const latestRound =
+    entries.length > 0 ? entries[entries.length - 1].round : null;
+
+  const flagged = latest.sections ?? [];
+  const flaggedIds = new Set(flagged.map((s) => s.sectionId));
+  const approvedSections = DEMO_SECTION_OPTIONS.filter(
+    (s) => !flaggedIds.has(s.id)
+  );
+
+  return (
+    <Section
+      title="デモフィードバック サマリ（内部専用）"
+      badge={
+        <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800">
+          ⚠ 顧客非公開
+        </span>
+      }
+    >
+      <div className="rounded-2xl border border-border bg-accent p-4 text-sm leading-relaxed text-muted-foreground">
+        顧客がデモページから送信した修正要望（セクション単位）の内部確認用サマリです。
+        どのセクションが修正依頼で、どのセクションが承認相当かを把握してください。
+        顧客向け画面・メールには出しません。
+      </div>
+
+      {/* サマリスタッツ（最新ラウンド・評価・送信日時） */}
+      <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl bg-accent p-4">
+          <p className="text-xs font-bold text-muted-foreground">最新ラウンド</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {latestRound !== null ? `${latestRound} 回目の修正依頼` : "—"}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-accent p-4">
+          <p className="text-xs font-bold text-muted-foreground">最新の全体評価</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            <span className="text-amber-500">★</span> {latest.rating} / 5
+          </p>
+        </div>
+        <div className="rounded-2xl bg-accent p-4">
+          <p className="text-xs font-bold text-muted-foreground">送信日時</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {latest.submittedAt || "不明"}
+          </p>
+        </div>
+      </div>
+
+      {/* 全体コメント */}
+      <div className="mt-5">
+        <p className="mb-2 text-sm font-bold text-foreground">最新の全体コメント</p>
+        {latest.comment ? (
+          <p className="whitespace-pre-wrap rounded-2xl bg-accent p-4 text-sm leading-relaxed text-foreground">
+            {latest.comment}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">（全体コメントなし）</p>
+        )}
+      </div>
+
+      {/* セクション別の 修正依頼 / 承認相当 の内訳 */}
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <div>
+          <p className="mb-2 text-sm font-bold text-rose-700">
+            修正依頼あり（{flagged.length}件）
+          </p>
+          {flagged.length === 0 ? (
+            <p className="text-sm text-muted-foreground">該当なし</p>
+          ) : (
+            <ul className="space-y-2">
+              {flagged.map((s) => (
+                <li
+                  key={s.sectionId}
+                  className="rounded-2xl border border-rose-200 bg-rose-50 p-3"
+                >
+                  <p className="text-sm font-semibold text-rose-900">
+                    {demoSectionName(s.sectionId, s.sectionName)}
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-rose-800/90">
+                    {s.feedback
+                      ? s.feedback
+                      : "（箇所のみ指定・詳細コメントなし）"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-bold text-emerald-700">
+            修正対象外（{approvedSections.length}件・承認相当）
+          </p>
+          {approvedSections.length === 0 ? (
+            <p className="text-sm text-muted-foreground">該当なし</p>
+          ) : (
+            <ul className="flex flex-wrap gap-2">
+              {approvedSections.map((s) => (
+                <li
+                  key={s.id}
+                  className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
+                >
+                  {s.name}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            顧客が修正対象として選択しなかった箇所です。特に修正を求めていない＝
+            承認相当と解釈できます。
+          </p>
+        </div>
+      </div>
+
+      {/* 参考画像 URL */}
+      {(latest.referenceImages?.length ?? 0) > 0 && (
+        <div className="mt-5">
+          <p className="mb-2 text-sm font-bold text-foreground">
+            参考画像 / スクリーンショット URL
+          </p>
+          <ul className="space-y-1 text-sm">
+            {latest.referenceImages!.map((url) => (
+              <li key={url} className="break-all">
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline hover:opacity-80"
+                >
+                  {url}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 修正ラウンド履歴 */}
+      {entries.length > 0 && (
+        <div className="mt-5">
+          <p className="mb-2 text-sm font-bold text-foreground">
+            修正ラウンド履歴（{entries.length}件）
+          </p>
+          <ul className="space-y-1 text-xs text-muted-foreground">
+            {entries.map((e) => (
+              <li key={e.round} className="rounded-xl bg-accent px-3 py-2">
+                <span className="font-semibold text-foreground">
+                  {e.round} 回目
+                </span>
+                {" / "}
+                <span className="text-amber-600">
+                  ★ {e.feedback.rating}
+                </span>
+                {" / "}
+                <span>{e.submittedAt}</span>
+                {" / "}
+                <span>修正依頼 {e.feedback.sections?.length ?? 0} 件</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  フォローアップの繰り返しループ進捗（needs_followup 時に表示）         */
 /* ------------------------------------------------------------------ */
 
@@ -964,6 +1157,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   const executionPromptMarkdown = pkg.executionHandoff
     ? await readExecutionPromptMarkdown(submissionId)
     : null;
+
+  // デモフィードバック履歴（demo-feedback.json）を読み込む。
+  // 顧客がデモページから修正要望を送った履歴。存在すれば内部レビュー用にサマリ表示。
+  // ステータスによらず過去のフィードバックを確認できるよう、常に読み込みを試みる。
+  const demoFeedbackHistory = await readDemoFeedbackHistory(submissionId);
 
   // needs_followup のとき、顧客が再編集できるように submission.json のペイロードを読み込む
   let initialPayload: Record<string, unknown> = {};
@@ -1199,6 +1397,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
           {/* AI画像フォールバック方針（内部専用・Phase D 評価の可視化） */}
           {pkg.imageFallback && <ImageFallbackSection fb={pkg.imageFallback} />}
+
+          {/* デモフィードバック サマリ（内部専用・Phase F セクション別承認状況） */}
+          {demoFeedbackHistory?.latest && (
+            <DemoFeedbackReviewSection history={demoFeedbackHistory} />
+          )}
 
           <Section title="内部プロンプトチェーン（代表専用）">
             <div className="space-y-4">
