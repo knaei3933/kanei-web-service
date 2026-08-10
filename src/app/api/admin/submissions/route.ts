@@ -191,39 +191,41 @@ export async function GET(request: Request): Promise<Response> {
     ? await listRelaySubmissionIds()
     : listLocalSubmissionIds();
 
-  const items: SubmissionListItem[] = [];
+  const items = (
+    await Promise.all(
+      ids.map(async (id): Promise<SubmissionListItem | null> => {
+        // approval-package.json を読めない submission は一覧から除外
+        const approval = await readApprovalObject(id);
+        if (approval === null) return null;
 
-  for (const id of ids) {
-    // approval-package.json を読めない submission は一覧から除外
-    const approval = await readApprovalObject(id);
-    if (approval === null) continue;
+        const status = asString(approval.status);
+        const receivedAt = asString(approval.receivedAt);
+        const intakeQuality = asObject(approval.intakeQuality);
+        const score =
+          typeof intakeQuality.score === "number" ? intakeQuality.score : 0;
 
-    const status = asString(approval.status);
-    const receivedAt = asString(approval.receivedAt);
-    const intakeQuality = asObject(approval.intakeQuality);
-    const score =
-      typeof intakeQuality.score === "number" ? intakeQuality.score : 0;
+        // companyName / businessType は submission.json から直接取得
+        const { companyName: directCompanyName, businessType } =
+          await readSubmissionFields(id);
 
-    // companyName / businessType は submission.json から直接取得
-    const { companyName: directCompanyName, businessType } =
-      await readSubmissionFields(id);
+        // companyName が submission.json に無ければ businessSummary で補完
+        let companyName = directCompanyName;
+        if (!companyName) {
+          const reviewSummary = asObject(approval.reviewSummary);
+          companyName = asString(reviewSummary.businessSummary);
+        }
 
-    // companyName が submission.json に無ければ businessSummary で補完
-    let companyName = directCompanyName;
-    if (!companyName) {
-      const reviewSummary = asObject(approval.reviewSummary);
-      companyName = asString(reviewSummary.businessSummary);
-    }
-
-    items.push({
-      id,
-      status,
-      companyName,
-      receivedAt,
-      score,
-      businessType,
-    });
-  }
+        return {
+          id,
+          status,
+          companyName,
+          receivedAt,
+          score,
+          businessType,
+        };
+      })
+    )
+  ).filter((item): item is SubmissionListItem => item !== null);
 
   // receivedAt 降順（新しいものが先）
   items.sort((a, b) => {

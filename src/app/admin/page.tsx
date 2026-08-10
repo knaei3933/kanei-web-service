@@ -209,9 +209,10 @@ function RouteAccessPanel({ submissionId, status }: { submissionId: string; stat
           </div>
           <span className="shrink-0 text-xs font-semibold">{primary.available ? "열기 →" : "준비중"}</span>
         </div>
-        <div className="mt-2 rounded-lg bg-white/70 px-2 py-1 font-mono text-[11px] text-slate-700">
-          {primary.shortPath}
-        </div>
+        <details className="mt-2 rounded-lg bg-white/70 px-2 py-1 text-[11px] text-slate-700">
+          <summary className="cursor-pointer select-none font-medium text-slate-600">경로 보기</summary>
+          <div className="mt-1 font-mono">{primary.shortPath}</div>
+        </details>
       </a>
 
       <div className="mt-2 grid gap-2">
@@ -225,7 +226,11 @@ function RouteAccessPanel({ submissionId, status }: { submissionId: string; stat
             <div className="font-semibold">{l.label}</div>
             <div className="mt-0.5 text-[11px] opacity-80">{l.description}</div>
             {l.availabilityNote ? <div className="mt-1 text-[11px] font-medium opacity-90">{l.availabilityNote}</div> : null}
-            <div className="mt-1 font-mono opacity-90">{l.shortPath}</div>
+            <div className="mt-1 text-[11px] font-medium opacity-90">클릭해서 열기</div>
+            <details className="mt-1 rounded bg-white/60 px-2 py-1 text-slate-700">
+              <summary className="cursor-pointer select-none text-[11px] font-medium text-slate-600">경로 보기</summary>
+              <div className="mt-1 font-mono text-[11px] opacity-90">{l.shortPath}</div>
+            </details>
           </a>
         ))}
       </div>
