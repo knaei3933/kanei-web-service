@@ -23,6 +23,8 @@
 import type { ConsultIntakeQuality } from "./consult-quality";
 import type { PromptStagePreview } from "./prompt-chain";
 import { buildPromptChainPreview } from "./prompt-chain";
+import { getMonetUseCase } from "@/generated/monet-catalog";
+import { resolveUseCaseKey } from "@/lib/proposal";
 import {
   writeArtifact,
   readArtifact,
@@ -381,6 +383,55 @@ export function approvalPackagePathFor(submissionId: string): string {
 /** 計画アーティファクト（omc-plan.json）の表示用パス */
 export function planningArtifactPathFor(submissionId: string): string {
   return artifactDisplayPath(submissionId, "omc-plan.json");
+}
+
+function extractBusinessTypeFromSummary(summary: string): string {
+  const match = summary.match(/事業種=([^/]+)/);
+  return match?.[1]?.trim() ?? "";
+}
+
+function buildMonetExecutionNotes(
+  pkg: ApprovalPackage,
+  plan: PlanningArtifact
+): string[] {
+  const businessType = extractBusinessTypeFromSummary(
+    pkg.reviewSummary.businessSummary
+  );
+  const useCase = getMonetUseCase(resolveUseCaseKey(businessType));
+  const lines: string[] = [];
+
+  lines.push("## Monet コンポーネント対応付け");
+  lines.push(`- 業種 추정: ${businessType || "未入力"}`);
+  lines.push(`- Monet use case: ${useCase.label} (${useCase.key})`);
+  lines.push(`- 構成方針: ${useCase.description}`);
+  if (useCase.referencePages.length > 0) {
+    lines.push(
+      `- 参考ページ候補: ${useCase.referencePages
+        .slice(0, 3)
+        .map((page) => `${page.title} <${page.sourceUrl}>`)
+        .join(" / ")}`
+    );
+  }
+  lines.push("");
+  lines.push("## セクション別 実行プロンプト（内部用）");
+  useCase.recommendedStructure.slice(0, 6).forEach((slot, index) => {
+    lines.push(`### ${index + 1}. ${slot.slot}`);
+    lines.push(`- 目的: ${slot.rationale}`);
+    lines.push(`- 카테고리: ${slot.category}`);
+    if (slot.section) {
+      lines.push(
+        `- Monet 候補: ${slot.section.title} (${slot.section.id}) / ${slot.section.componentPath}`
+      );
+    } else {
+      lines.push("- Monet 候補: 該当なし（カスタム実装前提）");
+    }
+    lines.push(
+      `- 実行指示: ${plan.briefSnapshot.targetUserSummary || "想定顧客"} を意識し、${slot.slot} をこの submission 専用に実装する。必須掲載事項（${plan.briefSnapshot.mustInclude.join("・") || "未整理"}）と整合し、参考サイトの表現はそのまま複製せず、日本語の自然な商談導線に再構成する。`
+    );
+    lines.push("");
+  });
+
+  return lines;
 }
 
 /** 実行プロンプト（execution-prompt.md）の表示用パス */
@@ -1203,6 +1254,10 @@ export function buildExecutionPromptMarkdown(
     lines.push(`- 参考サイト: ${plan.briefSnapshot.referenceUrls.join("・")}`);
   }
   lines.push("");
+
+  for (const note of buildMonetExecutionNotes(pkg, plan)) {
+    lines.push(note);
+  }
   if (plan.prerequisites.length > 0) {
     lines.push("## 実行前に確認する前提");
     for (const p of plan.prerequisites) lines.push(`- ${p}`);
