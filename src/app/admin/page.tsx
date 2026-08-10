@@ -10,6 +10,7 @@ import {
   type AdminFilterKey,
 } from "@/lib/admin-navigation";
 import { RouteAccessList } from "@/components/admin/RouteAccessList";
+import { isSafeInternalPath } from "@/lib/admin-return-to";
 
 type Submission = {
   id: string;
@@ -331,6 +332,9 @@ export default function AdminListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<AdminFilterKey>("all");
+  // ログイン成功後に戻るべき元のパス（/admin/[id] から送られた場合）。
+  // URL の returnTo クエリから取り出し、isSafeInternalPath で検証してから使う。
+  const [returnTo, setReturnTo] = useState<string | null>(null);
 
   // デフォルトの表示順（優先度ティア → 新着順）を一度だけ適用する。
   // フィルタ（タブ・KPI）はこの順序を保ったまま絞り込むため、
@@ -369,12 +373,31 @@ export default function AdminListPage() {
   useEffect(() => {
     const secret = typeof window !== "undefined" ? sessionStorage.getItem("admin_secret") : null;
     if (secret) setAuthed(true);
+    // 元のページへ戻るための returnTo を URL から取り出す。
+    // 外部 URL やプロトコル相対 URL は後段（isSafeInternalPath）で弾く。
+    if (typeof window !== "undefined") {
+      const candidate = new URLSearchParams(window.location.search).get("returnTo");
+      if (candidate) setReturnTo(candidate);
+    }
   }, []);
+
+  // すでに認証済みの状態で /admin?returnTo=... を開いた場合（例: 別タブで既ログイン）、
+  // ログイン画面を経由せずに元のページへ復帰させる。
+  useEffect(() => {
+    if (authed && returnTo && isSafeInternalPath(returnTo)) {
+      router.replace(returnTo);
+    }
+  }, [authed, returnTo, router]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!password.trim()) return;
     sessionStorage.setItem("admin_secret", password.trim());
+    // 安全な returnTo があれば元のページへ戻す。なければ従来通り /admin 一覧を表示。
+    if (returnTo && isSafeInternalPath(returnTo)) {
+      router.replace(returnTo);
+      return;
+    }
     setAuthed(true);
   };
 

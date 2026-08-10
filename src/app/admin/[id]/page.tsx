@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { RouteAccessList } from "@/components/admin/RouteAccessList";
 import { Gate3ChecklistCard } from "@/components/gate3/Gate3ChecklistCard";
+import { buildLoginUrlWithReturn } from "@/lib/admin-return-to";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -296,7 +297,13 @@ export default function AdminDetailPage() {
   useEffect(() => {
     const secret = sessionStorage.getItem("admin_secret");
     if (!secret) {
-      router.replace("/admin");
+      // 未認証: 元のパス（クエリ文字列を含む）を保持してログイン画面へ送る。
+      // window.location はクライアントでのみ参照できるため SSR を避ける。
+      const currentPathWithSearch =
+        typeof window !== "undefined"
+          ? window.location.pathname + window.location.search
+          : "/admin";
+      router.replace(buildLoginUrlWithReturn(currentPathWithSearch));
       return;
     }
     if (!id) {
