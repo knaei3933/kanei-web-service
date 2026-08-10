@@ -86,6 +86,64 @@ function statusTone(status: ApprovalStatus): string {
   }
 }
 
+function isDemoVisibleStatus(status: ApprovalStatus): boolean {
+  return [
+    "demo_deployed",
+    "demo_revised",
+    "customer_approved",
+    "pre_production_interview",
+    "pre_production_review",
+    "production_ready",
+    "delivered",
+  ].includes(status);
+}
+
+function isExecutionVisibleStatus(status: ApprovalStatus): boolean {
+  return [
+    "approved_for_execution",
+    "demo_generating",
+    "demo_deployed",
+    "demo_revision_ready",
+    "demo_revised",
+    "customer_approved",
+    "pre_production_interview",
+    "pre_production_review",
+    "production_ready",
+    "delivered",
+  ].includes(status);
+}
+
+function reviewRouteGuidance(status: ApprovalStatus): {
+  title: string;
+  body: string;
+  toneClass: string;
+} {
+  if (isDemoVisibleStatus(status)) {
+    return {
+      title: "実際のデモホームページを開けます",
+      body:
+        "この案件は実デモが生成済みです。お客様確認用は /demo/[submissionId] を開き、内部確認用は /execution/[submissionId] を使ってください。",
+      toneClass: "border-emerald-200 bg-emerald-50 text-emerald-900",
+    };
+  }
+
+  if (isExecutionVisibleStatus(status)) {
+    return {
+      title: "まだ実デモは未生成です",
+      body:
+        "この段階では /demo/[submissionId] はまだ開けません。まず確認すべきページは内部プレビュー /execution/[submissionId] です。",
+      toneClass: "border-violet-200 bg-violet-50 text-violet-900",
+    };
+  }
+
+  return {
+    title: "まだデモ制作前の段階です",
+    body:
+      "この案件はレビュー・承認段階のため、実デモも内部プレビューもまだ主対象ではありません。まずこの review 画面と admin 画面で承認を進めてください。",
+    toneClass: "border-amber-200 bg-amber-50 text-amber-900",
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /*  表示用小物パーツ                                                    */
 /* ------------------------------------------------------------------ */
@@ -811,6 +869,12 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   const isApproved = pkg.status === "approved_for_execution";
   const isRejected = pkg.status === "rejected";
   const isNeedsFollowup = pkg.status === "needs_followup";
+  const demoUrl = `/demo/${pkg.submissionId}`;
+  const executionUrl = `/execution/${pkg.submissionId}`;
+  const adminUrl = `/admin/${pkg.submissionId}`;
+  const canOpenDemo = isDemoVisibleStatus(pkg.status);
+  const canOpenExecution = isExecutionVisibleStatus(pkg.status);
+  const routeGuidance = reviewRouteGuidance(pkg.status);
 
   // 添付ファイルを表示優先度（画像 → PDF → テキスト → その他）で並び替える
   const sortedAttachments: AttachmentFile[] = [
@@ -842,6 +906,40 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             {statusLabel(pkg.status)}
           </div>
         </div>
+
+        <section className={`mb-6 rounded-3xl border p-6 shadow-sm ${routeGuidance.toneClass}`}>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-wide opacity-80">現在どこを見ればよいか</p>
+              <h2 className="mt-2 text-xl font-bold">{routeGuidance.title}</h2>
+              <p className="mt-2 text-sm leading-relaxed opacity-90">{routeGuidance.body}</p>
+            </div>
+            <Link
+              href={adminUrl}
+              className="inline-flex items-center justify-center rounded-xl border border-current/20 bg-white/70 px-4 py-2 text-sm font-semibold transition hover:bg-white"
+            >
+              管理画面を開く →
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-current/15 bg-white/70 p-4">
+              <p className="text-xs font-bold opacity-70">レビュー画面</p>
+              <p className="mt-1 text-sm font-semibold">常時確認可能</p>
+              <p className="mt-2 break-all font-mono text-xs">/review/{pkg.submissionId}</p>
+            </div>
+            <div className="rounded-2xl border border-current/15 bg-white/70 p-4">
+              <p className="text-xs font-bold opacity-70">内部プレビュー</p>
+              <p className="mt-1 text-sm font-semibold">{canOpenExecution ? "現在開けます" : "まだ主対象外です"}</p>
+              <p className="mt-2 break-all font-mono text-xs">{executionUrl}</p>
+            </div>
+            <div className="rounded-2xl border border-current/15 bg-white/70 p-4">
+              <p className="text-xs font-bold opacity-70">実際のデモホームページ</p>
+              <p className="mt-1 text-sm font-semibold">{canOpenDemo ? "現在開けます" : "まだ未生成で開けません"}</p>
+              <p className="mt-2 break-all font-mono text-xs">{demoUrl}</p>
+            </div>
+          </div>
+        </section>
 
         <div className="grid gap-6">
           <Section title="概要">
