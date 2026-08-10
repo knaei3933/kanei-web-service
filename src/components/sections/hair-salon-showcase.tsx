@@ -19,7 +19,7 @@ const SALON_INFO = {
   email: "（メールアドレスは現在準備中です）",
   address: "長野県長野市〇〇（詳細住所は現在準備中です）",
   access: "長野駅徒歩8分",
-  parking: "駐車場情報は現在確認中です",
+  parking: "駐車場情報は現在準備中です",
   businessHours: "10:00〜19:00（木曜定休）",
   reservation: "完全予約制",
 };
@@ -264,7 +264,7 @@ export default function HairSalonShowcase() {
               </h1>
 
               <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-                長野駅徒歩8分。働くママがサクッと寄れる距感感の近いサロン。
+                長野駅徒歩8分。働くママがサクッと寄れる、距離感の近いサロン。
                 <br />
                 全スタッフ1級資格保持。オーガニック製品のみ使用。
               </p>
@@ -633,7 +633,7 @@ export default function HairSalonShowcase() {
               アクセス・地図
             </h2>
             <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
-              長野駅徒歩8分。駐車場情報は現在確認中です。
+              長野駅徒歩8分。駐車場情報は現在準備中です。
             </p>
           </div>
 
@@ -755,7 +755,7 @@ export default function HairSalonShowcase() {
                 Instagram掲載内容を反映予定
               </p>
               <p className="text-xs text-white/70 mt-1">
-                Instagramアカウント情報は準備中です
+                Instagramアカウント情報は現在準備中です
               </p>
             </motion.div>
           </div>

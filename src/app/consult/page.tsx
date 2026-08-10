@@ -359,8 +359,6 @@ const createEmptyRefSite = (id: string): ReferenceSite => ({
 
 const INITIAL_REFERENCE_SITES: ReferenceSite[] = [
   createEmptyRefSite("ref-1"),
-  createEmptyRefSite("ref-2"),
-  createEmptyRefSite("ref-3"),
 ];
 
 const INITIAL_DATA: FormData = {
@@ -1007,7 +1005,7 @@ export default function ConsultPage() {
   const [submitted, setSubmitted] = useState(false);
 
   /* 参考サイト追加用のIDカウンタ */
-  const refIdCounter = useRef(3);
+  const refIdCounter = useRef(1);
 
   /* 素材追加用のIDカウンタ */
   const attachmentIdCounter = useRef(0);
@@ -1172,32 +1170,44 @@ export default function ConsultPage() {
   };
 
   /* ---- バリデーション ---- */
-  const isValid = useMemo(() => {
+  // 未入力の必須項目を一覧で返す。isValid はこの配列から派生させるので、
+  // バリデーション判定と送信ボタン下の案内が絶対にずれない（二重管理しない）。
+  const missingRequirements = useMemo<string[]>(() => {
+    const items: string[] = [];
     // Step 1
-    if (!data.businessType.trim()) return false;
-    if (!data.companyName.trim()) return false;
+    if (!data.businessType.trim()) items.push("事業種");
+    if (!data.companyName.trim()) items.push("事業体名");
     // Step 2（チェックボックス or 自由入力があれば有効）
-    if (!data.targetCustomer.trim() && targetCheckboxes.length === 0) return false;
-    if (!data.sellingPoints.trim() && strengthCheckboxes.length === 0) return false;
-    if (!data.mustIncludeInfo.trim() && infoCheckboxes.length === 0) return false;
+    if (!data.targetCustomer.trim() && targetCheckboxes.length === 0)
+      items.push("ターゲット・理想のお客様");
+    if (!data.sellingPoints.trim() && strengthCheckboxes.length === 0)
+      items.push("強み・差別化ポイント");
+    if (!data.mustIncludeInfo.trim() && infoCheckboxes.length === 0)
+      items.push("必ず載せたい情報");
     // Step 3
-    if (!data.desiredImage.trim()) return false;
+    if (!data.desiredImage.trim()) items.push("伝えたいイメージ");
     // Step 4
-    if (data.sitePurpose.length === 0) return false;
-    if (data.sitePurpose.includes("その他") && !data.sitePurposeOther.trim())
-      return false;
-    if (data.features.length === 0) return false;
-    if (data.features.includes("その他") && !data.featuresOther.trim())
-      return false;
-    if (!data.timing) return false;
+    if (data.sitePurpose.length === 0) {
+      items.push("サイトの主な目的");
+    } else if (data.sitePurpose.includes("その他") && !data.sitePurposeOther.trim()) {
+      items.push("サイトの主な目的（その他）");
+    }
+    if (data.features.length === 0) {
+      items.push("必要なページ・機能");
+    } else if (data.features.includes("その他") && !data.featuresOther.trim()) {
+      items.push("必要なページ・機能（その他）");
+    }
+    if (!data.timing) items.push("公開希望時期");
     // Step 5
-    if (!data.budget) return false;
+    if (!data.budget) items.push("ご予算の目安");
     // Step 7
-    if (!data.name.trim()) return false;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return false;
-    if (!data.phone.trim()) return false;
-    return true;
+    if (!data.name.trim()) items.push("お名前");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) items.push("メールアドレス");
+    if (!data.phone.trim()) items.push("電話番号");
+    return items;
   }, [data, targetCheckboxes, strengthCheckboxes, infoCheckboxes]);
+
+  const isValid = missingRequirements.length === 0;
 
   /* ---- 送信 ---- */
   const handleSubmit = async (e: React.FormEvent) => {
@@ -2523,9 +2533,25 @@ export default function ConsultPage() {
               </p>
             )}
             {!isValid && (
-              <p className="text-center text-sm text-muted-foreground">
-                必須項目（<span className="text-red-500">*</span>）をすべてご入力いただくと送信できます。
-              </p>
+              <div className="w-full max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left">
+                <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  あと{missingRequirements.length}項目で送信できます
+                </p>
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {missingRequirements.map((item) => (
+                    <li
+                      key={item}
+                      className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200"
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-amber-700/80">
+                  必須項目（<span className="font-bold">*</span>）をすべてご入力いただくと送信できます。
+                </p>
+              </div>
             )}
             <p className="text-center text-xs text-muted-foreground">
               ご入力いただいた情報は、ご提案の目的でのみ使用いたします。

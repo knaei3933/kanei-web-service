@@ -21,6 +21,9 @@ type Submission = {
   businessType: string;
 };
 
+/** 認証の状態。保存された secret は API で検証するまで信用しない。 */
+type AuthStatus = "checking" | "unauthed" | "authed";
+
 const STATUS_LABELS: Record<string, string> = {
   received: "受領済み",
   needs_followup: "追加情報待ち",
@@ -326,7 +329,14 @@ function KpiSummary({
 
 export default function AdminListPage() {
   const router = useRouter();
-  const [authed, setAuthed] = useState(false);
+  // 保存された secret は API で検証するまで認証済みとみなさない。
+  // "checking" の間はログインフォームもダッシュボードも出さず、
+  // 無効な認証でダッシュボードが一瞬見える（フラッシュする）のを防ぐ。
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
+  // ログイン画面に表示する認証エラー（無効なパスワード・セッション切れなど）。
+  const [authError, setAuthError] = useState<string | null>(null);
+  // ログイン送信中（ボタン無効化・二重送信防止）。
+  const [loggingIn, setLoggingIn] = useState(false);
   const [password, setPassword] = useState("");
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(false);
@@ -370,98 +380,180 @@ export default function AdminListPage() {
     [sortedSubmissions, activeFilter],
   );
 
+  /**
+   * 保存された secret を信用せず、/api/admin/submissions で都度検証する。
+   * 成功なら一覧を取得して "ok"、認証エラー(401)なら "unauthorized"、
+   * 通信エラーなら "error" を返す。エラー表示は呼び出し元で切り替える。
+   */
+  const loadSubmissions = useCallback(
+    async (token: string): Promise<"ok" | "unauthorized" | "error"> => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/admin/submissions", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.status === 401) return "unauthorized";
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setSubmissions(data.submissions ?? []);
+        return "ok";
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "取得に失敗しました");
+        return "error";
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // セッションを破棄してログイン画面へ戻す（無効な認証・セッション切れの共通処理）。
+  const backToLogin = useCallback((message: string) => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("admin_secret");
+    }
+    setSubmissions([]);
+    setAuthError(message);
+    setAuthStatus("unauthed");
+  }, []);
+
+  // 初回マウント: sessionStorage に secret があっても即認証とはみなさず、
+  // API で検証してからダッシュボードを表示する。無効ならログイン画面へ戻す。
   useEffect(() => {
-    const secret = typeof window !== "undefined" ? sessionStorage.getItem("admin_secret") : null;
-    if (secret) setAuthed(true);
+    const secret =
+      typeof window !== "undefined" ? sessionStorage.getItem("admin_secret") : null;
     // 元のページへ戻るための returnTo を URL から取り出す。
     // 外部 URL やプロトコル相対 URL は後段（isSafeInternalPath）で弾く。
-    if (typeof window !== "undefined") {
-      const candidate = new URLSearchParams(window.location.search).get("returnTo");
-      if (candidate) setReturnTo(candidate);
-    }
-  }, []);
+    const candidate =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("returnTo")
+        : null;
+    if (candidate) setReturnTo(candidate);
 
-  // すでに認証済みの状態で /admin?returnTo=... を開いた場合（例: 別タブで既ログイン）、
-  // ログイン画面を経由せずに元のページへ復帰させる。
-  useEffect(() => {
-    if (authed && returnTo && isSafeInternalPath(returnTo)) {
-      router.replace(returnTo);
-    }
-  }, [authed, returnTo, router]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!password.trim()) return;
-    sessionStorage.setItem("admin_secret", password.trim());
-    // 安全な returnTo があれば元のページへ戻す。なければ従来通り /admin 一覧を表示。
-    if (returnTo && isSafeInternalPath(returnTo)) {
-      router.replace(returnTo);
+    if (!secret) {
+      setAuthStatus("unauthed");
       return;
     }
-    setAuthed(true);
+
+    let cancelled = false;
+    loadSubmissions(secret).then((outcome) => {
+      if (cancelled) return;
+      if (outcome === "ok") {
+        // 有効な認証: 安全な returnTo があれば元のページへ復帰。
+        if (candidate && isSafeInternalPath(candidate)) {
+          router.replace(candidate);
+          return;
+        }
+        setAuthStatus("authed");
+      } else {
+        backToLogin(
+          outcome === "unauthorized"
+            ? "認証に失敗しました。管理者パスワードをご確認ください。"
+            : "認証情報の確認中にエラーが発生しました。もう一度入力してください。",
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadSubmissions, backToLogin, router]);
+
+  // ログイン送信: 入力されたパスワードを API で検証し、成功時のみ secret を保存する。
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = password.trim();
+    if (!trimmed || loggingIn) return;
+    setAuthError(null);
+    setLoggingIn(true);
+    const outcome = await loadSubmissions(trimmed);
+    if (outcome === "ok") {
+      sessionStorage.setItem("admin_secret", trimmed);
+      setPassword("");
+      // 安全な returnTo があれば元のページへ戻す。なければ従来通り /admin 一覧を表示。
+      if (returnTo && isSafeInternalPath(returnTo)) {
+        router.replace(returnTo);
+        return;
+      }
+      setAuthStatus("authed");
+    } else if (outcome === "unauthorized") {
+      setAuthError("認証に失敗しました。管理者パスワードをご確認ください。");
+    } else {
+      setAuthError("認証情報の確認中にエラーが発生しました。もう一度入力してください。");
+    }
+    setLoggingIn(false);
   };
 
+  // 認証後の再取得（アクション成功後のリフレッシュ）。セッション切れはログインへ戻す。
   const fetchSubmissions = useCallback(async () => {
-    const token = sessionStorage.getItem("admin_secret");
-    if (!token) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/submissions", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      setSubmissions(data.submissions ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "取得に失敗しました");
-    } finally {
-      setLoading(false);
+    const token =
+      typeof window !== "undefined" ? sessionStorage.getItem("admin_secret") : null;
+    if (!token) {
+      backToLogin("認証に失敗しました。管理者パスワードをご確認ください。");
+      return;
     }
-  }, []);
+    const outcome = await loadSubmissions(token);
+    if (outcome === "unauthorized") {
+      backToLogin("認証に失敗しました。管理者パスワードをご確認ください。");
+    }
+  }, [loadSubmissions, backToLogin]);
 
-  useEffect(() => {
-    if (authed) fetchSubmissions();
-  }, [authed, fetchSubmissions]);
+  // 認証確認中: 保存された secret を API で検証している間はフォームもダッシュボードも
+  // 出さず、無効な認証でダッシュボードが一瞬見える（フラッシュする）のを防ぐ。
+  if (authStatus === "checking") {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center px-4 py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+      </main>
+    );
+  }
 
   // Login gate
-  if (!authed) {
+  if (authStatus === "unauthed") {
     return (
-      <>
-        
-        <main className="flex min-h-[60vh] items-center justify-center px-4 py-12">
-          <div className="w-full max-w-sm">
-            <form
-              onSubmit={handleLogin}
-              className="rounded-3xl border border-border bg-white p-8 shadow-sm"
+      <main className="flex min-h-[60vh] items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm">
+          <form
+            onSubmit={handleLogin}
+            className="rounded-3xl border border-border bg-white p-8 shadow-sm"
+          >
+            <h1 className="mb-6 text-center text-xl font-bold text-foreground">
+              管理者ログイン
+            </h1>
+            {authError && (
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                {authError}
+              </div>
+            )}
+            <label className="mb-2 block text-sm font-medium text-muted-foreground">
+              管理者パスワード
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mb-4 w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              placeholder="パスワードを入力"
+              autoFocus
+              disabled={loggingIn}
+            />
+            <button
+              type="submit"
+              disabled={loggingIn}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <h1 className="mb-6 text-center text-xl font-bold text-foreground">
-                管理者ログイン
-              </h1>
-              <label className="mb-2 block text-sm font-medium text-muted-foreground">
-                管理者パスワード
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mb-4 w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                placeholder="パスワードを入力"
-                autoFocus
-              />
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
-              >
-                ログイン
-              </button>
-            </form>
-          </div>
-        </main>
-        
-      </>
+              {loggingIn ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  認証中...
+                </>
+              ) : (
+                "ログイン"
+              )}
+            </button>
+          </form>
+        </div>
+      </main>
     );
   }
 
