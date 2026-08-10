@@ -4,6 +4,7 @@ import {
   isSafeSubmissionId,
   isSafeAttachmentName,
 } from "@/server/submission-storage";
+import { readAiFallbackAssets } from "@/lib/ai-fallback-assets";
 
 /* ------------------------------------------------------------------ */
 /*  /api/consult/[submissionId]/attachments/[savedName]                 */
@@ -23,8 +24,11 @@ import {
 /*      - local/ephemeral : filesystem（data/ または /tmp）から直接読む    */
 /*      - relay           : リレープロキシ経由で上流（WSL）から読む         */
 /*                                                                      */
-/*    content-type とダウンロード時のファイル名は submission.json の       */
-/*    メタデータ（type / originalName）から復元する。                     */
+/*    content-type とダウンロード時のファイル名は、2種類のメタデータ       */
+/*    から復元する（savedName がどちらに属するかで切り替え）:             */
+/*      - 顧客アップロード分 : submission.json の files（type/originalName）*/
+/*      - オペレータ生成分   : ai-fallback-assets.json レジストリ            */
+/*        （contentType/originalName・Phase Q）                             */
 /*                                                                      */
 /*  ※ 顧客向けには一切公開しない（内部専用）。                            */
 /* ------------------------------------------------------------------ */
@@ -42,10 +46,27 @@ interface StoredFileMeta {
 }
 
 /**
- * submission.json を読み、savedName に合致する添付メタデータを探す。
- * 取得できなくてもダウンロード自体は可能なので、見つからなければ null。
+ * savedName に合致する添付メタデータを探し、content-type とオリジナル
+ * ファイル名を復元する。取得できなくてもダウンロード自体は可能なので、
+ * 見つからなければ null。
+ *
+ * 顧客アップロード分（submission.json の files）を先に探し、無ければ
+ * オペレータ生成の AIフォールバック資産レジストリ（ai-fallback-assets.json）
+ * を探す。Phase Q で追加したバイナリアップロード資産は後者にだけ記録される。
  */
 async function findFileMeta(
+  submissionId: string,
+  savedName: string
+): Promise<{ originalName: string; contentType: string } | null> {
+  const fromSubmission = await findFileMetaFromSubmission(submissionId, savedName);
+  if (fromSubmission) return fromSubmission;
+  return findFileMetaFromFallback(submissionId, savedName);
+}
+
+/**
+ * submission.json の files から顧客アップロード分のメタデータを探す。
+ */
+async function findFileMetaFromSubmission(
   submissionId: string,
   savedName: string
 ): Promise<{ originalName: string; contentType: string } | null> {
@@ -76,6 +97,31 @@ async function findFileMeta(
     }
   }
   return null;
+}
+
+/**
+ * AIフォールバック資産レジストリ（ai-fallback-assets.json）から、
+ * オペレータ生成分のメタデータを探す（Phase Q）。
+ * レジストリの contentType / originalName をプレビューの content-type 復元に使う。
+ */
+async function findFileMetaFromFallback(
+  submissionId: string,
+  savedName: string
+): Promise<{ originalName: string; contentType: string } | null> {
+  const registry = await readAiFallbackAssets(submissionId);
+  if (!registry) return null;
+  const asset = registry.assets.find((a) => a.savedName === savedName);
+  if (!asset) return null;
+  return {
+    originalName:
+      typeof asset.originalName === "string" && asset.originalName.length > 0
+        ? asset.originalName
+        : savedName,
+    contentType:
+      typeof asset.contentType === "string" && asset.contentType.length > 0
+        ? asset.contentType
+        : "application/octet-stream",
+  };
 }
 
 /**

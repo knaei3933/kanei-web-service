@@ -23,6 +23,10 @@ import {
   type AiFallbackAsset,
 } from "@/lib/ai-fallback-assets";
 import {
+  fallbackAssetHref,
+  isInlineImageContentType,
+} from "@/lib/ai-fallback-asset-links";
+import {
   readDemoFeedbackHistory,
   type DemoFeedbackHistory,
 } from "@/lib/demo-feedback-loop";
@@ -891,9 +895,11 @@ function PreProductionSection({ pkg }: { pkg: ApprovalPackage }) {
  */
 function ImageFallbackSection({
   fb,
+  submissionId,
   assets = [],
 }: {
   fb: ImageFallbackAssessment;
+  submissionId: string;
   assets?: AiFallbackAsset[];
 }) {
   const isNeeded = fb.status !== "not_needed";
@@ -969,36 +975,102 @@ function ImageFallbackSection({
             </p>
           </div>
           <ul className="space-y-2">
-            {assets.map((asset) => (
-              <li
-                key={asset.id}
-                className="rounded-2xl border border-border bg-white p-3 text-sm"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
-                      asset.status === "replaced"
-                        ? "border-emerald-200 bg-emerald-100 text-emerald-800"
-                        : "border-amber-200 bg-amber-100 text-amber-800"
-                    }`}
-                  >
-                    {asset.status === "replaced" ? "差し替え済み" : "仮画像（差し替え待ち）"}
-                  </span>
-                  <span className="font-bold text-foreground">{asset.category}</span>
-                  <span className="font-mono text-[11px] text-muted-foreground">
-                    #{asset.id}
-                  </span>
-                </div>
-                <p className="mt-1 break-all font-mono text-xs text-foreground">
-                  {asset.savedName}
-                </p>
-                {asset.note && (
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {asset.note}
+            {assets.map((asset) => {
+              const hasBinary = Boolean(asset.contentType);
+              const previewHref = fallbackAssetHref(
+                submissionId,
+                asset.savedName,
+                "preview"
+              );
+              const downloadHref = fallbackAssetHref(
+                submissionId,
+                asset.savedName,
+                "download"
+              );
+              const inlineImage =
+                hasBinary && isInlineImageContentType(asset.contentType);
+              return (
+                <li
+                  key={asset.id}
+                  className="rounded-2xl border border-border bg-white p-3 text-sm"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+                        asset.status === "replaced"
+                          ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+                          : "border-amber-200 bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {asset.status === "replaced" ? "差し替え済み" : "仮画像（差し替え待ち）"}
+                    </span>
+                    <span className="font-bold text-foreground">{asset.category}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      #{asset.id}
+                    </span>
+                    {hasBinary && (
+                      <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700">
+                        {asset.contentType}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* インライン画像サムネイル（ブラウザ表示可能な画像のときだけ） */}
+                  {inlineImage && (
+                    <a
+                      href={previewHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 block overflow-hidden rounded-xl border border-border bg-slate-50"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={previewHref}
+                        alt={asset.originalName ?? asset.savedName}
+                        loading="lazy"
+                        decoding="async"
+                        className="max-h-40 w-full object-contain"
+                      />
+                    </a>
+                  )}
+
+                  <p className="mt-1 break-all font-mono text-xs text-foreground">
+                    {asset.savedName}
                   </p>
-                )}
-              </li>
-            ))}
+                  {asset.originalName && asset.originalName !== asset.savedName && (
+                    <p className="mt-0.5 break-all text-[11px] text-muted-foreground">
+                      元ファイル名: {asset.originalName}
+                    </p>
+                  )}
+                  {asset.note && (
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {asset.note}
+                    </p>
+                  )}
+
+                  {/* プレビュー/ダウンロード（バイナリ本体がある資産だけ） */}
+                  {hasBinary && (
+                    <div className="mt-2 flex flex-wrap gap-3 text-xs">
+                      <a
+                        href={previewHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-primary underline hover:opacity-80"
+                      >
+                        プレビュー（別タブ）
+                      </a>
+                      <a
+                        href={downloadHref}
+                        download
+                        className="font-medium text-primary underline hover:opacity-80"
+                      >
+                        ダウンロード
+                      </a>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -1933,7 +2005,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
           {/* AI画像フォールバック方針（内部専用・Phase D 評価の可視化） */}
           {pkg.imageFallback && (
-            <ImageFallbackSection fb={pkg.imageFallback} assets={fallbackAssets} />
+            <ImageFallbackSection
+              fb={pkg.imageFallback}
+              submissionId={pkg.submissionId}
+              assets={fallbackAssets}
+            />
           )}
 
           {/* デモフィードバック サマリ（内部専用・Phase F セクション別承認状況） */}

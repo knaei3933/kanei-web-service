@@ -58,6 +58,17 @@ export interface AiFallbackAsset {
   replacedAt?: string;
   /** 自由備考（任意・差し替え先ファイル名やメモ等） */
   note?: string;
+  /**
+   * 保存したバイナリの MIME タイプ（任意）。
+   * アップロード経路でバイナリ本体も保存したときだけ入る。
+   * プレビュー（インライン表示）で content-type を復元するために使う。
+   */
+  contentType?: string;
+  /**
+   * オペレータがアップロードした元のファイル名（任意）。
+   * ダウンロード時のファイル名復元や、保存名との対応確認に使う。
+   */
+  originalName?: string;
 }
 
 /**
@@ -80,6 +91,10 @@ export interface AiFallbackAssetInput {
   category: string;
   savedName: string;
   note?: string;
+  /** バイナリ本体も保存したときの MIME タイプ（任意） */
+  contentType?: string;
+  /** オペレータがアップロードした元のファイル名（任意） */
+  originalName?: string;
 }
 
 /** 現在のスキーマバージョン */
@@ -150,6 +165,14 @@ function normalizeRegistry(
       ...(typeof a.replacedAt === "string" ? { replacedAt: a.replacedAt } : {}),
       ...(typeof a.note === "string" && a.note.length > 0
         ? { note: a.note }
+        : {}),
+      // Phase Q: バイナリ本体も保存した資産向けのプレビュー用メタデータ。
+      // 古いエントリ（pre-Phase-Q）には無い項目なので、文字列のときだけ復元する。
+      ...(typeof a.contentType === "string" && a.contentType.length > 0
+        ? { contentType: a.contentType }
+        : {}),
+      ...(typeof a.originalName === "string" && a.originalName.length > 0
+        ? { originalName: a.originalName }
         : {}),
     });
   }
@@ -228,6 +251,15 @@ export async function appendAiFallbackAsset(
   }
 
   const note = input.note ? clampText(input.note, 1000) : undefined;
+  // MIME タイプ・元ファイル名は任意。プレビュー/ダウンロードの復元に使う。
+  const contentType =
+    typeof input.contentType === "string" && input.contentType.length > 0
+      ? input.contentType.trim().slice(0, 255)
+      : undefined;
+  const originalName =
+    typeof input.originalName === "string" && input.originalName.length > 0
+      ? clampText(input.originalName, 255)
+      : undefined;
 
   const existing = (await readAiFallbackAssets(submissionId)) ?? emptyRegistry(submissionId);
 
@@ -240,6 +272,8 @@ export async function appendAiFallbackAsset(
     status: "generated",
     createdAt: new Date().toISOString(),
     ...(note ? { note } : {}),
+    ...(contentType ? { contentType } : {}),
+    ...(originalName ? { originalName } : {}),
   };
 
   existing.assets.push(asset);
@@ -321,3 +355,9 @@ export async function removeAiFallbackAsset(
 
   return registry;
 }
+
+// プレビュー/ダウンロード用 href ヘルパ（Phase Q）は、サーバー専用依存を含まない
+// 純粋なヘルパのため client-safe モジュールへ分離した:
+//   @/lib/ai-fallback-asset-links （fallbackAssetHref / isInlineImageContentType /
+//   AiFallbackAssetHrefMode）
+// クライアントコンポーネントから import すると node:fs 系がバンドルに混入するため。

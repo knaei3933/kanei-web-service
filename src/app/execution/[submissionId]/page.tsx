@@ -145,6 +145,9 @@ function ImageFallbackOperatorPanel({
   submissionId: string;
   fallbackAssets: AiFallbackAsset[];
 }) {
+  // フォールバック不要の案件では、生成ガイド（コマンド例・プロンプト等）を出さず、
+  // 「不要である」ことを正直に示す。登録済み資産の追跡レジストリは常時表示する。
+  const isNotNeeded = fb.status === "not_needed";
   return (
     <section className="border-t border-rose-200 bg-rose-50/40">
       <div className="mx-auto max-w-container px-4 py-10 sm:py-12">
@@ -157,9 +160,18 @@ function ImageFallbackOperatorPanel({
                 内部オペレータ専用の作業ガイド（顧客非公開）
               </p>
               <p className="mt-1 text-xs leading-relaxed">
-                このパネルは実装担当者向けです。サーバー（Vercel/serverless）からは画像生成を行いません。
-                ローカル環境のオペレータが codex で仮画像を生成し、実物受領後に差し替えます。
-                以下の内容は顧客向け画面・メールには絶対に出さないでください。
+                {isNotNeeded ? (
+                  <>
+                    この案件はAI仮画像フォールバックが<b>不要</b>です。顧客提供の写真・ロゴで画像は概ね足りています。
+                    画像生成は行わない前提ですが、予備として資産を登録した場合は下のレジストリで追跡できます。
+                  </>
+                ) : (
+                  <>
+                    このパネルは実装担当者向けです。サーバー（Vercel/serverless）からは画像生成を行いません。
+                    ローカル環境のオペレータが codex で仮画像を生成し、実物受領後に差し替えます。
+                    以下の内容は顧客向け画面・メールには絶対に出さないでください。
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -206,6 +218,9 @@ function ImageFallbackOperatorPanel({
           </div>
         )}
 
+        {/* 生成ガイド: フォールバック不要の案件では表示しない */}
+        {!isNotNeeded && (
+          <>
         {/* 生成優先順位 */}
         <div className="mt-8">
           <div className="flex items-center gap-2">
@@ -308,6 +323,8 @@ function ImageFallbackOperatorPanel({
 
         {/* オペレータ作業チェックリスト */}
         <OperatorChecklist prefix={fb.assetTraceability.prefix} />
+          </>
+        )}
 
         {/* 生成資産の追跡レジストリ（Phase H・内部オペレータ専用） */}
         {/* 生成した AI仮画像のメタデータをここに登録・追跡し、実物受領後に差し替え状態を更新する */}
@@ -501,8 +518,10 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
   // 画像生成そのものは serverless では行わず、ローカルオペレータが実行する前提。
   const approvalPackage = await readApprovalPackage(submissionId);
   const imageFallback = approvalPackage?.imageFallback ?? null;
-  const showFallbackPanel =
-    imageFallback !== null && imageFallback.status !== "not_needed";
+  // フォールバック評価が存在すれば必ずパネルを出す（not_needed 含む）。
+  // not_needed のときはパネル内で「フォールバック不要」と正直に表示し、
+  // 生成ガイド（コマンド例等）は省く。登録済み資産は常に見せる。
+  const showFallbackPanel = imageFallback !== null;
 
   // 生成資産の追跡レジストリ（ai-fallback-assets.json）を読み込む。
   // オペレータが登録した AI仮画像のメタデータ一覧。存在しなければ空。
