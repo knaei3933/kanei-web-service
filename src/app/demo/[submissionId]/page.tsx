@@ -9,12 +9,6 @@ import { SHOWCASE_MAP } from "@/lib/showcase-map";
 
 interface DemoPageProps {
   params: Promise<{ submissionId: string }> | { submissionId: string };
-  "20260808-123604-e6663cd3": {
-    loader: () =>
-      import("@/components/sections/hair-salon-showcase").then((m) => ({ default: m.default })),
-    enterpriseName: "HAIR SALON TANAKA",
-    businessType: "",
-  },
 }
 
 // デモ未生成時のプレースホルダーコンポーネント
