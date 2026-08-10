@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getAdminRouteLinks } from "@/lib/admin-navigation";
+import { RouteAccessList } from "@/components/admin/RouteAccessList";
 import { Gate3ChecklistCard } from "@/components/gate3/Gate3ChecklistCard";
 
 /* ------------------------------------------------------------------ */
@@ -892,78 +892,9 @@ export default function AdminDetailPage() {
         </div>
       </section>
 
-      {/* ---- 홈페이지 접근 주소 ---- */}
+      {/* ---- アクセス先 ---- */}
       <nav className="rounded-2xl border border-border bg-white p-4 shadow-sm">
-        {(() => {
-          const routeLinks = getAdminRouteLinks(apStatus, id);
-          const primary = routeLinks.find((link) => link.primary) ?? routeLinks[0];
-          const toneClass: Record<string, string> = {
-            neutral: "border-slate-200 bg-slate-50 text-slate-700",
-            review: "border-indigo-200 bg-indigo-50 text-indigo-700",
-            demo: "border-sky-200 bg-sky-50 text-sky-700",
-            execution: "border-violet-200 bg-violet-50 text-violet-700",
-            interview: "border-emerald-200 bg-emerald-50 text-emerald-700",
-          };
-
-          return (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    홈페이지 접근 주소
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">
-                    현재 단계에서 먼저 확인할 주소와 관련 내부 주소를 함께 표시합니다.
-                  </p>
-                </div>
-                <span className="text-xs text-muted-foreground">submission: {id}</span>
-              </div>
-
-              <Link
-                href={primary.available ? primary.href : "#"}
-                aria-disabled={!primary.available}
-                className={`block rounded-2xl border px-4 py-3 transition ${primary.available ? "hover:opacity-90" : "cursor-not-allowed opacity-70"} ${toneClass[primary.tone]}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold">지금 먼저 볼 페이지</p>
-                    <p className="mt-1 text-sm font-bold">{primary.label}</p>
-                    <p className="mt-1 text-xs opacity-80">{primary.description}</p>
-                    {primary.availabilityNote ? (
-                      <p className="mt-1 text-xs font-medium opacity-90">{primary.availabilityNote}</p>
-                    ) : null}
-                  </div>
-                  <span className="shrink-0 text-xs font-semibold">{primary.available ? "열기 →" : "준비중"}</span>
-                </div>
-                <div className="mt-3 rounded-lg bg-white/70 px-3 py-2 font-mono text-xs text-slate-700">
-                  {primary.shortPath}
-                </div>
-              </Link>
-
-              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {routeLinks
-                  .filter((link) => !link.primary)
-                  .map((link) => (
-                    <Link
-                      key={link.key}
-                      href={link.available ? link.href : "#"}
-                      aria-disabled={!link.available}
-                      className={`rounded-xl border px-3 py-3 transition ${link.available ? "hover:opacity-90" : "cursor-not-allowed opacity-70"} ${toneClass[link.tone]}`}
-                    >
-                      <p className="text-xs font-semibold">{link.label}</p>
-                      <p className="mt-1 text-[11px] opacity-80">{link.description}</p>
-                      {link.availabilityNote ? (
-                        <p className="mt-1 text-[11px] font-medium opacity-90">{link.availabilityNote}</p>
-                      ) : null}
-                      <div className="mt-2 rounded-lg bg-white/70 px-2 py-1 font-mono text-[11px] text-slate-700">
-                        {link.shortPath}
-                      </div>
-                    </Link>
-                  ))}
-              </div>
-            </div>
-          );
-        })()}
+        <RouteAccessList submissionId={id} status={apStatus} showHeader />
       </nav>
 
       {/* ---- Customer info ---- */}

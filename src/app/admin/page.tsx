@@ -6,12 +6,10 @@ import {
   ADMIN_FILTER_GROUPS,
   filterSubmissionsByStatus,
   getAdminPriorityTier,
-  getAdminRouteLinks,
-  getAdminQuickLinkStyle,
-  getAdminQuickLinks,
   sortSubmissionsByPriority,
   type AdminFilterKey,
 } from "@/lib/admin-navigation";
+import { RouteAccessList } from "@/components/admin/RouteAccessList";
 
 type Submission = {
   id: string;
@@ -166,76 +164,6 @@ function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) 
   }
 
   return <span className="text-xs text-muted-foreground">-</span>;
-}
-
-/**
- * 各ページへジャンプするためのコンパクトなクイックリンク。
- * プライマリアクション（ActionCell）とは別のナビゲーションエリアとして表示する。
- * ステータスに応じた可用性ルールは getAdminQuickLinks に集約している。
- */
-function RouteAccessPanel({ submissionId, status }: { submissionId: string; status: string }) {
-  const links = getAdminRouteLinks(status, submissionId);
-  const primary = links.find((link) => link.primary) ?? links[0];
-
-  const toneClass: Record<string, string> = {
-    neutral: "border-slate-200 bg-slate-50 text-slate-700",
-    review: "border-indigo-200 bg-indigo-50 text-indigo-700",
-    demo: "border-sky-200 bg-sky-50 text-sky-700",
-    execution: "border-violet-200 bg-violet-50 text-violet-700",
-    interview: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  };
-
-  return (
-    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-          홈페이지 접근 주소
-        </span>
-        <span className="text-[11px] text-slate-400">submission: {submissionId}</span>
-      </div>
-
-      <a
-        href={primary.available ? primary.href : "#"}
-        aria-disabled={!primary.available}
-        className={`block rounded-xl border px-3 py-2.5 transition ${primary.available ? "hover:opacity-90" : "cursor-not-allowed opacity-70"} ${toneClass[primary.tone]}`}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-xs font-semibold">지금 먼저 볼 페이지: {primary.label}</div>
-            <div className="mt-0.5 text-[11px] opacity-80">{primary.description}</div>
-            {primary.availabilityNote ? (
-              <div className="mt-1 text-[11px] font-medium opacity-90">{primary.availabilityNote}</div>
-            ) : null}
-          </div>
-          <span className="shrink-0 text-xs font-semibold">{primary.available ? "열기 →" : "준비중"}</span>
-        </div>
-        <details className="mt-2 rounded-lg bg-white/70 px-2 py-1 text-[11px] text-slate-700">
-          <summary className="cursor-pointer select-none font-medium text-slate-600">경로 보기</summary>
-          <div className="mt-1 font-mono">{primary.shortPath}</div>
-        </details>
-      </a>
-
-      <div className="mt-2 grid gap-2">
-        {links.map((l) => (
-          <a
-            key={l.key}
-            href={l.available ? l.href : "#"}
-            aria-disabled={!l.available}
-            className={`rounded-lg border px-2.5 py-2 text-[11px] transition ${l.primary ? "hidden" : "block"} ${l.available ? "hover:opacity-90" : "cursor-not-allowed opacity-70"} ${getAdminQuickLinkStyle(l.key)}`}
-          >
-            <div className="font-semibold">{l.label}</div>
-            <div className="mt-0.5 text-[11px] opacity-80">{l.description}</div>
-            {l.availabilityNote ? <div className="mt-1 text-[11px] font-medium opacity-90">{l.availabilityNote}</div> : null}
-            <div className="mt-1 text-[11px] font-medium opacity-90">클릭해서 열기</div>
-            <details className="mt-1 rounded bg-white/60 px-2 py-1 text-slate-700">
-              <summary className="cursor-pointer select-none text-[11px] font-medium text-slate-600">경로 보기</summary>
-              <div className="mt-1 font-mono text-[11px] opacity-90">{l.shortPath}</div>
-            </details>
-          </a>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 /**
@@ -567,7 +495,7 @@ export default function AdminListPage() {
                         <th className="px-6 py-4 font-medium">業種</th>
                         <th className="px-6 py-4 font-medium">品質スコア</th>
                         <th className="px-6 py-4 font-medium">状態</th>
-                        <th className="px-6 py-4 font-medium">操作 / 접근 주소</th>
+                        <th className="px-6 py-4 font-medium">操作 / アクセス先</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -606,7 +534,7 @@ export default function AdminListPage() {
                           <td className="px-6 py-4">
                             <div className="flex flex-col items-start gap-2">
                               <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
-                              <RouteAccessPanel submissionId={s.id} status={s.status} />
+                              <RouteAccessList submissionId={s.id} status={s.status} />
                             </div>
                           </td>
                         </tr>
@@ -640,7 +568,7 @@ export default function AdminListPage() {
                         <div className="flex justify-end">
                           <ActionCell submissionId={s.id} status={s.status} onActionSuccess={fetchSubmissions} />
                         </div>
-                        <RouteAccessPanel submissionId={s.id} status={s.status} />
+                        <RouteAccessList submissionId={s.id} status={s.status} />
                       </div>
                     </div>
                   ))}
