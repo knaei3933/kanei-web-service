@@ -407,7 +407,6 @@ export default function HairSalonShowcase() {
               </div>
               <h3 className="mb-2 text-sm font-semibold">駐車場</h3>
               <p className="text-sm text-muted-foreground">{SALON_INFO.parking}</p>
-              <p className="mt-1 text-xs text-stone-600">予約可</p>
             </motion.div>
           </div>
         </div>
@@ -634,7 +633,7 @@ export default function HairSalonShowcase() {
               アクセス・地図
             </h2>
             <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
-              長野駅徒歩8分。専用駐車場3台分をご用意しています。
+              長野駅徒歩8分。駐車場情報は現在確認中です。
             </p>
           </div>
 
@@ -665,9 +664,6 @@ export default function HairSalonShowcase() {
                   <MapPin className="h-5 w-5 text-stone-600" />
                   所在地
                 </h3>
-                <p className="mb-2 text-sm text-muted-foreground">
-                  〒380-0001
-                </p>
                 <p className="text-base font-semibold">
                   {SALON_INFO.address}
                 </p>
