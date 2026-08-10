@@ -107,15 +107,17 @@ async function prepareHandoff(
     const handoff = buildExecutionHandoff(pkg, plan);
     pkg.executionHandoff = handoff;
 
-    // プロンプトも生成
-    const { buildExecutionPromptMarkdown } = await import("@/lib/approval-package");
+    // プロンプトも生成（本文 + セクション別）
+    const { buildExecutionPromptMarkdown, buildExecutionSectionPromptsMarkdown } = await import("@/lib/approval-package");
     const promptMarkdown = buildExecutionPromptMarkdown(pkg, plan);
+    const sectionPromptsMarkdown = buildExecutionSectionPromptsMarkdown(pkg, plan);
 
     try {
       // ファイル書き出し
       const { writeArtifact } = await import("@/server/submission-storage");
       await writeArtifact(submissionId, "omc-plan.json" as any, JSON.stringify(plan, null, 2));
       await writeArtifact(submissionId, "execution-prompt.md" as any, promptMarkdown);
+      await writeArtifact(submissionId, "execution-section-prompts.md" as any, sectionPromptsMarkdown);
       await writeArtifact(submissionId, "execution-handoff.json" as any, JSON.stringify(handoff, null, 2));
 
       // パッケージ更新

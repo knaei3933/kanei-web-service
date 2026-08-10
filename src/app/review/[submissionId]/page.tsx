@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  buildExecutionSectionPromptsMarkdown,
   readApprovalPackage,
   readExecutionPromptMarkdown,
+  readExecutionSectionPromptsMarkdown,
   type ApprovalStatus,
   type ApprovalPackage,
   type PlanningArtifact,
@@ -594,9 +596,11 @@ function PlanningArtifactSection({ plan }: { plan: PlanningArtifact }) {
 function ExecutionHandoffSection({
   handoff,
   promptMarkdown,
+  sectionPromptsMarkdown,
 }: {
   handoff: ExecutionHandoff;
   promptMarkdown: string | null;
+  sectionPromptsMarkdown: string | null;
 }) {
   return (
     <Section
@@ -634,6 +638,14 @@ function ExecutionHandoffSection({
               <span className="text-muted-foreground">プロンプト: </span>
               <span className="font-mono text-foreground">{handoff.promptFilePath}</span>
             </li>
+            {handoff.sectionPromptsFilePath && (
+              <li className="break-all">
+                <span className="text-muted-foreground">セクション別プロンプト: </span>
+                <span className="font-mono text-foreground">
+                  {handoff.sectionPromptsFilePath}
+                </span>
+              </li>
+            )}
             <li className="break-all">
               <span className="text-muted-foreground">メタデータ: </span>
               <span className="font-mono text-foreground">{handoff.metadataFilePath}</span>
@@ -675,6 +687,21 @@ function ExecutionHandoffSection({
           </p>
           <pre className="max-h-[480px] overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-border bg-slate-50 p-4 text-xs leading-relaxed text-foreground">
 {promptMarkdown}
+          </pre>
+        </div>
+      )}
+
+      {sectionPromptsMarkdown && (
+        <div className="mt-5">
+          <p className="mb-2 text-sm font-bold text-foreground">
+            セクション別実行プロンプト（execution-section-prompts.md・Phase P・内部専用）
+          </p>
+          <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
+            execution-prompt.md を HEADER / HERO / SERVICES … のセクション単位に事前分割した作業ブロック。
+            オペレータは該当セクションを取り出して Claude Code に渡せます。
+          </p>
+          <pre className="max-h-[480px] overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-border bg-slate-50 p-4 text-xs leading-relaxed text-foreground">
+{sectionPromptsMarkdown}
           </pre>
         </div>
       )}
@@ -1642,6 +1669,21 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     ? await readExecutionPromptMarkdown(submissionId)
     : null;
 
+  // セクション別実行プロンプト（execution-section-prompts.md・Phase P・内部専用）も読み込む。
+  // execution-prompt.md をセクション単位に事前分割した作業ブロックで、
+  // ハンドオフ生成時に一緒に書き出される。不在時は null（ブロックを表示しない）。
+  //
+  // レガシー後方互換（pre-Phase-P）: Phase P より前に承認されたサブミッションは
+  // execution-handoff.json / execution-prompt.md のみで execution-section-prompts.md を持たない。
+  // ストレージ読み込みが null のとき、ハンドオフ＋計画アーティファクトが揃っていれば
+  // その場で markdown を合成して表示する。ストレージへの書き込みは一切行わない（読み取り専用フォールバック）。
+  const executionSectionPromptsMarkdown = pkg.executionHandoff
+    ? (await readExecutionSectionPromptsMarkdown(submissionId)) ??
+      (pkg.planningArtifact
+        ? buildExecutionSectionPromptsMarkdown(pkg, pkg.planningArtifact)
+        : null)
+    : null;
+
   // デモフィードバック履歴（demo-feedback.json）を読み込む。
   // 顧客がデモページから修正要望を送った履歴。存在すれば内部レビュー用にサマリ表示。
   // ステータスによらず過去のフィードバックを確認できるよう、常に読み込みを試みる。
@@ -1956,6 +1998,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             <ExecutionHandoffSection
               handoff={pkg.executionHandoff}
               promptMarkdown={executionPromptMarkdown}
+              sectionPromptsMarkdown={executionSectionPromptsMarkdown}
             />
           )}
 

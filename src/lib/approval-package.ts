@@ -29,6 +29,7 @@ import {
   assessImageFallback,
   type GenerationPriorityLevel,
   type ImageFallbackAssessment,
+  type ImageGenerationTarget,
 } from "./image-fallback";
 import {
   writeArtifact,
@@ -294,6 +295,8 @@ export interface ExecutionHandoff {
   claudeCommand: string;
   /** 実行プロンプトファイルの表示パス（submission フォルダ内） */
   promptFilePath: string;
+  /** セクション別実行プロンプトファイルの表示パス（execution-section-prompts.md・Phase P） */
+  sectionPromptsFilePath: string;
   /** ハンドオフメタデータファイルの表示パス */
   metadataFilePath: string;
   /** 計画アーティファクトファイルの表示パス */
@@ -519,6 +522,466 @@ function buildImageFallbackPromptLines(pkg: ApprovalPackage): string[] {
   lines.push("");
 
   return lines;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Phase P: セクション別実行プロンプト（execution-section-prompts.md）  */
+/* ------------------------------------------------------------------ */
+/*  execution-prompt.md が「1本の大きなプロンプト」なのに対し、こちらは    */
+/*  HEADER / HERO / SERVICES / TRUST / CTA / FOOTER / FAQ / ABOUT /     */
+/*  CONTACT / OTHER の10セクションに事前分割したコンパクトな作業ブロック。  */
+/*  オペレータはセクション単位でプロンプトを取り出して Claude Code に渡せる。 */
+/*  Phase Q として、画像フォールバックが必要なセクションに生成ヒントを埋め込む。 */
+/*  純粋関数・決定論的。顧客事実は briefSnapshot / imageFallback からのみ引き出す。 */
+/* ------------------------------------------------------------------ */
+
+/** セクション別実行プロンプトの1セクション定義（決定論的マスター） */
+interface ExecutionPromptSectionDef {
+  /** 大文字のセクションID（固定・変更不可） */
+  id: string;
+  /** 日本語表示名 */
+  name: string;
+  /** このセクションの目的（オペレータ向け） */
+  purpose: string;
+  /** briefSnapshot.mustInclude のうちこのセクションに関連する項目を抽出するキーワード */
+  mustIncludeKeywords: string[];
+  /** 画像生成の必要性（Phase Q）。true のとき imageFallback と突合して候補を埋め込む */
+  likelyNeedsImagery: boolean;
+  /** imageFallback.generationPriority[].category と突合するキーワード */
+  imageryKeywords: string[];
+  /** Monet useCase.recommendedStructure のスロットと突合するキーワード */
+  monetSlotKeywords: string[];
+  /** 実装指示（Claude Code / オペレータ向け） */
+  implementation: string;
+  /** 検証チェックリスト（オペレータが完了判定に使う） */
+  checklist: string[];
+}
+
+/**
+ * セクション別実行プロンプトのマスターリスト（10セクション）。
+ * id は出力の見出しキーとして使うため変更しない。
+ * 順序も表示順として扱う。
+ */
+const EXECUTION_PROMPT_SECTIONS: readonly ExecutionPromptSectionDef[] = [
+  {
+    id: "HEADER",
+    name: "ヘッダー / ナビゲーション",
+    purpose:
+      "サイト全体の回遊導線を作る。ロゴ・グローバルナビ・CTA ボタンを置き、どこに何があるかを一目で分からせる。",
+    mustIncludeKeywords: ["ナビ", "メニュー", "導線", "ロゴ", "屋号"],
+    likelyNeedsImagery: true,
+    imageryKeywords: ["ロゴ"],
+    monetSlotKeywords: ["ヘッダー", "ナビ", "header"],
+    implementation:
+      "ロゴ（提供がなければ PLACEHOLDER）と主要4〜6項目のナビを実装する。SP ではハンバーガーに折りたたむ。固定表示し、CTA ボタンの色は後続の CTA セクションと揃える。",
+    checklist: [
+      "ロゴが表示されている（提供logoまたはプレースホルダー）",
+      "ナビの主要項目がすべて含まれている",
+      "スマホでハンバーガーメニューが開く",
+      "ナビのリンク先が実在するセクションを指している",
+    ],
+  },
+  {
+    id: "HERO",
+    name: "メインビジュアル / ヒーロー",
+    purpose:
+      "訪問者の最初の3秒を獲得する。事業の核心メッセージとターゲットが一目で伝わるファーストビューを作る。",
+    mustIncludeKeywords: ["ビジュアル", "キャッチ", "ターゲット", "メッセージ", "スローガン", "コピー"],
+    likelyNeedsImagery: true,
+    imageryKeywords: ["メインビジュアル", "ヒーロー", "ファーストビュー", "バックグラウンド", "背景", "メイン"],
+    monetSlotKeywords: ["ヒーロー", "メインビジュアル", "hero", "ファーストビュー"],
+    implementation:
+      "H1＋サブコピー＋主CTA の3要素をファーストビューに収める。背景画像は画像フォールバック指示に従う。ターゲット表現は brief の targetUserSummary を反映し、参考サイトの表現をそのまま複製しない。",
+    checklist: [
+      "H1 に事業の核心が一言で入っている",
+      "サブコピーがターゲットの関心を示している",
+      "主CTA ボタンがファーストビュー内にある",
+      "背景画像の帰属（顧客提供/AI仮画像）が明確",
+    ],
+  },
+  {
+    id: "SERVICES",
+    name: "サービス / 商品紹介",
+    purpose:
+      "何を売っているか・なぜ選ぶべきかを具体例で伝える。料金・メニュー・施工例などで説得材料を並べる。",
+    mustIncludeKeywords: [
+      "サービス", "メニュー", "料金", "価格", "商品", "コース", "プラン",
+      "施工", "内容", "提供", "仕事", "対応", "取扱", "対応エリア",
+    ],
+    likelyNeedsImagery: true,
+    imageryKeywords: ["ギャラリー", "施工", "料理", "商品", "メニュー写真", "事例", "サービス"],
+    monetSlotKeywords: ["サービス", "商品", "メニュー", "料金", "service"],
+    implementation:
+      "サービスを3〜6のカードまたはリストで構成する。各項目に概要・価格・ポイントを載せる。画像が必要な場合は画像フォールバック指示のカテゴリと優先度に従う。mustInclude の料金・メニュー情報を取りこぼさない。",
+    checklist: [
+      "主要サービスがすべて掲載されている",
+      "料金・価格情報が必須掲載事項と整合している",
+      "各サービスに画像またはアイコンが添えられている",
+      "ターゲットにとってのベネフィットが書かれている",
+    ],
+  },
+  {
+    id: "TRUST",
+    name: "信頼要素 / 強み紹介",
+    purpose:
+      "実績・口コミ・資格で「ここに頼んで大丈夫」を示す。強みを根拠付きで並べる。",
+    mustIncludeKeywords: ["実績", "お客様の声", "口コミ", "認定", "資格", "許認可", "メディア", "受賞", "導入", "事例", "信頼", "評判", "年数", "経験"],
+    likelyNeedsImagery: true,
+    imageryKeywords: ["お客様の声", "実績", "口コミ"],
+    monetSlotKeywords: ["信頼", "実績", "強み", "口コミ", "お客様の声", "trust"],
+    implementation:
+      "強み（briefSnapshot.strengths）を見出し化し、数値・資格・口コミで裏付ける。口コミは提供がなければ構成せず、プレースホルダー領域だけ確保する（顧客事実を捏造しない）。",
+    checklist: [
+      "強みが3〜5項目で根拠付きで並んでいる",
+      "資格・許認可が該当分だけ掲載されている",
+      "口コミ領域の取り扱い（提供/未提供）が明確",
+      "実績数値が顧客事実のみに基づいている",
+    ],
+  },
+  {
+    id: "CTA",
+    name: "お問い合わせ誘導 / CTA",
+    purpose:
+      "次の行動（問い合わせ・予約・資料請求）を明確に促し、コンバージョン導線を作る。",
+    mustIncludeKeywords: ["問い合わせ", "お問い合わせ", "予約", "見積", "資料請求", "申し込み", "お申し込み", "来店", "応募", "無料", "相談", "お試し"],
+    likelyNeedsImagery: true,
+    imageryKeywords: ["バナー"],
+    monetSlotKeywords: ["CTA", "お問い合わせ", "予約", "コンタクト", "cta"],
+    implementation:
+      "主要アクションを1つに絞った CTA を複数箇所（ヒーロー下・サービス後・フッター前）に配置する。ボタン文言は必須掲載の導線と一致させる。参考サイトの表現は複製しない。",
+    checklist: [
+      "主要CTA がファーストビュー内に存在する",
+      "CTA 文言が必須導線（予約/見積 等）と一致している",
+      "ページ下部に追従または再掲されている",
+      "ボタンが目立ち・クリックできる状態にある",
+    ],
+  },
+  {
+    id: "FOOTER",
+    name: "フッター / 連絡先",
+    purpose:
+      "連絡先・営業時間・アクセス・SNSなど、最後に必要な情報を網羅し、導線を閉じる。",
+    mustIncludeKeywords: ["住所", "電話", "営業時間", "定休日", "アクセス", "SNS", "コピーライト", "会社名", "所在地", "代表"],
+    likelyNeedsImagery: false,
+    imageryKeywords: [],
+    monetSlotKeywords: ["フッター", "footer", "連絡先"],
+    implementation:
+      "住所・電話・営業時間・定休日・SNS リンクを構造化リストで並べる。コピーライト表記を入れる。これらは CONTACT/ABOUT と重複するため、フッターにはコンパクトな参照版を置く。",
+    checklist: [
+      "住所・電話・営業時間が正しく掲載されている",
+      "定休日が明示されている",
+      "SNS リンク（該当分）が含まれている",
+      "コピーライト表記がある",
+    ],
+  },
+  {
+    id: "FAQ",
+    name: "よくある質問 / FAQ",
+    purpose:
+      "顧客が買い手 jag前に抱える疑問を先回りして解消し、問い合わせの心理的ハードルを下げる。",
+    mustIncludeKeywords: ["よくある質問", "FAQ", "質問", "Q&A", "疑問"],
+    likelyNeedsImagery: false,
+    imageryKeywords: [],
+    monetSlotKeywords: ["FAQ", "質問", "よくある"],
+    implementation:
+      "mustInclude に質問が含まれていればアコーディオンで構成する。質問が顧客から提供されていない場合は、業種の汎用質問を推測掲載せず「質問が提供されていません」の空き領域を残す（捏造しない）。",
+    checklist: [
+      "提供された質問が漏れなく掲載されている",
+      "回答が日本語で自然に読める",
+      "アコーディオンの開閉が動作する",
+      "捏造した質問/回答が混入していない",
+    ],
+  },
+  {
+    id: "ABOUT",
+    name: "会社概要 / about",
+    purpose:
+      "誰が・どんな想いでやっているかを伝え、人格的信頼を作る。",
+    mustIncludeKeywords: ["会社概要", "代表", "沿革", "店舗", "スタッフ", "企業", "店紹介", "私たち", "理念", "代表挨拶", "設立"],
+    likelyNeedsImagery: true,
+    imageryKeywords: ["会社", "スタッフ", "店内", "店舗", "外観", "代表"],
+    monetSlotKeywords: ["会社概要", "about", "代表", "理念"],
+    implementation:
+      "代表挨拶・沿革・理念を mustInclude の範囲で構成する。スタッフ/店舗写真が必要な場合は画像フォールバック指示に従う。提供されていない事項は掲載しない。",
+    checklist: [
+      "会社概要の必須項目が掲載されている",
+      "代表挨拶/理念が提供範囲で反映されている",
+      "画像の帰属が明確",
+      "捏造した経歴/数値が混入していない",
+    ],
+  },
+  {
+    id: "CONTACT",
+    name: "お問い合わせ / contact",
+    purpose:
+      "問い合わせの受け口を作り、顧客が確実に連絡できる導線を完成させる。",
+    mustIncludeKeywords: ["電話", "メール", "お問い合わせ", "問い合わせ", "フォーム", "営業時間", "定休日", "住所", "アクセス", "LINE", "予約"],
+    likelyNeedsImagery: false,
+    imageryKeywords: [],
+    monetSlotKeywords: ["お問い合わせ", "コンタクト", "予約", "contact"],
+    implementation:
+      "電話番号・メール・営業時間・定休日・地図（アクセス）を並べる。フォームは必須項目を最小限にする。連絡先情報は必須掲載事項と一致させる。",
+    checklist: [
+      "電話・メールが正しく掲載されている",
+      "営業時間・定休日が明示されている",
+      "アクセス/地図が含まれている",
+      "フォーム（あれば）の必須項目が最小限",
+    ],
+  },
+  {
+    id: "OTHER",
+    name: "その他 / 残項目",
+    purpose:
+      "上記9セクションのいずれにも分類できなかった必須掲載事項を受け止める逃げ道。セクション構成に当てはまらない個別要件はここで扱う。",
+    mustIncludeKeywords: [],
+    likelyNeedsImagery: false,
+    imageryKeywords: [],
+    monetSlotKeywords: [],
+    implementation:
+      "他セクションに分類できなかった必須事項を個別ブロックで扱う。配置先が不明な場合はフッター直上の自由ブロックに置き、必須掲載の取りこぼしがないことを優先する。",
+    checklist: [
+      "全必須掲載事項がいずれかのセクションに配置されている",
+      "取り残された必須事項がない",
+      "配置が不自然でない",
+    ],
+  },
+];
+
+/** 配列のうち、いずれかのキーワードを部分含む要素を返す（大小文字・空白区別なしの日本語 includes） */
+function filterByKeywords(items: string[], keywords: string[]): string[] {
+  if (keywords.length === 0) return [];
+  return items.filter((item) =>
+    keywords.some((kw) => item.length > 0 && kw.length > 0 && item.includes(kw))
+  );
+}
+
+/**
+ * imageFallback.generationPriority のうち、セクションの imageryKeywords に
+ * 合致するカテゴリだけを取り出す（Phase Q）。
+ */
+function pickImageryTargetsForSection(
+  fb: ImageFallbackAssessment | null,
+  keywords: string[]
+): ImageGenerationTarget[] {
+  if (!fb || keywords.length === 0) return [];
+  return fb.generationPriority.filter((t) =>
+    keywords.some((kw) => t.category.includes(kw))
+  );
+}
+
+/**
+ * Monet useCase.recommendedStructure のスロットのうち、セクションの
+ * monetSlotKeywords に合致するもののコンポーネント候補を返す。
+ */
+function pickMonetCandidatesForSection(
+  useCase: ReturnType<typeof getMonetUseCase>,
+  keywords: string[]
+): Array<{ slot: string; title: string; id: string; componentPath: string }> {
+  if (keywords.length === 0) return [];
+  const out: Array<{
+    slot: string;
+    title: string;
+    id: string;
+    componentPath: string;
+  }> = [];
+  for (const slot of useCase.recommendedStructure) {
+    const haystack = `${slot.slot} ${slot.category ?? ""}`.toLowerCase();
+    const hit = keywords.some((kw) =>
+      haystack.includes(kw.toLowerCase())
+    );
+    if (hit && slot.section) {
+      out.push({
+        slot: slot.slot,
+        title: slot.section.title,
+        id: slot.section.id,
+        componentPath: slot.section.componentPath,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * セクション別実行プロンプト（execution-section-prompts.md）を構築する。
+ * 内部専用・ローカルオペレータがセクション単位で Claude Code に読ませる。
+ * 純粋関数・決定論的（日時・乱数に依存しない）。
+ */
+export function buildExecutionSectionPromptsMarkdown(
+  pkg: ApprovalPackage,
+  plan: PlanningArtifact
+): string {
+  const id = pkg.submissionId;
+  const snap = plan.briefSnapshot;
+  const mustInclude = snap.mustInclude;
+  const fb = pkg.imageFallback ?? null;
+
+  // OTHER セクション用に「他の9セクションのいずれにも合致しなかった必須事項」を計算する。
+  const matchedByOthers = new Set<string>();
+  for (const sec of EXECUTION_PROMPT_SECTIONS) {
+    if (sec.id === "OTHER") continue;
+    for (const item of filterByKeywords(mustInclude, sec.mustIncludeKeywords)) {
+      matchedByOthers.add(item);
+    }
+  }
+  const otherLeftovers = mustInclude.filter((item) => !matchedByOthers.has(item));
+
+  // Monet use case は参考マッピングのために解決する（失敗しない）。
+  const businessType = extractBusinessTypeFromSummary(
+    pkg.reviewSummary.businessSummary
+  );
+  const useCase = getMonetUseCase(resolveUseCaseKey(businessType));
+
+  const lines: string[] = [];
+  lines.push(`# セクション別実行プロンプト — ${id}`);
+  lines.push("");
+  lines.push(
+    "> 内部専用ドキュメントです。execution-prompt.md をセクション単位に事前分割した作業ブロック。"
+  );
+  lines.push(
+    "> オペレータは該当セクションのブロックを取り出して Claude Code に渡せる。本番（serverless）のリクエストハンドラからは Claude Code を実行しない。"
+  );
+  lines.push("");
+  lines.push("## 全体要件（全セクション共通）");
+  lines.push(`- 事業要件: ${snap.businessSummary || "（要約なし）"}`);
+  lines.push(`- ターゲット: ${snap.targetUserSummary || "（未整理）"}`);
+  if (snap.strengths.length > 0) {
+    lines.push(`- 強み: ${snap.strengths.join("・")}`);
+  }
+  if (mustInclude.length > 0) {
+    lines.push(`- 必須掲載（全体）: ${mustInclude.join("・")}`);
+  }
+  if (snap.referenceUrls.length > 0) {
+    lines.push(`- 参考サイト: ${snap.referenceUrls.join("・")}`);
+  }
+  lines.push(`- Monet use case: ${useCase.label} (${useCase.key})`);
+  // Phase Q: 画像フォールバックの全体判定を先頭に明示する。
+  if (fb && fb.status !== "not_needed") {
+    lines.push(
+      `- AI画像フォールバック判定: ${fb.status === "recommended" ? "推奨" : "許容（差し替え前提）"}・不足カテゴリ ${fb.missingImageCategories.join("・") || "（該当記載なし）"}`
+    );
+    lines.push(
+      `  - 生成経路: \`${fb.generationPath.tool} -m ${fb.generationPath.model}\`（serverless ではなくローカルオペレータが実行）。詳細は各セクションの「画像生成の必要性」と execution-prompt.md を参照。`
+    );
+  } else {
+    lines.push("- AI画像フォールバック判定: 不要（顧客提供素材を使用）");
+  }
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+
+  for (const sec of EXECUTION_PROMPT_SECTIONS) {
+    lines.push(`## [${sec.id}] ${sec.name}`);
+    lines.push(`**目的:** ${sec.purpose}`);
+
+    // 1) 反映すべき顧客事実（mustInclude のキーワード抽出）
+    const sectionFacts =
+      sec.id === "OTHER" ? otherLeftovers : filterByKeywords(mustInclude, sec.mustIncludeKeywords);
+    lines.push("**反映すべき顧客事実（必須掲載から抽出）:**");
+    if (sectionFacts.length > 0) {
+      for (const f of sectionFacts) lines.push(`- ${f}`);
+    } else {
+      lines.push(
+        "- （このセクションに直接対応する必須掲載事項は検出されませんでした。全体の必須掲載事項から取捨選択するか、該当なければ本セクションは最小構成でよい）"
+      );
+    }
+
+    // 強みは TRUST / ABOUT で関連付ける。
+    if ((sec.id === "TRUST" || sec.id === "ABOUT") && snap.strengths.length > 0) {
+      lines.push("- 強み（参考）:");
+      for (const s of snap.strengths) lines.push(`  - ${s}`);
+    }
+
+    // 2) 必須掲載の取り扱い
+    lines.push("**必須掲載の取り扱い:**");
+    if (sectionFacts.length > 0) {
+      lines.push(
+        `- 上記の顧客事実を漏れなく配置すること。提供されていない事項は推測で補わない（捏造禁止）。`
+      );
+    } else {
+      lines.push(
+        `- 本セクション固有の必須事項がない場合でも、導線上の自然な最小構成を保つこと。`
+      );
+    }
+
+    // 3) 参考サイト・Monet マッピング
+    lines.push("**参考サイト・Monet マッピング:**");
+    if (snap.referenceUrls.length > 0) {
+      lines.push(
+        `- 参考サイトの表現はそのまま複製せず、日本語の自然な商談導線に再構成する: ${snap.referenceUrls.join("・")}`
+      );
+    } else {
+      lines.push("- 参考サイトの指定なし。業種標準の構成で作る。");
+    }
+    const monetCandidates = pickMonetCandidatesForSection(
+      useCase,
+      sec.monetSlotKeywords
+    );
+    if (monetCandidates.length > 0) {
+      lines.push("- Monet コンポーネント候補（再利用優先）:");
+      for (const c of monetCandidates) {
+        lines.push(`  - ${c.title} (${c.id}) — ${c.componentPath} [スロット: ${c.slot}]`);
+      }
+    } else {
+      lines.push(
+        "- Monet 候補: 該当なし（カスタム実装前提）。`src/generated/monet-catalog.ts` を再確認のうえ、無ければ新規実装。"
+      );
+    }
+
+    // 4) Phase Q: 画像生成の必要性
+    lines.push("**画像生成の必要性（Phase Q）:**");
+    if (!sec.likelyNeedsImagery) {
+      lines.push("- このセクションは通常、生成画像を必要としない（テキスト・アイコン中心）。");
+    } else {
+      const targets = pickImageryTargetsForSection(fb, sec.imageryKeywords);
+      if (fb && fb.status !== "not_needed" && targets.length > 0) {
+        lines.push(
+          `- AI画像フォールバックが必要。以下のカテゴリを優先度順に生成すること:`
+        );
+        for (const t of targets) {
+          lines.push(
+            `  - 【${t.priority === "high" ? "高" : t.priority === "medium" ? "中" : "低"}】${t.category} — ${t.reason}`
+          );
+          lines.push(`    - プロンプトヒント: ${t.promptFragment.replace(/\n/g, " ")}`);
+        }
+        if (fb.generationPath.exampleCommand) {
+          lines.push(`  - 生成経路コマンド例: \`${fb.generationPath.exampleCommand}\``);
+        }
+        if (fb.assetTraceability.prefix) {
+          lines.push(
+            `  - トレーサビリティ: 生成物は \`${fb.assetTraceability.prefix}\` プレフィックスで保存し、AI生成資産として顧客提供素材と区別する。`
+          );
+        }
+      } else if (fb && fb.status !== "not_needed") {
+        lines.push(
+          `- AI画像フォールバック判定ありだが、このセクションに合致するカテゴリは検出されなかった。不足カテゴリ全体（${fb.missingImageCategories.join("・") || "該当記載なし"}）から必要分を判断し、execution-prompt.md の生成経路を参照すること。`
+        );
+      } else {
+        lines.push(
+          "- AI画像フォールバック不要。顧客提供の写真・ロゴを使用する（不足時はプレースホルダー領域を確保し、捏造しない）。"
+        );
+      }
+    }
+
+    // 5) 実装指示
+    lines.push(`**実装指示（Claude Code / オペレータ）:** ${sec.implementation}`);
+
+    // 6) 検証チェックリスト
+    lines.push("**検証チェックリスト:**");
+    for (const c of sec.checklist) lines.push(`- [ ] ${c}`);
+
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+  }
+
+  lines.push("## 使い方（オペレータ向け）");
+  lines.push("- 各セクションブロックをコピーして Claude Code に個別渡しできる。");
+  lines.push("- 全体プロンプトは execution-prompt.md を参照。本ファイルはその事前分割版。");
+  lines.push(
+    "- 画像生成が必要なセクションは「画像生成の必要性」の指示に従い、serverless ではなくローカルで生成すること。"
+  );
+  lines.push("");
+  return lines.join("\n");
 }
 
 /** 実行プロンプト（execution-prompt.md）の表示用パス */
@@ -932,6 +1395,16 @@ function normalizeExecutionHandoff(
     workingDirectory: asString(o.workingDirectory) || ".",
     claudeCommand: cmd,
     promptFilePath: asString(o.promptFilePath),
+    // 旧パッケージ（Phase P 以前）には sectionPromptsFilePath がないため、
+    // promptFilePath のファイル名を差し替えて後方互換的に補う。
+    sectionPromptsFilePath:
+      asString(o.sectionPromptsFilePath) ||
+      (asString(o.promptFilePath)
+        ? asString(o.promptFilePath).replace(
+            /execution-prompt\.md$/,
+            "execution-section-prompts.md"
+          )
+        : ""),
     metadataFilePath: asString(o.metadataFilePath),
     planFilePath: asString(o.planFilePath),
     briefFilePath: asString(o.briefFilePath),
@@ -1534,6 +2007,7 @@ export function buildExecutionHandoff(
   const id = pkg.submissionId;
   const rel = `${LOCAL_DISPLAY_ROOT}/${id}`;
   const promptFilePath = `${rel}/execution-prompt.md`;
+  const sectionPromptsFilePath = `${rel}/execution-section-prompts.md`;
   // runtime が実際に読み込む showcase パスの正は SHOWCASE_MAP。
   // 既にエントリがあればその安定パスを、未登録なら null（新規作成扱い）。
   const showcaseTarget = resolveShowcaseTarget(id);
@@ -1565,6 +2039,7 @@ export function buildExecutionHandoff(
       ? `claude "${promptFilePath} を読み、submissionId=${id} 専用の showcase を ${showcaseTarget.componentPath} に実装してください。runtime は SHOWCASE_MAP 経由で解決するため、${id} エントリの loader が ${showcaseTarget.targetComponent} を参照していることを確認してください。他 submission の showcase は再利用・更新せず、brief.json / omc-plan.json を参照し、各ステップを順に進め、最後に検証してください。"`
       : `claude "${promptFilePath} を読み、submissionId=${id} 専用の showcase を安定した意味的なファイル名（数字で始まらない・submissionId を使わない）で新規実装し、SHOWCASE_MAP に ${id} エントリを追加してください。brief.json / omc-plan.json を参照し、各ステップを順に進め、最後に検証してください。"`,
     promptFilePath,
+    sectionPromptsFilePath,
     metadataFilePath: `${rel}/execution-handoff.json`,
     planFilePath: `${rel}/omc-plan.json`,
     briefFilePath: `${rel}/brief.json`,
@@ -1591,16 +2066,23 @@ async function writePlanningArtifactFile(plan: PlanningArtifact): Promise<void> 
 
 /**
  * 実行ハンドオフを構成するファイル群を書き込む。
- *   - execution-prompt.md  : Claude Code に読ませるプロンプト（内部専用）
- *   - execution-handoff.json: ハンドオフのメタデータ + コマンド（内部専用）
+ *   - execution-prompt.md        : Claude Code に読ませるプロンプト（内部専用）
+ *   - execution-section-prompts.md: セクション別に事前分割したプロンプト（Phase P・内部専用）
+ *   - execution-handoff.json     : ハンドオフのメタデータ + コマンド（内部専用）
  */
 async function writeExecutionHandoffFiles(
   submissionId: string,
   handoff: ExecutionHandoff,
-  promptMarkdown: string
+  promptMarkdown: string,
+  sectionPromptsMarkdown: string
 ): Promise<void> {
-  // プロンプト本文（Markdown）とメタデータ（JSON）をそれぞれアダプタ経由で書き込む
+  // プロンプト本文（Markdown×2）とメタデータ（JSON）をそれぞれアダプタ経由で書き込む
   await writeArtifact(submissionId, "execution-prompt.md", promptMarkdown);
+  await writeArtifact(
+    submissionId,
+    "execution-section-prompts.md",
+    sectionPromptsMarkdown
+  );
   await writeArtifact(
     submissionId,
     "execution-handoff.json",
@@ -1615,6 +2097,15 @@ export async function readExecutionPromptMarkdown(
   if (!isSafeSubmissionId(submissionId)) return null;
   // アダプタは不在・失敗時に null を返すので try/catch 不要
   return readArtifact(submissionId, "execution-prompt.md");
+}
+
+/** セクション別実行プロンプト（execution-section-prompts.md）をディスクから読み込む。不在時は null。 */
+export async function readExecutionSectionPromptsMarkdown(
+  submissionId: string
+): Promise<string | null> {
+  if (!isSafeSubmissionId(submissionId)) return null;
+  // アダプタは不在・失敗時に null を返すので try/catch 不要
+  return readArtifact(submissionId, "execution-section-prompts.md");
 }
 
 /* ------------------------------------------------------------------ */
@@ -1696,11 +2187,17 @@ export async function approvePlan(
 
   const handoff = buildExecutionHandoff(pkg, plan);
   const promptMarkdown = buildExecutionPromptMarkdown(pkg, plan);
+  const sectionPromptsMarkdown = buildExecutionSectionPromptsMarkdown(pkg, plan);
   pkg.executionHandoff = handoff;
 
   try {
     await writePlanningArtifactFile(plan);
-    await writeExecutionHandoffFiles(submissionId, handoff, promptMarkdown);
+    await writeExecutionHandoffFiles(
+      submissionId,
+      handoff,
+      promptMarkdown,
+      sectionPromptsMarkdown
+    );
   } catch {
     // ファイル書き出し失敗でもパッケージ本体の更新を優先する
   }

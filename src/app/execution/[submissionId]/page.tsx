@@ -11,7 +11,11 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { readApprovalPackage } from "@/lib/approval-package";
+import {
+  buildExecutionSectionPromptsMarkdown,
+  readApprovalPackage,
+  readExecutionSectionPromptsMarkdown,
+} from "@/lib/approval-package";
 import {
   imageFallbackStatusLabel,
   generationPriorityLabel,
@@ -410,6 +414,70 @@ function RevisionHandoffSummaryCard({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  セクション別実行プロンプト パネル（内部専用・Phase P/Q）              */
+/* ------------------------------------------------------------------ */
+/*  execution-prompt.md を HEADER / HERO / SERVICES … のセクション単位に   */
+/*  事前分割した作業ブロックを、オペレータ作業サーフェスに compact に露出する。*/
+/*  オペレータは該当セクションを取り出して Claude Code に渡せる。           */
+/*  本番（serverless）では Claude Code を実行せず、ローカルオペレータが実行。 */
+/*  修正完了証明ではなく実行入力。顧客向け画面・メールには絶対に出さない。   */
+/* ------------------------------------------------------------------ */
+
+function SectionPromptsOperatorPanel({
+  sectionPromptsFilePath,
+  sectionPromptsMarkdown,
+}: {
+  sectionPromptsFilePath: string;
+  sectionPromptsMarkdown: string;
+}) {
+  return (
+    <section className="border-t border-violet-200 bg-violet-50/30">
+      <div className="mx-auto max-w-container px-4 py-10 sm:py-12">
+        {/* 内部専用バナー */}
+        <div className="rounded-2xl border border-violet-300 bg-violet-100/70 p-4 text-sm leading-relaxed text-violet-900">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" />
+            <div>
+              <p className="font-bold">
+                内部オペレータ専用（顧客非公開）— セクション別実行プロンプト
+              </p>
+              <p className="mt-1 text-xs leading-relaxed">
+                execution-prompt.md をセクション単位（HEADER / HERO / SERVICES / TRUST / CTA / FOOTER / FAQ / ABOUT / CONTACT / OTHER）
+                に事前分割した作業ブロックです。オペレータは該当セクションを取り出して Claude Code に渡せます。
+                本番（serverless）のリクエストハンドラからは Claude Code を実行しません。顧客向け画面・メールには絶対に出さないでください。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* アーティファクトパス */}
+        <div className="mt-6 rounded-2xl border border-border bg-white p-4">
+          <p className="text-xs font-bold text-muted-foreground">
+            アーティファクトパス
+          </p>
+          <p className="mt-1 break-all font-mono text-sm text-foreground">
+            {sectionPromptsFilePath || "（パス不明）"}
+          </p>
+        </div>
+
+        {/* セクション別プロンプト本文（スクロール可能な compact パネル） */}
+        <div className="mt-4 rounded-2xl border border-border bg-white p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-bold text-foreground">
+              セクション別プロンプト本文（execution-section-prompts.md）
+            </p>
+            <CopyButton value={sectionPromptsMarkdown} />
+          </div>
+          <pre className="mt-3 max-h-[560px] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-slate-50 p-4 text-xs leading-relaxed text-foreground">
+{sectionPromptsMarkdown}
+          </pre>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default async function ExecutionPage({ params }: ExecutionPageProps) {
   const { submissionId } = await params;
 
@@ -449,6 +517,28 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
   const revisionHandoff: RevisionHandoff | null =
     await readRevisionHandoff(submissionId);
   const handoffSummary = revisionHandoff?.sectionFeedbackSummary ?? null;
+
+  // セクション別実行プロンプト（execution-section-prompts.md・Phase P・内部専用）を読み込む。
+  // execution-prompt.md をセクション単位に事前分割した作業ブロックで、オペレータが
+  // 該当セクションを取り出して Claude Code に渡せる。実行ハンドオフがあるときだけ読み、
+  // 表示はオペレータ作業サーフェス（画像フォールバック / 修正ハンドオフ と同じ領域）に置く。
+  const executionHandoff = approvalPackage?.executionHandoff ?? null;
+  const sectionPromptsFilePath = executionHandoff?.sectionPromptsFilePath ?? "";
+  // レガシー後方互換（pre-Phase-P）: Phase P より前に承認されたサブミッションは
+  // execution-handoff.json / execution-prompt.md のみで execution-section-prompts.md を持たない。
+  // ストレージ読み込みが null のとき、実行ハンドオフ＋計画アーティファクトが揃っていれば
+  // その場で markdown を合成して表示する。ストレージへの書き込みは一切行わない（読み取り専用フォールバック）。
+  const sectionPromptsMarkdown = executionHandoff
+    ? (await readExecutionSectionPromptsMarkdown(submissionId)) ??
+      (approvalPackage && approvalPackage.planningArtifact
+        ? buildExecutionSectionPromptsMarkdown(
+            approvalPackage,
+            approvalPackage.planningArtifact
+          )
+        : null)
+    : null;
+  const showSectionPromptsPanel =
+    executionHandoff !== null && sectionPromptsMarkdown !== null;
 
   return (
     <div className="bg-slate-50">
@@ -543,6 +633,19 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
             />
           </div>
         </section>
+      )}
+
+      {/* ============================================================ */}
+      {/*  セクション別実行プロンプト（内部専用・Phase P/Q）                  */}
+      {/* ============================================================ */}
+      {/*  execution-prompt.md のセクション事前分割版をオペレータ作業サーフェスに  */}
+      {/*  compact に露出する。実行ハンドオフ＋本文が揃ったときだけ表示。          */}
+      {/*  顧客向けプレビュー（showcase）とは完全に分離した下部の作業領域。        */}
+      {showSectionPromptsPanel && sectionPromptsMarkdown && (
+        <SectionPromptsOperatorPanel
+          sectionPromptsFilePath={sectionPromptsFilePath}
+          sectionPromptsMarkdown={sectionPromptsMarkdown}
+        />
       )}
 
       {/* ============================================================ */}

@@ -3,8 +3,8 @@
 /* ------------------------------------------------------------------ */
 /*  相談1件ごとの成果物（submission.json / brief.json /                 */
 /*  approval-package.json / omc-plan.json / execution-handoff.json /   */
-/*  execution-prompt.md）をどこに保存するかを環境で切り替えるための、   */
-/*  プロバイダ非依存な型定義。                                         */
+/*  execution-prompt.md / execution-section-prompts.md）をどこに保存するかを */
+/*  環境で切り替えるための、プロバイダ非依存な型定義。                 */
 /*                                                                    */
 /*  保存先は3モード（src/server/submission-storage/index.ts で解決）:  */
 /*    - local     : ローカル開発のファイルシステム（data/...）         */
@@ -41,6 +41,7 @@ export const ARTIFACT_FILE_NAMES = [
   "omc-plan.json",
   "execution-handoff.json",
   "execution-prompt.md",
+  "execution-section-prompts.md",
   "demo-feedback.json",
   "revision-handoff.json",
   "revision-lineage.json",
