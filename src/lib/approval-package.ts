@@ -35,6 +35,7 @@ import {
   readArtifact,
   artifactDisplayPath,
 } from "@/server/submission-storage";
+import { resolveShowcaseComponentPath } from "@/lib/showcase-map";
 
 /** 承認パッケージのスキーマバージョン（下流ツールの互換性確認用） */
 export const APPROVAL_SCHEMA_VERSION = "1.1.0";
@@ -1398,6 +1399,30 @@ export function buildPlanningArtifact(pkg: ApprovalPackage): PlanningArtifact {
 }
 
 /**
+ * ハンドオフ成果物が示す showcase のパス・コンポーネント名を解決する。
+ *
+ * 正は SHOWCASE_MAP（runtime と共有）。submissionId が既にマップに登録
+ * されていれば、runtime が実際に読み込む安定パス（例:
+ * src/components/sections/phase2-manufacturing-showcase.tsx）とその
+ * モジュール名を返す。オペレータはこのファイルを作成/更新すればよい。
+ *
+ * 未登録（新規 submission）の場合は null を返す。呼び出し側は
+ * submissionId をそのままファイル名に使わず、オペレータに安定名の選定と
+ * SHOWCASE_MAP への登録を促す。数字始まりのファイル名は Turbopack の
+ * 動的 import 解決が不安定になるため、古い `${id}-showcase` 命名は出さない。
+ */
+function resolveShowcaseTarget(id: string): {
+  componentPath: string;
+  targetComponent: string;
+} | null {
+  const componentPath = resolveShowcaseComponentPath(id);
+  if (!componentPath) return null;
+  const fileName = componentPath.split("/").pop() ?? componentPath;
+  const targetComponent = fileName.replace(/\.tsx$/, "");
+  return { componentPath, targetComponent };
+}
+
+/**
  * Claude Code 実行ハンドオフ用のプロンプト（Markdown）を構築する。
  * 内部専用・ローカルオペレータが実行する Claude Code に読ませる。
  * 本番（serverless）のリクエストハンドラからは実行しない。
@@ -1408,8 +1433,9 @@ export function buildExecutionPromptMarkdown(
 ): string {
   const id = pkg.submissionId;
   const rel = `${LOCAL_DISPLAY_ROOT}/${id}`;
-  const targetComponent = `${id}-showcase`;
-  const componentPath = `src/components/sections/${targetComponent}.tsx`;
+  // runtime が実際に読み込む showcase パスの正は SHOWCASE_MAP。
+  // 既にエントリがあればその安定パスを使い、未登録なら null（新規作成扱い）。
+  const showcaseTarget = resolveShowcaseTarget(id);
   const lines: string[] = [];
   lines.push(`# 実行ハンドオフプロンプト — ${id}`);
   lines.push("");
@@ -1421,15 +1447,25 @@ export function buildExecutionPromptMarkdown(
   lines.push("## 前提");
   lines.push("- このプロンプトはリポジトリルートで実行することを想定しています。");
   lines.push(`- 対象 submissionId: \`${id}\``);
-  lines.push(`- この作業で新規作成または更新すべき showcase コンポーネント: \`${componentPath}\``);
+  if (showcaseTarget) {
+    lines.push(`- この作業で更新すべき showcase コンポーネント（runtime が実際に読み込む安定パス）: \`${showcaseTarget.componentPath}\``);
+  } else {
+    lines.push("- この submission の showcase は SHOWCASE_MAP に未登録（新規作成）。");
+    lines.push(`- showcase は安定した意味的なファイル名（小文字英数字とハイフン、かつ数字で始まらない）で \`src/components/sections/\` 配下に新規作成すること。submissionId（\`${id}\`）をそのままファイル名に使わないこと（Turbopack の動的 import 解決が不安定になるため）。`);
+  }
   lines.push("- 他 submission の既存 showcase を流用したり、別 submission のファイルを更新してはいけません。");
   lines.push(`- ブリーフ: \`${rel}/brief.json\``);
   lines.push(`- 計画: \`${rel}/omc-plan.json\``);
   lines.push(`- 承認パッケージ: \`${rel}/approval-package.json\``);
   lines.push("");
   lines.push("## 出力契約（必須）");
-  lines.push(`- 最終的に \`${componentPath}\` を作成または更新すること。`);
-  lines.push(`- SHOWCASE_MAP には \`${id}\` のエントリだけを追加/更新し、loader は \`${targetComponent}\` を参照すること。`);
+  if (showcaseTarget) {
+    lines.push(`- 最終的に \`${showcaseTarget.componentPath}\` を更新すること。`);
+    lines.push(`- SHOWCASE_MAP の \`${id}\` エントリの loader が \`${showcaseTarget.targetComponent}\` を参照していることを確認すること（runtime はこのマップ経由で解決する）。`);
+  } else {
+    lines.push(`- showcase を安定名で新規作成し、SHOWCASE_MAP に \`${id}\` をキーとするエントリを追加すること（loader は作成したモジュールを参照）。`);
+    lines.push(`- ファイル名に submissionId（\`${id}\`）を使わないこと。`);
+  }
   lines.push("- 作業完了時には、作成/更新したファイルパスを明示して検証結果を出すこと。");
   lines.push("");
   lines.push("## 事業要件の要点");
@@ -1498,8 +1534,11 @@ export function buildExecutionHandoff(
   const id = pkg.submissionId;
   const rel = `${LOCAL_DISPLAY_ROOT}/${id}`;
   const promptFilePath = `${rel}/execution-prompt.md`;
-  const targetComponent = `${id}-showcase`;
-  const componentPath = `src/components/sections/${targetComponent}.tsx`;
+  // runtime が実際に読み込む showcase パスの正は SHOWCASE_MAP。
+  // 既にエントリがあればその安定パスを、未登録なら null（新規作成扱い）。
+  const showcaseTarget = resolveShowcaseTarget(id);
+  const targetComponent = showcaseTarget?.targetComponent ?? null;
+  const componentPath = showcaseTarget?.componentPath ?? null;
   const notices: string[] = [
     "本番（Vercel/serverless）のリクエストハンドラからは Claude Code を実行しません（実行時間・実行環境の制約のため）。",
     "このハンドオフはローカル環境のオペレータが Claude Code で実行することを想定しています。",
@@ -1522,7 +1561,9 @@ export function buildExecutionHandoff(
     generatedAt: new Date().toISOString(),
     handoffMode: "local-operator",
     workingDirectory: ".",
-    claudeCommand: `claude "${promptFilePath} を読み、submissionId=${id} 専用の showcase を ${componentPath} に実装してください。他 submission の showcase は再利用・更新せず、SHOWCASE_MAP には ${id} のエントリだけを追加/更新してください。brief.json / omc-plan.json を参照し、各ステップを順に進め、最後に検証してください。"`,
+    claudeCommand: showcaseTarget
+      ? `claude "${promptFilePath} を読み、submissionId=${id} 専用の showcase を ${showcaseTarget.componentPath} に実装してください。runtime は SHOWCASE_MAP 経由で解決するため、${id} エントリの loader が ${showcaseTarget.targetComponent} を参照していることを確認してください。他 submission の showcase は再利用・更新せず、brief.json / omc-plan.json を参照し、各ステップを順に進め、最後に検証してください。"`
+      : `claude "${promptFilePath} を読み、submissionId=${id} 専用の showcase を安定した意味的なファイル名（数字で始まらない・submissionId を使わない）で新規実装し、SHOWCASE_MAP に ${id} エントリを追加してください。brief.json / omc-plan.json を参照し、各ステップを順に進め、最後に検証してください。"`,
     promptFilePath,
     metadataFilePath: `${rel}/execution-handoff.json`,
     planFilePath: `${rel}/omc-plan.json`,

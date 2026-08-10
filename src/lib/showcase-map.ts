@@ -8,11 +8,23 @@ import type { ComponentType } from "react";
  * 同時に反映される。2 箇所へコピペすると片方だけ更新される不整合
  * （＝もう一方の画面でプレースホルダーが表示される）を防ぐため、
  * 定義はここに一本化する。
+ *
+ * このレジストリは実行ハンドオフ成果物（approval-package）の
+ * 「オペレータが作成/更新すべき showcase パス」の正でもある。
+ * runtime が読み込むパス（componentPath）をここに宣言しておくことで、
+ * ハンドオフが古い submissionId ベースのファイル名を指示する事故を防ぐ。
  */
 export interface ShowcaseEntry {
   loader: () => Promise<{ default: ComponentType }>;
   enterpriseName: string;
   businessType: string;
+  /**
+   * runtime の loader が実際に読み込む、安定した showcase のファイルパス。
+   * 実行ハンドオフ（approval-package）がオペレータに示す
+   * 「実際に使われるパス」として共有参照する正。
+   * loader の import 先と常に一致させること。
+   */
+  componentPath: string;
 }
 
 export const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
@@ -21,12 +33,14 @@ export const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
       import("@/components/sections/izakaya-showcase").then((m) => ({ default: m.default })),
     enterpriseName: "テスト居酒屋",
     businessType: "飲食業",
+    componentPath: "src/components/sections/izakaya-showcase.tsx",
   },
   "20260809-061637-e59e74cc": {
     loader: () =>
       import("@/components/sections/manufacturing-showcase").then((m) => ({ default: m.default })),
     enterpriseName: "テスト製造株式会社",
     businessType: "製造業",
+    componentPath: "src/components/sections/manufacturing-showcase.tsx",
   },
   "20260808-061647-a4b73e82": {
     // ファイル名は識別子ベースの安定名（phase2-manufacturing-showcase）にしておく。
@@ -36,5 +50,21 @@ export const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
       import("@/components/sections/phase2-manufacturing-showcase").then((m) => ({ default: m.default })),
     enterpriseName: "Phase2最新検証株式会社",
     businessType: "製造業",
+    componentPath: "src/components/sections/phase2-manufacturing-showcase.tsx",
   },
 };
+
+/**
+ * 指定 submissionId の showcase が SHOWCASE_MAP に登録されていれば、
+ * runtime が実際に読み込む安定したコンポーネントパスを返す。
+ *
+ * ハンドオフ成果物（approval-package）はこのパスを正として扱う。
+ * runtime と同じマップを見ることで、「ハンドオフが指示するパス」と
+ * 「runtime が読み込むパス」が一致し続ける。
+ *
+ * 未登録（新規 submission）の場合は null。
+ */
+export function resolveShowcaseComponentPath(submissionId: string): string | null {
+  const entry = SHOWCASE_MAP[submissionId];
+  return entry ? entry.componentPath : null;
+}
