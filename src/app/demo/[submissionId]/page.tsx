@@ -5,37 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DemoFeedbackForm } from "./DemoFeedbackForm";
 import { readApprovalPackage } from "@/lib/approval-package";
 import { isSafeSubmissionId } from "@/server/submission-storage";
-
-// showcase コンポーネントの静的マップ
-// execution ページと同じ定義を使用
-interface ShowcaseEntry {
-  loader: () => Promise<{ default: React.ComponentType }>;
-  enterpriseName: string;
-  businessType: string;
-}
-
-const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
-  "20260808-130735-d901b09c": {
-    loader: () =>
-      import("@/components/sections/izakaya-showcase").then(
-        (m) => ({ default: m.default })
-      ),
-    enterpriseName: "テスト居酒屋",
-    businessType: "飲食業",
-  },
-  "20260809-061637-e59e74cc": {
-    loader: () =>
-      import("@/components/sections/manufacturing-showcase").then((m) => ({ default: m.default })),
-    enterpriseName: "テスト製造株式会社",
-    businessType: "製造業",
-  },
-  "20260808-061647-a4b73e82": {
-    loader: () =>
-      import("@/components/sections/20260808-061647-a4b73e82-showcase").then((m) => ({ default: m.default })),
-    enterpriseName: "Phase2最新検証株式会社",
-    businessType: "製造業",
-  },
-};
+import { SHOWCASE_MAP } from "@/lib/showcase-map";
 
 interface DemoPageProps {
   params: Promise<{ submissionId: string }> | { submissionId: string };
