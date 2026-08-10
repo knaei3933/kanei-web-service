@@ -195,15 +195,19 @@ function RouteAccessPanel({ submissionId, status }: { submissionId: string; stat
       </div>
 
       <a
-        href={primary.href}
-        className={`block rounded-xl border px-3 py-2.5 transition hover:opacity-90 ${toneClass[primary.tone]}`}
+        href={primary.available ? primary.href : "#"}
+        aria-disabled={!primary.available}
+        className={`block rounded-xl border px-3 py-2.5 transition ${primary.available ? "hover:opacity-90" : "cursor-not-allowed opacity-70"} ${toneClass[primary.tone]}`}
       >
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-xs font-semibold">지금 먼저 볼 페이지: {primary.label}</div>
             <div className="mt-0.5 text-[11px] opacity-80">{primary.description}</div>
+            {primary.availabilityNote ? (
+              <div className="mt-1 text-[11px] font-medium opacity-90">{primary.availabilityNote}</div>
+            ) : null}
           </div>
-          <span className="shrink-0 text-xs font-semibold">열기 →</span>
+          <span className="shrink-0 text-xs font-semibold">{primary.available ? "열기 →" : "준비중"}</span>
         </div>
         <div className="mt-2 rounded-lg bg-white/70 px-2 py-1 font-mono text-[11px] text-slate-700">
           {primary.shortPath}
@@ -214,11 +218,13 @@ function RouteAccessPanel({ submissionId, status }: { submissionId: string; stat
         {links.map((l) => (
           <a
             key={l.key}
-            href={l.href}
-            className={`rounded-lg border px-2.5 py-2 text-[11px] transition ${l.primary ? "hidden" : "block"} ${getAdminQuickLinkStyle(l.key)}`}
+            href={l.available ? l.href : "#"}
+            aria-disabled={!l.available}
+            className={`rounded-lg border px-2.5 py-2 text-[11px] transition ${l.primary ? "hidden" : "block"} ${l.available ? "hover:opacity-90" : "cursor-not-allowed opacity-70"} ${getAdminQuickLinkStyle(l.key)}`}
           >
             <div className="font-semibold">{l.label}</div>
             <div className="mt-0.5 text-[11px] opacity-80">{l.description}</div>
+            {l.availabilityNote ? <div className="mt-1 text-[11px] font-medium opacity-90">{l.availabilityNote}</div> : null}
             <div className="mt-1 font-mono opacity-90">{l.shortPath}</div>
           </a>
         ))}

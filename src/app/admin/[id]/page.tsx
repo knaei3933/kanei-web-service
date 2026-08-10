@@ -919,16 +919,20 @@ export default function AdminDetailPage() {
               </div>
 
               <Link
-                href={primary.href}
-                className={`block rounded-2xl border px-4 py-3 transition hover:opacity-90 ${toneClass[primary.tone]}`}
+                href={primary.available ? primary.href : "#"}
+                aria-disabled={!primary.available}
+                className={`block rounded-2xl border px-4 py-3 transition ${primary.available ? "hover:opacity-90" : "cursor-not-allowed opacity-70"} ${toneClass[primary.tone]}`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold">지금 먼저 볼 페이지</p>
                     <p className="mt-1 text-sm font-bold">{primary.label}</p>
                     <p className="mt-1 text-xs opacity-80">{primary.description}</p>
+                    {primary.availabilityNote ? (
+                      <p className="mt-1 text-xs font-medium opacity-90">{primary.availabilityNote}</p>
+                    ) : null}
                   </div>
-                  <span className="shrink-0 text-xs font-semibold">열기 →</span>
+                  <span className="shrink-0 text-xs font-semibold">{primary.available ? "열기 →" : "준비중"}</span>
                 </div>
                 <div className="mt-3 rounded-lg bg-white/70 px-3 py-2 font-mono text-xs text-slate-700">
                   {primary.shortPath}
@@ -941,11 +945,15 @@ export default function AdminDetailPage() {
                   .map((link) => (
                     <Link
                       key={link.key}
-                      href={link.href}
-                      className={`rounded-xl border px-3 py-3 transition hover:opacity-90 ${toneClass[link.tone]}`}
+                      href={link.available ? link.href : "#"}
+                      aria-disabled={!link.available}
+                      className={`rounded-xl border px-3 py-3 transition ${link.available ? "hover:opacity-90" : "cursor-not-allowed opacity-70"} ${toneClass[link.tone]}`}
                     >
                       <p className="text-xs font-semibold">{link.label}</p>
                       <p className="mt-1 text-[11px] opacity-80">{link.description}</p>
+                      {link.availabilityNote ? (
+                        <p className="mt-1 text-[11px] font-medium opacity-90">{link.availabilityNote}</p>
+                      ) : null}
                       <div className="mt-2 rounded-lg bg-white/70 px-2 py-1 font-mono text-[11px] text-slate-700">
                         {link.shortPath}
                       </div>

@@ -36,6 +36,8 @@ export interface AdminRouteLink extends AdminQuickLink {
   description: string;
   tone: "neutral" | "review" | "demo" | "execution" | "interview";
   primary: boolean;
+  available: boolean;
+  availabilityNote?: string;
 }
 
 const LABELS: Record<AdminQuickLinkKey, string> = {
@@ -113,6 +115,7 @@ export function getAdminRouteLinks(
       description: "社内の進行・承認操作を開く",
       tone: "neutral",
       primary: false,
+      available: true,
     },
     {
       key: "review",
@@ -122,29 +125,36 @@ export function getAdminRouteLinks(
       description: "ブリーフ・計画・内部レビュー内容を確認",
       tone: "review",
       primary: false,
+      available: true,
     },
-  ];
-
-  if (DEMO_VISIBLE_STATUSES.has(status)) {
-    links.push({
+    {
       key: "demo",
       href: `/demo/${submissionId}`,
       shortPath: `/demo/${submissionId}`,
-      label: "顧客確認用デモ",
-      description: "お客様が見る完成デモページ",
+      label: "実際のデモホームページ",
+      description: "お客様が確認する最終デモページ",
       tone: "demo",
       primary: false,
-    });
-    links.push({
+      available: DEMO_VISIBLE_STATUSES.has(status),
+      availabilityNote: DEMO_VISIBLE_STATUSES.has(status)
+        ? "現在このデモを開けます"
+        : "まだデモ未生成です。デモ生成後に開けます",
+    },
+    {
       key: "execution",
       href: `/execution/${submissionId}`,
       shortPath: `/execution/${submissionId}`,
-      label: "実装プレビュー",
-      description: "生成中・実装途中を確認する内部プレビュー",
+      label: "内部プレビュー",
+      description: "生成中・実装途中を確認する内部ページ",
       tone: "execution",
       primary: false,
-    });
-  }
+      available: DEMO_VISIBLE_STATUSES.has(status) || status === "approved_for_execution" || status === "demo_generating",
+      availabilityNote:
+        DEMO_VISIBLE_STATUSES.has(status) || status === "approved_for_execution" || status === "demo_generating"
+          ? "内部確認用として開けます"
+          : "デモ準備完了後に使う内部プレビューです",
+    },
+  ];
 
   if (INTERVIEW_RELEVANT_STATUSES.has(status)) {
     links.push({
@@ -155,6 +165,7 @@ export function getAdminRouteLinks(
       description: "本制作前の追加質問・回答を確認",
       tone: "interview",
       primary: false,
+      available: true,
     });
   }
 
