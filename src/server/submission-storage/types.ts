@@ -48,6 +48,7 @@ export const ARTIFACT_FILE_NAMES = [
   "interview-request.json",
   "interview-answer.json",
   "production-readiness.json",
+  "ai-fallback-assets.json",
 ] as const;
 
 /** 成果物のファイル名（固定セットのいずれか） */

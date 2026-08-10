@@ -17,7 +17,9 @@ import {
   type ImageFallbackAssessment,
   type GenerationPriorityLevel,
 } from "@/lib/image-fallback";
+import { readAiFallbackAssets, type AiFallbackAsset } from "@/lib/ai-fallback-assets";
 import { CopyButton } from "./CopyButton";
+import { FallbackAssetTracker } from "./FallbackAssetTracker";
 
 // showcase コンポーネントの静的マップ
 // 新しい showcase が追加されたらここにエントリを追加
@@ -152,7 +154,15 @@ function OperatorChecklist({ prefix }: { prefix: string }) {
  * トレーサビリティ規則・作業チェックリストをまとめて表示する。
  * 画像生成そのものは行わず、オペレータがローカルで実行するためのガイド。
  */
-function ImageFallbackOperatorPanel({ fb }: { fb: ImageFallbackAssessment }) {
+function ImageFallbackOperatorPanel({
+  fb,
+  submissionId,
+  fallbackAssets,
+}: {
+  fb: ImageFallbackAssessment;
+  submissionId: string;
+  fallbackAssets: AiFallbackAsset[];
+}) {
   return (
     <section className="border-t border-rose-200 bg-rose-50/40">
       <div className="mx-auto max-w-container px-4 py-10 sm:py-12">
@@ -316,6 +326,15 @@ function ImageFallbackOperatorPanel({ fb }: { fb: ImageFallbackAssessment }) {
 
         {/* オペレータ作業チェックリスト */}
         <OperatorChecklist prefix={fb.assetTraceability.prefix} />
+
+        {/* 生成資産の追跡レジストリ（Phase H・内部オペレータ専用） */}
+        {/* 生成した AI仮画像のメタデータをここに登録・追跡し、実物受領後に差し替え状態を更新する */}
+        <FallbackAssetTracker
+          submissionId={submissionId}
+          initialAssets={fallbackAssets}
+          categoryOptions={fb.missingImageCategories}
+          prefix={fb.assetTraceability.prefix}
+        />
       </div>
     </section>
   );
@@ -346,6 +365,13 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
   const imageFallback = approvalPackage?.imageFallback ?? null;
   const showFallbackPanel =
     imageFallback !== null && imageFallback.status !== "not_needed";
+
+  // 生成資産の追跡レジストリ（ai-fallback-assets.json）を読み込む。
+  // オペレータが登録した AI仮画像のメタデータ一覧。存在しなければ空。
+  const fallbackRegistry = showFallbackPanel
+    ? await readAiFallbackAssets(submissionId)
+    : null;
+  const fallbackAssets = fallbackRegistry?.assets ?? [];
 
   return (
     <div className="bg-slate-50">
@@ -406,7 +432,11 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
       {/*  画像が不足している案件でのみ表示。既存のプレビューフローは維持し、  */}
       {/*  内部ガイドは顧客向けコンテンツと明確に区別して下部に置く。          */}
       {showFallbackPanel && imageFallback && (
-        <ImageFallbackOperatorPanel fb={imageFallback} />
+        <ImageFallbackOperatorPanel
+          fb={imageFallback}
+          submissionId={submissionId}
+          fallbackAssets={fallbackAssets}
+        />
       )}
 
       {/* ============================================================ */}

@@ -10,7 +10,7 @@
 /*    omc-plan.json / execution-handoff.json / execution-prompt.md /    */
 /*    demo-feedback.json / revision-handoff.json / delivery-info.json / */
 /*    interview-request.json / interview-answer.json /                  */
-/*    production-readiness.json                                          */
+/*    production-readiness.json / ai-fallback-assets.json               */
 /*                                                                      */
 /*  モード解決:                                                        */
 /*    - ローカル開発（VERCEL!=1）            → local     (filesystem)    */

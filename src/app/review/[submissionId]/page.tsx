@@ -17,6 +17,10 @@ import {
   type ImageFallbackAssessment,
 } from "@/lib/image-fallback";
 import {
+  readAiFallbackAssets,
+  type AiFallbackAsset,
+} from "@/lib/ai-fallback-assets";
+import {
   readDemoFeedbackHistory,
   type DemoFeedbackHistory,
 } from "@/lib/demo-feedback-loop";
@@ -842,8 +846,16 @@ function PreProductionSection({ pkg }: { pkg: ApprovalPackage }) {
  * ステータス・不足画像カテゴリ・内部生成経路（/usr/bin/codex -m gpt-5.5）・
  * 顧客向け注記を一目で分かるようにする。生成経路・運用規則は内部専用。
  */
-function ImageFallbackSection({ fb }: { fb: ImageFallbackAssessment }) {
+function ImageFallbackSection({
+  fb,
+  assets = [],
+}: {
+  fb: ImageFallbackAssessment;
+  assets?: AiFallbackAsset[];
+}) {
   const isNeeded = fb.status !== "not_needed";
+  const pending = assets.filter((a) => a.status === "generated");
+  const replaced = assets.filter((a) => a.status === "replaced");
   const toneClass =
     fb.status === "recommended"
       ? "border-rose-200 bg-rose-50 text-rose-900"
@@ -899,6 +911,54 @@ function ImageFallbackSection({ fb }: { fb: ImageFallbackAssessment }) {
           {fb.customerFacingNote}
         </p>
       </div>
+
+      {/* 追跡中のAIフォールバック資産（内部専用・コンパクトサマリ） */}
+      {/* 生成済み資産のうち、まだ仮画像か・差し替え済みかを一目で分かるようにする */}
+      {assets.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-bold text-foreground">
+              追跡中のAIフォールバック資産
+            </p>
+            <p className="text-xs text-muted-foreground">
+              仮画像 <span className="font-bold text-amber-700">{pending.length}</span> 件 ／
+              差し替え済み <span className="font-bold text-emerald-700">{replaced.length}</span> 件
+            </p>
+          </div>
+          <ul className="space-y-2">
+            {assets.map((asset) => (
+              <li
+                key={asset.id}
+                className="rounded-2xl border border-border bg-white p-3 text-sm"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+                      asset.status === "replaced"
+                        ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+                        : "border-amber-200 bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {asset.status === "replaced" ? "差し替え済み" : "仮画像（差し替え待ち）"}
+                  </span>
+                  <span className="font-bold text-foreground">{asset.category}</span>
+                  <span className="font-mono text-[11px] text-muted-foreground">
+                    #{asset.id}
+                  </span>
+                </div>
+                <p className="mt-1 break-all font-mono text-xs text-foreground">
+                  {asset.savedName}
+                </p>
+                {asset.note && (
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {asset.note}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </Section>
   );
 }
@@ -1163,6 +1223,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   // ステータスによらず過去のフィードバックを確認できるよう、常に読み込みを試みる。
   const demoFeedbackHistory = await readDemoFeedbackHistory(submissionId);
 
+  // AIフォールバック資産レジストリ（ai-fallback-assets.json）を読み込む。
+  // オペレータが登録した AI仮画像の追跡メタデータ。存在すれば内部レビュー用にサマリ表示。
+  const fallbackAssetsRegistry = await readAiFallbackAssets(submissionId);
+  const fallbackAssets = fallbackAssetsRegistry?.assets ?? [];
+
   // needs_followup のとき、顧客が再編集できるように submission.json のペイロードを読み込む
   let initialPayload: Record<string, unknown> = {};
   if (pkg.status === "needs_followup") {
@@ -1396,7 +1461,9 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
           </Section>
 
           {/* AI画像フォールバック方針（内部専用・Phase D 評価の可視化） */}
-          {pkg.imageFallback && <ImageFallbackSection fb={pkg.imageFallback} />}
+          {pkg.imageFallback && (
+            <ImageFallbackSection fb={pkg.imageFallback} assets={fallbackAssets} />
+          )}
 
           {/* デモフィードバック サマリ（内部専用・Phase F セクション別承認状況） */}
           {demoFeedbackHistory?.latest && (
