@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getAdminRouteLinks } from "@/lib/admin-navigation";
+import { Gate3ChecklistCard } from "@/components/gate3/Gate3ChecklistCard";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -1131,6 +1132,18 @@ export default function AdminDetailPage() {
           <h2 className="mb-4 text-lg font-bold text-foreground">
             本制作前ヒアリング状況
           </h2>
+
+          {/* 内部判断支援チェックリスト（承認/差し戻し判断の目安） */}
+          <div className="mb-5">
+            <Gate3ChecklistCard
+              input={{
+                status: apStatus,
+                interview,
+                readiness,
+              }}
+            />
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl bg-gray-50 p-4">
               <p className="text-xs text-muted-foreground">ヒアリング回答URL</p>

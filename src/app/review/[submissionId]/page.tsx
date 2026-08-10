@@ -30,6 +30,7 @@ import {
   type RevisionLineage,
   type RoundEntry,
 } from "@/lib/revision-lineage";
+import { Gate3ChecklistCard } from "@/components/gate3/Gate3ChecklistCard";
 import { FollowupEditForm } from "./FollowupEditForm";
 
 interface ReviewPageProps {
@@ -713,6 +714,16 @@ function PreProductionSection({ pkg }: { pkg: ApprovalPackage }) {
         </span>
       }
     >
+      {/* 内部判断支援チェックリスト（コンパクト・既存データから派生） */}
+      <div className="mb-5">
+        <Gate3ChecklistCard
+          input={{
+            status: pkg.status,
+            interview: pkg.preProductionInterview,
+            readiness: pkg.productionReadiness,
+          }}
+        />
+      </div>
       {!interview ? (
         <p className="text-sm leading-relaxed text-muted-foreground">
           本制作前ヒアリングはまだ開始されていません。顧客がデモを承認
