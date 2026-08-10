@@ -33,6 +33,8 @@ export interface DemoFeedbackData {
     sectionName: string;
     feedback: string;
   }>;
+  /** 참고 이미지/스크린샷 URL (任意) */
+  referenceImages?: string[];
   /** フィードバック送信日時（ISO8601） */
   submittedAt: string;
 }
@@ -352,9 +354,17 @@ export function generateRevisionPrompt(
     lines.push("## セクション別のフィードバック");
     for (const section of feedbackData.sections) {
       lines.push(`### ${section.sectionName} (${section.sectionId})`);
-      lines.push(section.feedback);
+      lines.push(section.feedback || "- この 요소 중심으로 조정 요청");
       lines.push("");
     }
+  }
+
+  if (feedbackData.referenceImages && feedbackData.referenceImages.length > 0) {
+    lines.push("## 参考画像 / スクリーンショット URL");
+    for (const url of feedbackData.referenceImages) {
+      lines.push(`- ${url}`);
+    }
+    lines.push("");
   }
 
   lines.push("## 修正対応方針");

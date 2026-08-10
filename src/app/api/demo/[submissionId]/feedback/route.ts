@@ -17,7 +17,8 @@ import { isSafeSubmissionId } from "@/server/submission-storage";
  *   - action: 'approve' | 'revision'
  *   - rating: number (1-5)
  *   - comment: string
- *   - sections?: string[] (revision時の修正対象セクション・将来的に使用可能)
+ *   - sections?: Array<{ sectionId: string; sectionName: string; feedback: string }>
+ *   - referenceImages?: string[]
  */
 export async function POST(
   request: NextRequest,
@@ -35,11 +36,16 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { action, rating, comment, sections } = body as {
+    const { action, rating, comment, sections, referenceImages } = body as {
       action: "approve" | "revision";
       rating: number;
       comment: string;
-      sections?: string[];
+      sections?: Array<{
+        sectionId: string;
+        sectionName: string;
+        feedback: string;
+      }>;
+      referenceImages?: string[];
     };
 
     // バリデーション
@@ -64,12 +70,37 @@ export async function POST(
       );
     }
 
+    const normalizedSections = Array.isArray(sections)
+      ? sections
+          .filter(
+            (section): section is { sectionId: string; sectionName: string; feedback: string } =>
+              !!section &&
+              typeof section.sectionId === "string" &&
+              typeof section.sectionName === "string" &&
+              typeof section.feedback === "string"
+          )
+          .map((section) => ({
+            sectionId: section.sectionId.trim(),
+            sectionName: section.sectionName.trim(),
+            feedback: section.feedback.trim(),
+          }))
+          .filter((section) => section.sectionId && section.sectionName)
+      : [];
+
+    const normalizedReferenceImages = Array.isArray(referenceImages)
+      ? referenceImages
+          .filter((url): url is string => typeof url === "string")
+          .map((url) => url.trim())
+          .filter((url) => url.length > 0)
+      : [];
+
     const submittedAt = new Date().toISOString();
     // demo-feedback-loop が扱う履歴データの形に正規化（action は含めない）
     const feedbackData: DemoFeedbackData = {
       rating,
-      comment,
-      sections: [],
+      comment: comment.trim(),
+      sections: normalizedSections,
+      referenceImages: normalizedReferenceImages,
       submittedAt,
     };
 
