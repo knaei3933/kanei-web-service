@@ -174,6 +174,232 @@ function reviewRouteGuidance(status: ApprovalStatus): {
 }
 
 /* ------------------------------------------------------------------ */
+/*  次のアクション メタ（ステータス → やること / 操作先）               */
+/* ------------------------------------------------------------------ */
+
+type NextActionContext = {
+  adminUrl: string;
+  demoUrl: string;
+  executionUrl: string;
+  reviewUrl: string;
+};
+
+type NextActionMeta = {
+  /** ① 現在の段階 */
+  stage: string;
+  /** ② 次にやること */
+  nextAction: string;
+  /** ③ 開くべきページ / 操作先 のラベル */
+  targetLabel: string;
+  /** ③ の遷移先 URL */
+  href: string;
+  /** カードの配色 */
+  toneClass: string;
+};
+
+/**
+ * ステータスごとに「いま何をすべきか」を1枚のカードにまとめるためのメタを返す。
+ * オペレータが迷わず次の操作に進めるよう、段階・やること・開くべきページを明示する。
+ * URL はメイン側で計算済みの admin / demo / execution / review を再利用する。
+ */
+function nextActionMeta(
+  status: ApprovalStatus,
+  ctx: NextActionContext,
+): NextActionMeta {
+  switch (status) {
+    case "needs_followup":
+      return {
+        stage: "顧客からの追加情報待ち",
+        nextAction:
+          "必須項目が揃うまで追加情報の入力を待つ。すべて揃うと自動で代表確認（第1ゲート）へ進む。",
+        targetLabel: "追加情報入力フォーム（この画面）",
+        href: ctx.reviewUrl,
+        toneClass: "border-amber-200 bg-amber-50 text-amber-900",
+      };
+    case "awaiting_representative_approval":
+      return {
+        stage: "第1ゲート（インテイク承認）待ち",
+        nextAction:
+          "代表がインテイクを承認 or 差し戻し。承認すると OMC 計画アーティファクトを自動生成し、第2ゲートへ進む。",
+        targetLabel: "承認アクション（この画面の下部）",
+        href: ctx.reviewUrl,
+        toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+      };
+    case "awaiting_plan_approval":
+      return {
+        stage: "第2ゲート（計画承認）待ち",
+        nextAction:
+          "計画アーティファクトを確認し、承認 or 差し戻し。承認すると実行ハンドオフ成果物を生成する。",
+        targetLabel: "計画アーティファクトと承認アクション（この画面）",
+        href: ctx.reviewUrl,
+        toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+      };
+    case "approved_for_execution":
+      return {
+        stage: "実行準備完了（実行ハンドオフ生成済み）",
+        nextAction:
+          "ローカルオペレータが実行ハンドオフのプロンプトを使い、Claude Code でデモを生成する。",
+        targetLabel: "実行ハンドオフ / 内部プレビュー",
+        href: ctx.executionUrl,
+        toneClass: "border-violet-200 bg-violet-50 text-violet-900",
+      };
+    case "demo_generating":
+      return {
+        stage: "デモ生成中",
+        nextAction:
+          "オペレータの生成作業を待つ。完了するとデモ公開（顧客確認待ち）へ進む。",
+        targetLabel: "内部プレビュー（生成状況確認）",
+        href: ctx.executionUrl,
+        toneClass: "border-violet-200 bg-violet-50 text-violet-900",
+      };
+    case "demo_deployed":
+      return {
+        stage: "デモ公開済み（顧客確認待ち）",
+        nextAction:
+          "顧客にデモ URL を案内し、フィードバック or 承認を待つ。",
+        targetLabel: "デモページを開く",
+        href: ctx.demoUrl,
+        toneClass: "border-blue-200 bg-blue-50 text-blue-900",
+      };
+    case "demo_revision_ready":
+      return {
+        stage: "修正要望を受領済み",
+        nextAction:
+          "デモフィードバック（セクション別修正要望）を確認し、修正してデモを再公開する。",
+        targetLabel: "デモフィードバック / デモページ",
+        href: ctx.demoUrl,
+        toneClass: "border-rose-200 bg-rose-50 text-rose-900",
+      };
+    case "demo_revised":
+      return {
+        stage: "修正版公開済み（顧客再確認待ち）",
+        nextAction:
+          "顧客に修正版デモを再確認してもらい、承認を待つ。",
+        targetLabel: "デモページを開く",
+        href: ctx.demoUrl,
+        toneClass: "border-blue-200 bg-blue-50 text-blue-900",
+      };
+    case "customer_approved":
+      return {
+        stage: "顧客承認済み（本制作前ヒアリング待ち）",
+        nextAction:
+          "管理画面から本制作前ヒアリングを起票し、顧客へ質問・追加素材を依頼する。",
+        targetLabel: "管理画面を開く",
+        href: ctx.adminUrl,
+        toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+      };
+    case "pre_production_interview":
+      return {
+        stage: "本制作前ヒアリング中（第3ゲート前）",
+        nextAction:
+          "ヒアリング回答と追加素材を確認し、本制作準備度を評価する。",
+        targetLabel: "管理画面を開く",
+        href: ctx.adminUrl,
+        toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+      };
+    case "pre_production_review":
+      return {
+        stage: "第3ゲート（本制作前最終承認）待ち",
+        nextAction:
+          "本制作へ進めるか、最終承認 or 差し戻しを判断する（ADMIN_SECRET が必要）。",
+        targetLabel: "管理画面を開く",
+        href: ctx.adminUrl,
+        toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+      };
+    case "production_ready":
+      return {
+        stage: "本制作可能（第3ゲート承認済み）",
+        nextAction:
+          "本制作を実行する。必要に応じて実行ハンドオフ・素材を最終確認する。",
+        targetLabel: "管理画面を開く",
+        href: ctx.adminUrl,
+        toneClass: "border-emerald-200 bg-emerald-50 text-emerald-900",
+      };
+    case "delivered":
+      return {
+        stage: "納品済み",
+        nextAction:
+          "完了。必要に応じて事後フォローや、最終デモを確認する。",
+        targetLabel: "デモページ（最終確認）",
+        href: ctx.demoUrl,
+        toneClass: "border-emerald-200 bg-emerald-50 text-emerald-900",
+      };
+    case "received":
+      return {
+        stage: "受領済み（品質判定待ち）",
+        nextAction:
+          "自動で品質判定が行われ、追加情報待ち or 代表確認へ進む。",
+        targetLabel: "この review 画面で経過確認",
+        href: ctx.reviewUrl,
+        toneClass: "border-blue-200 bg-blue-50 text-blue-900",
+      };
+    case "rejected":
+      return {
+        stage: "却下",
+        nextAction:
+          "この相談は却下済み。差し戻し理由を確認する。",
+        targetLabel: "承認アクション（この画面）",
+        href: ctx.reviewUrl,
+        toneClass: "border-rose-200 bg-rose-50 text-rose-900",
+      };
+    case "approved_for_planning":
+      return {
+        stage: "計画着手承認済み（旧状態）",
+        nextAction:
+          "レガシー状態。必要に応じて代表確認・計画承認へ誘導する。",
+        targetLabel: "管理画面を開く",
+        href: ctx.adminUrl,
+        toneClass: "border-slate-200 bg-slate-50 text-slate-700",
+      };
+    default:
+      return {
+        stage: statusLabel(status),
+        nextAction:
+          "このステータスの次アクションは未定義です。管理画面で状況を確認してください。",
+        targetLabel: "管理画面を開く",
+        href: ctx.adminUrl,
+        toneClass: "border-slate-200 bg-slate-50 text-slate-700",
+      };
+  }
+}
+
+/**
+ * ステータスごとの「次のアクション」を1枚の強調カードで出す。
+ * ① 現在の段階 / ② 次にやること / ③ 開くべきページ（操作先）を一目で分かるようにする。
+ * ページ最上部付近に配置し、オペレータが次の操作に迷わないようにする。
+ */
+function NextActionCard({ meta }: { meta: NextActionMeta }) {
+  return (
+    <section className={`mb-6 rounded-3xl border p-6 shadow-sm ${meta.toneClass}`}>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-bold uppercase tracking-wide opacity-70">
+            Next Action
+          </p>
+          <div className="mt-3">
+            <p className="text-xs font-bold opacity-70">① 現在の段階</p>
+            <p className="mt-0.5 text-base font-bold">{meta.stage}</p>
+          </div>
+          <div className="mt-3">
+            <p className="text-xs font-bold opacity-70">② 次にやること</p>
+            <p className="mt-0.5 text-sm leading-relaxed">{meta.nextAction}</p>
+          </div>
+        </div>
+        <div className="shrink-0 lg:max-w-xs">
+          <p className="text-xs font-bold opacity-70">③ 開くべきページ / 操作先</p>
+          <Link
+            href={meta.href}
+            className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-current/20 bg-white/70 px-4 py-2 text-sm font-bold transition hover:bg-white"
+          >
+            {meta.targetLabel} →
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  表示用小物パーツ                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -1979,12 +2205,19 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   const isApproved = pkg.status === "approved_for_execution";
   const isRejected = pkg.status === "rejected";
   const isNeedsFollowup = pkg.status === "needs_followup";
+  const reviewUrl = `/review/${pkg.submissionId}`;
   const demoUrl = `/demo/${pkg.submissionId}`;
   const executionUrl = `/execution/${pkg.submissionId}`;
   const adminUrl = `/admin/${pkg.submissionId}`;
   const canOpenDemo = isDemoVisibleStatus(pkg.status);
   const canOpenExecution = isExecutionVisibleStatus(pkg.status);
   const routeGuidance = reviewRouteGuidance(pkg.status);
+  const nextAction = nextActionMeta(pkg.status, {
+    adminUrl,
+    demoUrl,
+    executionUrl,
+    reviewUrl,
+  });
 
   // 添付ファイルを表示優先度（画像 → PDF → テキスト → その他）で並び替える
   const sortedAttachments: AttachmentFile[] = [
@@ -2016,6 +2249,8 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             {statusLabel(pkg.status)}
           </div>
         </div>
+
+        <NextActionCard meta={nextAction} />
 
         <section className={`mb-6 rounded-3xl border p-6 shadow-sm ${routeGuidance.toneClass}`}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

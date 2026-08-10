@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
   Send,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Mail,
   Phone,
   Clock,
@@ -397,6 +399,21 @@ const INITIAL_DATA: FormData = {
 /** 参考サイトカードの最大数 */
 const MAX_REFERENCE_SITES = 8;
 
+/**
+ * ウィザードの7ステップ定義。
+ * 既存のSectionCard（Step 1〜7）とタイトルを完全に一致させる。
+ * 進捗UI・ステップジャンプ・不足ヒントのマッピングはすべてこの定義を正とする。
+ */
+const STEPS: { id: number; title: string }[] = [
+  { id: 1, title: "事業について" },
+  { id: 2, title: "ターゲットと伝えたいこと" },
+  { id: 3, title: "どんなホームページにしたいか" },
+  { id: 4, title: "サイトの目的と機能" },
+  { id: 5, title: "ご予算について" },
+  { id: 6, title: "制作素材のご準備" },
+  { id: 7, title: "お客様情報" },
+];
+
 /** バイト数を読みやすいサイズ表記に変換 */
 const formatFileSize = (bytes: number): string => {
   if (!bytes) return "0 B";
@@ -465,6 +482,110 @@ function SectionCard({ children }: { children: React.ReactNode }) {
     <section className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-10">
       {children}
     </section>
+  );
+}
+
+/**
+ * ウィザードの進捗ヘッダー。
+ * 現在位置（Step N / 全7ステップ）・残りステップ数・進捗バー・
+ * クリック可能なステップタブを1箇所にまとめる。各ステップは
+ * 必須項目が残っていなければ完了（✓）扱いで表示する。
+ */
+function StepProgress({
+  currentStep,
+  missingByStep,
+  onSelect,
+}: {
+  currentStep: number;
+  missingByStep: number[];
+  onSelect: (step: number) => void;
+}) {
+  const total = STEPS.length;
+  const remaining = total - currentStep;
+  const currentMeta = STEPS.find((s) => s.id === currentStep);
+  const progressPct = Math.round((currentStep / total) * 100);
+
+  return (
+    <div className="rounded-3xl border border-border bg-accent/40 p-5 sm:p-6">
+      {/* サマリ行：現在位置と残り */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            入力ステップ
+          </p>
+          <p className="mt-1 text-base font-bold text-foreground sm:text-lg">
+            ステップ{" "}
+            <span className="text-primary">{currentStep}</span> / {total}
+            {currentMeta && (
+              <span className="ml-2 font-normal text-muted-foreground">
+                — {currentMeta.title}
+              </span>
+            )}
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {remaining > 0 ? `残り ${remaining} ステップ` : "最後のステップです"}
+        </p>
+      </div>
+
+      {/* 進捗バー */}
+      <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-border">
+        <div
+          className="h-full rounded-full bg-primary transition-all duration-300"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      {/* ステップタブ（クリックで直接移動） */}
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+        {STEPS.map((s) => {
+          const isActive = s.id === currentStep;
+          const missing = missingByStep[s.id - 1] ?? 0;
+          const isComplete = missing === 0;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => onSelect(s.id)}
+              aria-current={isActive ? "step" : undefined}
+              className={`flex shrink-0 items-center gap-2 rounded-2xl px-3 py-2 text-left transition-all ${
+                isActive
+                  ? "bg-white shadow-sm ring-2 ring-primary/30"
+                  : "hover:bg-white/70"
+              }`}
+            >
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all ${
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : isComplete
+                      ? "bg-emerald-500 text-white"
+                      : "bg-white text-muted-foreground ring-1 ring-border"
+                }`}
+              >
+                {isComplete && !isActive ? (
+                  <Check className="h-4 w-4" strokeWidth={3} />
+                ) : (
+                  s.id
+                )}
+              </span>
+              <span className="hidden sm:block">
+                <span
+                  className={`block text-xs font-bold ${
+                    isActive ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  Step {s.id}
+                </span>
+                <span className="block max-w-[7.5rem] truncate text-[11px] text-muted-foreground">
+                  {s.title}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -1004,6 +1125,20 @@ export default function ConsultPage() {
   const [siteIssueCheckboxes, setSiteIssueCheckboxes] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
+  /* ウィザードの現在ステップ（1..7）。1画面に1ステップだけ表示する。 */
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = STEPS.length;
+
+  /* ステップ移動時にページ先頭へ戻す（次のステップを最初から見せる） */
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentStep]);
+
+  const goToStep = (step: number) =>
+    setCurrentStep((prev) => Math.min(totalSteps, Math.max(1, step)));
+  const goNext = () => goToStep(currentStep + 1);
+  const goPrev = () => goToStep(currentStep - 1);
+
   /* 参考サイト追加用のIDカウンタ */
   const refIdCounter = useRef(1);
 
@@ -1172,46 +1307,74 @@ export default function ConsultPage() {
   /* ---- バリデーション ---- */
   // 未入力の必須項目を一覧で返す。isValid はこの配列から派生させるので、
   // バリデーション判定と送信ボタン下の案内が絶対にずれない（二重管理しない）。
-  const missingRequirements = useMemo<string[]>(() => {
-    const items: string[] = [];
+  // 各項目に step を付与することで、ウィザードの進捗UI・ステップ別ヒントも
+  // この配列を唯一の真実のソースとして派生させる（第二の検証系は作らない）。
+  const missingRequirements = useMemo<
+    { step: number; label: string }[]
+  >(() => {
+    const items: { step: number; label: string }[] = [];
     // Step 1
-    if (!data.businessType.trim()) items.push("事業種");
-    if (!data.companyName.trim()) items.push("事業体名");
+    if (!data.businessType.trim()) items.push({ step: 1, label: "事業種" });
+    if (!data.companyName.trim()) items.push({ step: 1, label: "事業体名" });
     // Step 2（チェックボックス or 自由入力があれば有効）
     if (!data.targetCustomer.trim() && targetCheckboxes.length === 0)
-      items.push("ターゲット・理想のお客様");
+      items.push({ step: 2, label: "ターゲット・理想のお客様" });
     if (!data.sellingPoints.trim() && strengthCheckboxes.length === 0)
-      items.push("強み・差別化ポイント");
+      items.push({ step: 2, label: "強み・差別化ポイント" });
     if (!data.mustIncludeInfo.trim() && infoCheckboxes.length === 0)
-      items.push("必ず載せたい情報");
+      items.push({ step: 2, label: "必ず載せたい情報" });
     // Step 3
-    if (!data.desiredImage.trim()) items.push("伝えたいイメージ");
+    if (!data.desiredImage.trim())
+      items.push({ step: 3, label: "伝えたいイメージ" });
     // Step 4
     if (data.sitePurpose.length === 0) {
-      items.push("サイトの主な目的");
+      items.push({ step: 4, label: "サイトの主な目的" });
     } else if (data.sitePurpose.includes("その他") && !data.sitePurposeOther.trim()) {
-      items.push("サイトの主な目的（その他）");
+      items.push({ step: 4, label: "サイトの主な目的（その他）" });
     }
     if (data.features.length === 0) {
-      items.push("必要なページ・機能");
+      items.push({ step: 4, label: "必要なページ・機能" });
     } else if (data.features.includes("その他") && !data.featuresOther.trim()) {
-      items.push("必要なページ・機能（その他）");
+      items.push({ step: 4, label: "必要なページ・機能（その他）" });
     }
-    if (!data.timing) items.push("公開希望時期");
+    if (!data.timing) items.push({ step: 4, label: "公開希望時期" });
     // Step 5
-    if (!data.budget) items.push("ご予算の目安");
+    if (!data.budget) items.push({ step: 5, label: "ご予算の目安" });
     // Step 7
-    if (!data.name.trim()) items.push("お名前");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) items.push("メールアドレス");
-    if (!data.phone.trim()) items.push("電話番号");
+    if (!data.name.trim()) items.push({ step: 7, label: "お名前" });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))
+      items.push({ step: 7, label: "メールアドレス" });
+    if (!data.phone.trim()) items.push({ step: 7, label: "電話番号" });
     return items;
   }, [data, targetCheckboxes, strengthCheckboxes, infoCheckboxes]);
 
   const isValid = missingRequirements.length === 0;
 
+  /* ステップ別の未入力件数（進捗UIの完了表示に使う）。配列添字 = step - 1。 */
+  const missingByStep = useMemo(() => {
+    const counts = new Array(STEPS.length).fill(0);
+    for (const m of missingRequirements) {
+      counts[m.step - 1] = (counts[m.step - 1] ?? 0) + 1;
+    }
+    return counts;
+  }, [missingRequirements]);
+
+  /* 現在のステップの未入力必須項目（ナビの直下にコンパクトなヒントを出す）。 */
+  const currentStepMissing = useMemo(
+    () => missingRequirements.filter((m) => m.step === currentStep),
+    [missingRequirements, currentStep]
+  );
+
   /* ---- 送信 ---- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // 最終ステップ以外では Enter / 送信 = 「次のステップへ」と同じ挙動にする。
+    // これにより未入力でもステップを進められ、キーボード操作も自然に保たれる。
+    // 実際の送信（API呼び出し）はステップ7でのみ走る。
+    if (currentStep < totalSteps) {
+      goNext();
+      return;
+    }
     if (!isValid || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -1544,9 +1707,17 @@ export default function ConsultPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* 進捗ヘッダー（現在のステップ・残り・ステップジャンプ） */}
+          <StepProgress
+            currentStep={currentStep}
+            missingByStep={missingByStep}
+            onSelect={goToStep}
+          />
+
           {/* ============================================================ */}
           {/*  Step 1: 事業について                                          */}
           {/* ============================================================ */}
+          {currentStep === 1 && (
           <SectionCard>
             <StepHeader step={1} title="事業について" />
 
@@ -1632,10 +1803,12 @@ export default function ConsultPage() {
               />
             </div>
           </SectionCard>
+          )}
 
           {/* ============================================================ */}
           {/*  Step 2: ターゲットと伝えたいこと（構造化選択式）                */}
           {/* ============================================================ */}
+          {currentStep === 2 && (
           <SectionCard>
             <StepHeader step={2} title="ターゲットと伝えたいこと" />
 
@@ -2039,10 +2212,12 @@ export default function ConsultPage() {
               </p>
             </div>
           </SectionCard>
+          )}
 
           {/* ============================================================ */}
           {/*  Step 3: どんなホームページにしたいか                          */}
           {/* ============================================================ */}
+          {currentStep === 3 && (
           <SectionCard>
             <StepHeader step={3} title="どんなホームページにしたいか" />
 
@@ -2165,10 +2340,12 @@ export default function ConsultPage() {
               )}
             </div>
           </SectionCard>
+          )}
 
           {/* ============================================================ */}
           {/*  Step 4: サイトの目的と機能                                      */}
           {/* ============================================================ */}
+          {currentStep === 4 && (
           <SectionCard>
             <StepHeader step={4} title="サイトの目的と機能" />
 
@@ -2250,10 +2427,12 @@ export default function ConsultPage() {
               </div>
             </div>
           </SectionCard>
+          )}
 
           {/* ============================================================ */}
           {/*  Step 5: ご予算について                                          */}
           {/* ============================================================ */}
+          {currentStep === 5 && (
           <SectionCard>
             <StepHeader step={5} title="ご予算について" />
 
@@ -2297,10 +2476,12 @@ export default function ConsultPage() {
               </div>
             </div>
           </SectionCard>
+          )}
 
           {/* ============================================================ */}
           {/*  Step 6: 制作素材のご準備                                       */}
           {/* ============================================================ */}
+          {currentStep === 6 && (
           <SectionCard>
             <StepHeader step={6} title="制作素材のご準備" />
 
@@ -2447,10 +2628,12 @@ export default function ConsultPage() {
               />
             </div>
           </SectionCard>
+          )}
 
           {/* ============================================================ */}
           {/*  Step 7: お客様情報                                             */}
           {/* ============================================================ */}
+          {currentStep === 7 && (
           <SectionCard>
             <StepHeader step={7} title="お客様情報" />
 
@@ -2502,57 +2685,104 @@ export default function ConsultPage() {
               />
             </div>
           </SectionCard>
+          )}
 
-          {/* 送信ボタン */}
-          <div className="flex flex-col items-center gap-4 pb-8">
-            <Button
-              type="submit"
-              size="lg"
-              disabled={!isValid || isSubmitting}
-              className={`w-full max-w-md text-lg ${
-                !isValid || isSubmitting
-                  ? "cursor-not-allowed opacity-50"
-                  : "hover:scale-[1.02]"
-              }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  送信中...
-                </>
+          {/* ステップナビゲーション（Prev / Next / 送信） */}
+          <div className="flex flex-col gap-4 pb-8">
+            {/* 現在のステップの不足ヒント（未入力でも進めるので「あとで戻れる」ことを明示） */}
+            {currentStepMissing.length > 0 && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  このステップで未入力の必須項目（{currentStepMissing.length}件） — このまま次へ進めます。あとで戻って入力できます
+                </p>
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {currentStepMissing.map((m) => (
+                    <li
+                      key={m.label}
+                      className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200"
+                    >
+                      {m.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* ボタン群：Prev は step1 で非表示 / Next は最終ステップで送信ボタンに切替 */}
+            <div className="flex items-center justify-between gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={goPrev}
+                className={currentStep === 1 ? "invisible" : ""}
+              >
+                <ChevronLeft className="h-5 w-5" />
+                前のステップへ
+              </Button>
+
+              {currentStep < totalSteps ? (
+                <Button type="submit" size="lg" className="hover:scale-[1.02]">
+                  次のステップへ
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
               ) : (
-                <>
-                  <Send className="mr-2 h-5 w-5" />
-                  無料で提案を依頼する
-                </>
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={!isValid || isSubmitting}
+                  className={`text-lg ${
+                    !isValid || isSubmitting
+                      ? "cursor-not-allowed opacity-50"
+                      : "hover:scale-[1.02]"
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      送信中...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-5 w-5" />
+                      無料で提案を依頼する
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
-            {submitError && (
-              <p className="w-full max-w-md rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
+            </div>
+
+            {/* 送信エラー（最終ステップのみ表示） */}
+            {submitError && currentStep === totalSteps && (
+              <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
                 {submitError}
               </p>
             )}
-            {!isValid && (
-              <div className="w-full max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left">
+
+            {/* 最終ステップ：全ステップの未入力サマリ（送信可否の判断材料） */}
+            {currentStep === totalSteps && !isValid && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left">
                 <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   あと{missingRequirements.length}項目で送信できます
                 </p>
                 <ul className="mt-2 flex flex-wrap gap-1.5">
-                  {missingRequirements.map((item) => (
+                  {missingRequirements.map((m) => (
                     <li
-                      key={item}
+                      key={m.label}
                       className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200"
                     >
-                      {item}
+                      {m.label}
                     </li>
                   ))}
                 </ul>
                 <p className="mt-2 text-xs text-amber-700/80">
-                  必須項目（<span className="font-bold">*</span>）をすべてご入力いただくと送信できます。
+                  必須項目（<span className="font-bold">*</span>）をすべてご入力いただくと送信できます。該当ステップに戻ってご入力ください。
                 </p>
               </div>
             )}
+
             <p className="text-center text-xs text-muted-foreground">
               ご入力いただいた情報は、ご提案の目的でのみ使用いたします。
             </p>
