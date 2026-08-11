@@ -43,6 +43,13 @@ import {
 } from "@/lib/revision-lineage";
 import { Gate3ChecklistCard } from "@/components/gate3/Gate3ChecklistCard";
 import { FollowupEditForm } from "./FollowupEditForm";
+import {
+  formatPayloadForReview,
+  SUPPLEMENT_TARGETS,
+  supplementTargetCurrentValues,
+} from "@/lib/consult-fields";
+import { buildIntakeEvidence } from "@/lib/intake-checklist";
+import { SupplementRequestForm } from "./SupplementRequestForm";
 
 interface ReviewPageProps {
   params: Promise<{ submissionId: string }> | { submissionId: string };
@@ -2285,6 +2292,35 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     }
   }
 
+  // 常に payload を読み込んで表示用に使う（needs_followup 以外でも全項目表示のため）
+  let payloadForDisplay: Record<string, unknown> = {};
+  try {
+    const raw = await readArtifact(submissionId, "submission.json");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        parsed.payload &&
+        typeof parsed.payload === "object"
+      ) {
+        payloadForDisplay = parsed.payload as Record<string, unknown>;
+      }
+    }
+  } catch {
+    // 読み取り失敗は空オブジェクトでフォールバック
+  }
+
+  // 顧客入力フィールドのグループ化表示
+  const consultFieldGroups = formatPayloadForReview(payloadForDisplay);
+
+  // インテイク十分性エビデンスの構築
+  const intakeEvidence = buildIntakeEvidence(payloadForDisplay, pkg.intakeQuality);
+
+  // 項目別差戻しUI用の「現在の入力値」を抜き出す（複数回呼ばないよう1回だけ計算）
+  const supplementCurrentValues = supplementTargetCurrentValues(payloadForDisplay);
+
   const isGate1 = pkg.status === "awaiting_representative_approval";
   const isGate2 = pkg.status === "awaiting_plan_approval";
   const isApproved = pkg.status === "approved_for_execution";
@@ -2446,6 +2482,218 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                   <BulletList items={pkg.intakeQuality.followupQuestions} />
                 </div>
               </div>
+            </div>
+          </Section>
+
+          {/* インテイク十分性エビデンス（なぜ十分か／なぜ不十分か） */}
+          <Section
+            title="インテイク十分性の根拠"
+            badge={
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
+                intakeEvidence.verdict === "sufficient"
+                  ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                  : "bg-amber-100 text-amber-800 border-amber-200"
+              }`}>
+                {intakeEvidence.verdict === "sufficient" ? "十分" : "不十分"}
+              </span>
+            }
+          >
+            <div className="rounded-2xl border border-border bg-accent p-4">
+              <p className="text-sm font-bold text-foreground">判定サマリ</p>
+              <p className="mt-2 text-sm leading-relaxed text-foreground">
+                {intakeEvidence.verdictSummary}
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-accent p-3">
+                <p className="text-xs font-bold text-muted-foreground">必須項目充足数</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {intakeEvidence.satisfiedRequiredCount} / {intakeEvidence.requiredItems.length}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-accent p-3">
+                <p className="text-xs font-bold text-muted-foreground">必須項目不足数</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {intakeEvidence.gapRequiredCount}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-accent p-3">
+                <p className="text-xs font-bold text-muted-foreground">任意項目入力あり</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {intakeEvidence.optionalPresentCount}
+                </p>
+              </div>
+            </div>
+
+            {/* 必須項目のエビデンス一覧 */}
+            <div className="mt-5">
+              <p className="mb-2 text-sm font-bold text-foreground">必須項目のエビデンス</p>
+              <div className="space-y-2">
+                {intakeEvidence.requiredItems.map((item) => (
+                  <div
+                    key={item.key}
+                    className={`rounded-2xl border p-3 ${
+                      item.status === "ok"
+                        ? "border-emerald-200 bg-emerald-50"
+                        : "border-amber-200 bg-amber-50"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-foreground">{item.label}</span>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                          item.status === "ok"
+                            ? "border-emerald-300 bg-emerald-100 text-emerald-800"
+                            : "border-amber-300 bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {item.status === "ok" ? "OK" : item.status === "empty" ? "空欄" : "薄弱"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      入力: {item.valueExcerpt}
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+                      {item.reason}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 任意項目の有無 */}
+            {intakeEvidence.optionalItems.length > 0 && (
+              <div className="mt-5">
+                <p className="mb-2 text-sm font-bold text-foreground">任意項目の有無（参考情報）</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {intakeEvidence.optionalItems.map((item) => (
+                    <div
+                      key={item.key}
+                      className={`rounded-xl border p-2 ${
+                        item.present
+                          ? "border-slate-200 bg-white"
+                          : "border-dashed border-slate-300 bg-slate-50"
+                      }`}
+                    >
+                      <p className="text-xs font-semibold text-foreground">{item.label}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {item.present ? item.valueExcerpt : "（未入力）"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 判定の根拠 */}
+            <div className="mt-5 rounded-2xl border border-border bg-accent p-4">
+              <p className="text-xs font-bold text-muted-foreground">判定の根拠</p>
+              <ul className="mt-2 space-y-1">
+                {intakeEvidence.rationale.map((r, i) => (
+                  <li key={i} className="text-sm leading-relaxed text-foreground">
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Section>
+
+          {/* 顧客入力フィールド全項目表示 */}
+          <Section
+            title="顧客入力フィールド（全項目）"
+            badge={
+              <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-800">
+                オペレータ用チェックリスト
+              </span>
+            }
+          >
+            <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+              顧客が記入した全項目をステップ別にグループ化して表示します。
+              オペレータが一目で入力状況を確認できるように、未入力項目も含めてすべて表示します。
+            </p>
+            <div className="space-y-6">
+              {consultFieldGroups.map((group) => (
+                <div
+                  key={group.title}
+                  className="rounded-2xl border border-border bg-white p-4"
+                >
+                  <p className="text-sm font-bold text-foreground">{group.title}</p>
+                  <div className="mt-3 space-y-3">
+                    {group.fields.map((field) => (
+                      <div
+                        key={field.key}
+                        className={`rounded-xl border p-3 ${
+                          field.hasValue
+                            ? "border-slate-200 bg-slate-50"
+                            : "border-dashed border-rose-200 bg-rose-50"
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-semibold text-foreground">
+                            {field.label}
+                          </span>
+                          {!field.hasValue && (
+                            <span className="inline-flex items-center rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
+                              未入力
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-2 text-sm">
+                          {field.kind === "longtext" ? (
+                            <p className="whitespace-pre-wrap break-words text-foreground">
+                              {field.value}
+                            </p>
+                          ) : field.kind === "refsites" && field.refSites ? (
+                            <div className="space-y-2">
+                              {field.refSites.map((site, i) => (
+                                <div
+                                  key={i}
+                                  className="rounded-lg bg-white p-2 text-xs"
+                                >
+                                  <p className="font-semibold text-foreground">{site.url}</p>
+                                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
+                                    <span>種類: {site.typeLabel}</span>
+                                    <span>再現度: {site.followLevelLabel}</span>
+                                  </div>
+                                  {site.whatToReference && (
+                                    <p className="mt-1 text-foreground">
+                                      参考部位: {site.whatToReference}
+                                    </p>
+                                  )}
+                                  {site.likedSections && (
+                                    <p className="mt-1 text-foreground">
+                                      好きな箇所: {site.likedSections}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : field.kind === "list" ? (
+                            <p className="text-foreground">{field.value}</p>
+                          ) : field.kind === "boolean" ? (
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-bold ${
+                                field.value === "はい"
+                                  ? "border-emerald-300 bg-emerald-100 text-emerald-800"
+                                  : "border-slate-300 bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {field.value}
+                            </span>
+                          ) : field.kind === "code" ? (
+                            <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-foreground">
+                              {field.value}
+                            </span>
+                          ) : (
+                            <p className="text-foreground">{field.value}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </Section>
 
@@ -2670,47 +2918,62 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
             {/* 第1ゲート: awaiting_representative_approval のときだけ表示 */}
             {isGate1 && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <form action="/api/consult/approve" method="post" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                  <input type="hidden" name="submissionId" value={pkg.submissionId} />
-                  <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
-                  <input type="hidden" name="approvedBy" value="代表" />
-                  <label className="block text-sm font-bold text-emerald-900">
-                    第1ゲート承認メモ（インテイク承認）
-                  </label>
-                  <textarea
-                    name="memo"
-                    rows={4}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
-                    placeholder="インテイクを承認し、計画アーティファクトを生成する際の指示メモ"
-                  />
-                  <p className="mt-2 text-xs leading-relaxed text-emerald-800/80">
-                    承認すると、OMC 計画アーティファクト（omc-plan.json）を自動生成し、
-                    第2ゲート（計画承認待ち）へ進みます。
-                  </p>
-                  <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
-                    インテイクを承認する（計画を生成）
-                  </button>
-                </form>
+              <div className="space-y-4">
+                {/* 項目別差戻し／補足要求（状態管理はクライアントコンポーネント） */}
+                <SupplementRequestForm
+                  submissionId={pkg.submissionId}
+                  targets={SUPPLEMENT_TARGETS.map((t) => ({
+                    key: t.key,
+                    label: t.label,
+                    required: t.required,
+                    currentValue: supplementCurrentValues[t.key],
+                  }))}
+                />
 
-                <form action="/api/consult/reject" method="post" className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                  <input type="hidden" name="submissionId" value={pkg.submissionId} />
-                  <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
-                  <input type="hidden" name="approvedBy" value="代表" />
-                  <label className="block text-sm font-bold text-rose-900">却下 / 保留メモ</label>
-                  <textarea
-                    name="memo"
-                    rows={4}
-                    className="mt-2 w-full rounded-2xl border border-rose-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
-                    placeholder="差し戻し理由や保留メモ"
-                  />
-                  <p className="mt-2 text-xs leading-relaxed text-rose-800/80">
-                    却下すると、status を rejected にします。
-                  </p>
-                  <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700">
-                    却下する
-                  </button>
-                </form>
+                {/* 従来の承認／却下フォーム */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <form action="/api/consult/approve" method="post" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <input type="hidden" name="submissionId" value={pkg.submissionId} />
+                    <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
+                    <input type="hidden" name="approvedBy" value="代表" />
+                    <label className="block text-sm font-bold text-emerald-900">
+                      第1ゲート承認メモ（インテイク承認）
+                    </label>
+                    <textarea
+                      name="memo"
+                      rows={4}
+                      className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
+                      placeholder="インテイクを承認し、計画アーティファクトを生成する際の指示メモ"
+                    />
+                    <p className="mt-2 text-xs leading-relaxed text-emerald-800/80">
+                      承認すると、OMC 計画アーティファクト（omc-plan.json）を自動生成し、
+                      第2ゲート（計画承認待ち）へ進みます。
+                    </p>
+                    <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
+                      インテイクを承認する（計画を生成）
+                    </button>
+                  </form>
+
+                  <form action="/api/consult/reject" method="post" className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                    <input type="hidden" name="submissionId" value={pkg.submissionId} />
+                    <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
+                    <input type="hidden" name="approvedBy" value="代表" />
+                    <label className="block text-sm font-bold text-rose-900">却下 / 保留メモ（単一）</label>
+                    <textarea
+                      name="memo"
+                      rows={4}
+                      className="mt-2 w-full rounded-2xl border border-rose-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
+                      placeholder="差し戻し理由や保留メモ"
+                    />
+                    <p className="mt-2 text-xs leading-relaxed text-rose-800/80">
+                      却下すると、status を rejected にします。
+                      項目別の差戻しは上の「項目別差戻し／補足要求」をご利用ください。
+                    </p>
+                    <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700">
+                      却下する（単一メモ）
+                    </button>
+                  </form>
+                </div>
               </div>
             )}
 

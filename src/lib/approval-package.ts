@@ -39,7 +39,7 @@ import {
 import { resolveShowcaseComponentPath } from "@/lib/showcase-map";
 
 /** 承認パッケージのスキーマバージョン（下流ツールの互換性確認用） */
-export const APPROVAL_SCHEMA_VERSION = "1.1.0";
+export const APPROVAL_SCHEMA_VERSION = "1.2.0";
 
 /**
  * 承認パッケージの状態。
@@ -148,6 +148,30 @@ export interface ApprovalDecision {
   decidedBy: string | null;
   /** 判定に添えるメモ（任意） */
   memo: string | null;
+}
+
+/**
+ * 項目別補足要求1件。
+ * 従来の「単一メモで却下」に代わり、顧客へ「どの項目を・どう直してほしいか」を
+ * 具体的に伝えるための構造化データ。requestSupplements() で生成され、
+ * needs_followup チャネル経由で顧客の完了画面・フォローアップ編集フォームに
+ * 自動的に表示される。
+ */
+export interface IntakeSupplementRequest {
+  /** ペイロード上の項目キー（targetCustomer / sellingPoints / features 等） */
+  key: string;
+  /** 表示名（日本語） */
+  label: string;
+  /** reject=不備のため差戻し／supplement=任意の補足依頼 */
+  severity: "reject" | "supplement";
+  /** 顧客向けの具体的な指示文（日本語・必須） */
+  guidance: string;
+  /** 差戻し時点の入力値（表示用スナップショット・未入力なら null） */
+  currentValue: string | null;
+  /** 要求日時（ISO8601） */
+  requestedAt: string;
+  /** 要求した代表者名（任意） */
+  requestedBy: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -754,6 +778,12 @@ export interface ApprovalPackage {
   lastFollowupAt: string | null;
   /** 直近のフォローアップ後の品質スコア（未実施時は null） */
   lastFollowupScore: number | null;
+  /**
+   * 代表者からの項目別差戻し／補足要求（構造化）。
+   * requestSupplements() で設定。未要求時は空配列。
+   * 従来の approval.memo（単一テキスト）に代わり、項目ごとに顧客へ指示を伝える。
+   */
+  supplementRequests: IntakeSupplementRequest[];
 }
 
 /** buildApprovalPackage に渡す、保存済みファイルの軽量メタデータ */
@@ -1718,6 +1748,8 @@ export function buildApprovalPackage(
     followupRounds: 0,
     lastFollowupAt: null,
     lastFollowupScore: null,
+    // 項目別差戻し／補足要求は受領時点では未発生
+    supplementRequests: [],
   };
 }
 
@@ -1991,6 +2023,44 @@ function normalizeImageFallback(raw: unknown): ImageFallbackAssessment | null {
 }
 
 /**
+ * 信頼できない入力から IntakeSupplementRequest[] を安全に取り出す。
+ * 古い形式（supplementRequests なし）や手編集でも空配列へ落ちる。
+ */
+function normalizeSupplementRequests(raw: unknown): IntakeSupplementRequest[] {
+  if (!Array.isArray(raw)) return [];
+  const out: IntakeSupplementRequest[] = [];
+  for (const item of raw) {
+    const o = asObject(item);
+    const key = asString(o.key);
+    const guidance = asString(o.guidance);
+    if (key.length === 0 || guidance.length === 0) continue;
+    const severity: "reject" | "supplement" =
+      o.severity === "reject" || o.severity === "supplement"
+        ? (o.severity as "reject" | "supplement")
+        : "supplement";
+    out.push({
+      key,
+      label: asString(o.label) || key,
+      severity,
+      guidance,
+      currentValue:
+        typeof o.currentValue === "string" && o.currentValue.length > 0
+          ? o.currentValue
+          : null,
+      requestedAt:
+        typeof o.requestedAt === "string" && o.requestedAt.length > 0
+          ? o.requestedAt
+          : "",
+      requestedBy:
+        typeof o.requestedBy === "string" && o.requestedBy.length > 0
+          ? o.requestedBy
+          : null,
+    });
+  }
+  return out;
+}
+
+/**
  * 読み込んだ生 JSON を ApprovalPackage の形へ正規化する。
  * 信頼できない入力（古い形式・手編集）でも安全に扱えるように、
  * 必須フィールドを欠損時は安全な既定値で補う。
@@ -2141,6 +2211,7 @@ function normalizeApprovalPackage(
     lastFollowupAt: typeof o.lastFollowupAt === "string" ? o.lastFollowupAt : null,
     lastFollowupScore:
       typeof o.lastFollowupScore === "number" ? o.lastFollowupScore : null,
+    supplementRequests: normalizeSupplementRequests(o.supplementRequests),
   };
 }
 
@@ -2614,6 +2685,131 @@ export async function rejectRepresentativeReview(
 
   pkg.approval = toDecision("reject", new Date().toISOString(), meta);
   pkg.status = "rejected";
+  await writeApprovalPackage(pkg);
+  return pkg;
+}
+
+/** requestSupplements へ渡す、代表者由来の補足要求入力（正規化前） */
+export interface IntakeSupplementInput {
+  /** ペイロード上の項目キー */
+  key: string;
+  /** 表示名（空なら key で代用） */
+  label?: string;
+  /** reject=不備差戻し／supplement=任意補足依頼（既定: supplement） */
+  severity?: "reject" | "supplement";
+  /** 顧客向けの具体的な指示文（必須・空は除外） */
+  guidance: string;
+  /** 差戻し時点の入力値（任意） */
+  currentValue?: string | null;
+}
+
+/**
+ * 代表者がインテイクを項目別に差し戻す／補足を依頼する遷移（第1ゲート・構造化却下）。
+ * 従来の rejectRepresentativeReview（単一メモで rejected 化）に代わり、
+ * 「どの項目を・どう直してほしいか」を構造化して顧客へ伝える。
+ *
+ * 挙動:
+ *   - pkg.supplementRequests に入力を正規化して保存
+ *   - 既存の needs_followup チャネル（consult 完了画面・フォローアップ編集フォーム）が
+ *     自動的に拾えるよう、項目を intakeQuality.requestedItems / followupQuestions
+ *     へマージ（重複排除）
+ *   - status を needs_followup、customerFacingStatus を followup_requested へ設定
+ *   - approval は「現状では承認しない」を示すため reject 判定とする
+ *
+ * items が空（有効な項目が1件も無い）ときは従来互換で rejected 化する。
+ * 該当パッケージが無い場合は null を返す（呼び出し側で 404 へマップ）。
+ */
+export async function requestSupplements(
+  submissionId: string,
+  items: IntakeSupplementInput[],
+  meta: UpdateDecisionMeta = {}
+): Promise<ApprovalPackage | null> {
+  const pkg = await readApprovalPackage(submissionId);
+  if (!pkg) return null;
+
+  const now = new Date().toISOString();
+
+  // 入力を正規化: key・guidance が揃っているものだけ残す
+  const requests: IntakeSupplementRequest[] = [];
+  for (const item of Array.isArray(items) ? items : []) {
+    if (!item || typeof item !== "object") continue;
+    const key = typeof item.key === "string" ? item.key.trim() : "";
+    const guidance =
+      typeof item.guidance === "string" ? item.guidance.trim() : "";
+    if (key.length === 0 || guidance.length === 0) continue;
+    const severity: "reject" | "supplement" =
+      item.severity === "reject" || item.severity === "supplement"
+        ? item.severity
+        : "supplement";
+    requests.push({
+      key,
+      label:
+        typeof item.label === "string" && item.label.trim().length > 0
+          ? item.label.trim()
+          : key,
+      severity,
+      guidance,
+      currentValue:
+        typeof item.currentValue === "string" && item.currentValue.length > 0
+          ? item.currentValue
+          : null,
+      requestedAt: now,
+      requestedBy:
+        typeof meta.decidedBy === "string" && meta.decidedBy.trim().length > 0
+          ? meta.decidedBy.trim()
+          : null,
+    });
+  }
+
+  // 項目が1件も無い → 従来互換: 単一メモ却下として rejected 化
+  if (requests.length === 0) {
+    return rejectRepresentativeReview(submissionId, meta);
+  }
+
+  pkg.supplementRequests = requests;
+
+  // 既存チャネル（consult 完了画面・FollowupEditForm）が自動表示するよう、
+  // requestedItems（項目ラベル）・followupQuestions（指示文）へマージ（重複排除）
+  const existingRequested = new Set(pkg.intakeQuality.requestedItems);
+  for (const r of requests) {
+    if (!existingRequested.has(r.label)) {
+      pkg.intakeQuality.requestedItems.push(r.label);
+      existingRequested.add(r.label);
+    }
+  }
+  const existingQuestions = new Set(pkg.intakeQuality.followupQuestions);
+  for (const r of requests) {
+    const q = `[${r.label}] ${r.guidance}`;
+    if (!existingQuestions.has(q)) {
+      pkg.intakeQuality.followupQuestions.push(q);
+      existingQuestions.add(q);
+    }
+  }
+
+  // フォローアップ系カウンタを進める（差戻しラウンドとして記録）
+  pkg.followupRounds = pkg.followupRounds + 1;
+  pkg.lastFollowupAt = now;
+  pkg.lastFollowupScore = pkg.intakeQuality.score;
+
+  // approval は「現状では承認しない」を明示（reject 判定・メモは任意）
+  pkg.approval = {
+    representativeDecision: "reject",
+    decidedAt: now,
+    decidedBy:
+      typeof meta.decidedBy === "string" && meta.decidedBy.trim().length > 0
+        ? meta.decidedBy.trim()
+        : null,
+    memo:
+      typeof meta.memo === "string" && meta.memo.trim().length > 0
+        ? meta.memo.trim()
+        : null,
+  };
+
+  // needs_followup へ遷移。toCustomerFacingStatus は needs_followup を扱わないため
+  // （default → under_internal_review になる）、ここでは明示的に followup_requested を設定する。
+  pkg.status = "needs_followup";
+  pkg.customerFacingStatus = "followup_requested";
+
   await writeApprovalPackage(pkg);
   return pkg;
 }
