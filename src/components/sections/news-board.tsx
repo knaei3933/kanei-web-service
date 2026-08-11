@@ -43,17 +43,16 @@ export default function NewsBoard() {
   return (
     <Section id="news" className="bg-background">
       <div className="mx-auto max-w-container">
-        <div className="mb-10 text-center">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-sm font-medium text-sky-700">
-            <Newspaper className="h-4 w-4" />
+        <div className="mb-8 text-center">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-muted-foreground">
+            <Newspaper className="h-3.5 w-3.5" />
             更新情報・構成メモ
           </div>
-          <h2 className="mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            制作事例だけでなく、運用時に役立つ考え方も整理しています
+          <h2 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">
+            運用に役立つ構成メモ
           </h2>
-          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground">
-            実際の構成例、更新しやすい導線の考え方、月額プランの運用範囲など、
-            初回相談の前後で確認しやすい情報を掲載する想定です。
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            構成例、更新のコツ、月額プランの範囲など、相談の前後に確認しやすい情報をまとめています。
           </p>
         </div>
 
@@ -65,7 +64,7 @@ export default function NewsBoard() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.35, delay: index * 0.08 }}
-              className="rounded-3xl border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
+              className="rounded-3xl border bg-card p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
             >
               <div className="mb-3 flex items-center justify-between">
                 <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">

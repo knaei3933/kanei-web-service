@@ -2252,6 +2252,28 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
         <NextActionCard meta={nextAction} />
 
+        {/* スティッキー次アクションバー：スクロール中も「次にやること」と
+            「開くべきページ」を常時表示し、担当者が次の操作を見失わないようにする。
+            グローバルヘッダー（z-50）の下に潜り込ませるため top-12 / z-40 とし、
+            ヘッダー下部で重なる分は本バーの上余白（py-4）で吸収する。 */}
+        <div className="sticky top-12 z-40 -mx-4 mb-6 border-b border-border bg-slate-50/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-muted-foreground">次のアクション</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
+                {nextAction.stage}
+              </p>
+            </div>
+            <Link
+              href={nextAction.href}
+              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition hover:opacity-90"
+            >
+              {nextAction.targetLabel}
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </div>
+
         <section className={`mb-6 rounded-3xl border p-6 shadow-sm ${routeGuidance.toneClass}`}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">

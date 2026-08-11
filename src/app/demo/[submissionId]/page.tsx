@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DemoFeedbackForm } from "./DemoFeedbackForm";
 import { readApprovalPackage } from "@/lib/approval-package";
@@ -102,19 +102,29 @@ export default async function DemoPage({ params }: DemoPageProps) {
       {/* ============================================================ */}
       <div className="border-b bg-white">
         <div className="mx-auto max-w-container px-4 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <Button asChild variant="ghost" size="sm">
               <Link href="/">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 トップに戻る
               </Link>
             </Button>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>{enterpriseName}</span>
-              <span className="text-slate-300">/</span>
-              <span>{businessType}</span>
-              <span className="text-slate-300">/</span>
-              <span>デモ確認</span>
+            <div className="flex items-center gap-3">
+              <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex">
+                <span>{enterpriseName}</span>
+                <span className="text-slate-300">/</span>
+                <span>{businessType}</span>
+                <span className="text-slate-300">/</span>
+                <span>デモ確認</span>
+              </div>
+              {/* ページ最上部からフィードバックフォームへジャンプするボタン。
+                  お客様がデモを見ながら、いつでも簡単にご意見を送れる導線。 */}
+              <Button asChild size="sm">
+                <a href="#feedback">
+                  <MessageSquare className="mr-1 h-4 w-4" />
+                  フィードバックを送る
+                </a>
+              </Button>
             </div>
           </div>
         </div>
@@ -132,7 +142,10 @@ export default async function DemoPage({ params }: DemoPageProps) {
       {/* ============================================================ */}
       {/*  フィードバックフォーム                                          */}
       {/* ============================================================ */}
-      <div className="border-t border-amber-200 bg-slate-50">
+      <div
+        id="feedback"
+        className="scroll-mt-24 border-t border-amber-200 bg-slate-50"
+      >
         <div className="mx-auto max-w-container px-4 py-8">
           <DemoFeedbackForm submissionId={submissionId} />
         </div>
