@@ -462,15 +462,18 @@ export function buildCustomerFollowupMail(
 
   // followupUrl がある場合は追加情報入力ページへのリンクブロックを追加
   const followupUrlHtml = input.followupUrl
-    ? `<div style="margin:20px 0;padding:16px;border:1px solid #a78bfa;border-radius:12px;background:#f5f3ff;">
-	    <p style="margin:0 0 8px;font-size:13px;font-weight:bold;color:#6d28d9;">追加情報入力ページ</p>
-	    <p style="margin:0 0 4px;font-size:13px;color:#4c1d95;">メールへの返信だけでなく、下記のページからも追加情報をご入力いただけます。</p>
-	    <p style="margin:0;"><a href="${escapeHtml(
-        input.followupUrl
-      )}" style="color:#7c3aed;word-break:break-all;font-weight:bold;">${escapeHtml(
-        input.followupUrl
-      )}</a></p>
-	  </div>`
+    ? `<div style="margin:20px 0;padding:16px;border:1px solid #a78bfa;border-radius:12px;background:#f5f3ff;text-align:center;">
+        <p style="margin:0 0 8px;font-size:13px;font-weight:bold;color:#6d28d9;">追加情報入力ページ</p>
+        <p style="margin:0 0 14px;font-size:13px;color:#4c1d95;">メールへの返信だけでなく、下記のページからも追加情報をご入力いただけます。</p>
+        <p style="margin:0 0 14px;">
+          <a href="${escapeHtml(
+            input.followupUrl
+          )}" style="display:inline-block;padding:12px 20px;border-radius:9999px;background:#7c3aed;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;line-height:1.2;">追加情報を入力する</a>
+        </p>
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#6b7280;word-break:break-all;">
+          ${escapeHtml(input.followupUrl)}
+        </p>
+      </div>`
     : "";
 
   const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Meiryo,sans-serif;color:#111827;max-width:600px;">
