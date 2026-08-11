@@ -963,9 +963,9 @@ export default function Hero() {
             className="grid gap-4 sm:grid-cols-3"
           >
             {[
-              ["初期費用0円", "導入負担を抑えて始められます"],
-              ["ソースコード納品", "将来の移行・管理に備えます"],
-              ["解約・移行しやすい", "長期縛らず、続けやすさで選ばれています"],
+              ["初期費用0円", "負担なく始められます"],
+              ["ソースコード納品", "移行・管理も安心です"],
+              ["解約・移行しやすい", "長期縛りなく続けられます"],
             ].map(([title, text]) => (
               <div key={title} className="rounded-2xl border bg-card p-4 shadow-sm">
                 <div className="flex items-center gap-2 font-semibold">
