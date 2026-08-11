@@ -163,12 +163,16 @@ export async function POST(
     // 新しいラウンド番号を決定（現在の最大ラウンド + 1）
     const nextRound = Math.max(0, ...lineage.rounds.map((r) => r.round)) + 1;
 
+    const targetComponentPath = snapshot.componentPath ?? lineage.componentPath;
+    const enforcedRevisionPrompt = `${revisionPrompt}\n\n## 必ず編集する対象ファイル\n- ${targetComponentPath ?? "(unknown target file)"}\n- 新しい showcase ファイルを増やさず、上記の既存ファイルを直接修正すること\n- runtime が参照中の既存コンポーネントを更新し、実際の git diff を残すこと\n- 説明文だけを返して終了せず、必ずファイルを編集して保存すること`;
+
     // 再利用用 revision-handoff.json を生成
     const reuseHandoff = {
       schemaVersion: "1.0.0",
       submissionId,
-      revisionPrompt,
+      revisionPrompt: enforcedRevisionPrompt,
       targetComponent: lineage.targetComponent,
+      componentPath: targetComponentPath,
       round: nextRound,
       createdAt: new Date().toISOString(),
       kind: "reuse" as const,
@@ -220,8 +224,10 @@ export async function POST(
       notes: `ラウンド ${round} からバリアント "${variantTag}" を生成`,
     });
 
-    // demo_revision_ready に遷移
-    await transitionStatus(submissionId, "demo_revision_ready");
+    // demo_revision_ready に遷移（既に同状態ならそのまま継続）
+    if (status !== "demo_revision_ready") {
+      await transitionStatus(submissionId, "demo_revision_ready");
+    }
 
     return Response.json({
       ok: true,

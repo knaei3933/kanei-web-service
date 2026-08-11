@@ -131,12 +131,16 @@ export async function POST(
     // 新しいラウンド番号を決定（現在の最大ラウンド + 1）
     const nextRound = Math.max(0, ...lineage.rounds.map((r) => r.round)) + 1;
 
+    const targetComponentPath = snapshot.componentPath ?? lineage.componentPath;
+    const restorePrompt = `# 復元指示 — ラウンド ${round} からの復元\n\nラウンド ${round}（${targetRound.label}）の内容を正確に復元してください。\n\n- 復元元ラウンド: ${round}\n- 復元元ラベル: ${targetRound.label}\n- componentPath: ${targetComponentPath}\n\n## 必ず編集する対象ファイル\n- ${targetComponentPath ?? "(unknown target file)"}\n- 新しい showcase ファイルを増やさず、上記の既存ファイルを直接修正すること\n- snapshot の内容へ戻すため、説明だけで終わらず必ずファイルを書き換えること\n- runtime が参照中の既存コンポーネントを更新し、実際の git diff を残すこと\n\nこの内容を新規コミットとして live に戻してください。`;
+
     // 復元用 revision-handoff.json を生成
     const restoreHandoff = {
       schemaVersion: "1.0.0",
       submissionId,
-      revisionPrompt: `# 復元指示 — ラウンド ${round} からの復元\n\nラウンド ${round}（${targetRound.label}）の内容を正確に復元してください。\n\n- 復元元ラウンド: ${round}\n- 復元元ラベル: ${targetRound.label}\n- componentPath: ${snapshot.componentPath}\n\nこの内容を新規コミットとして live に戻してください。`,
+      revisionPrompt: restorePrompt,
       targetComponent: lineage.targetComponent,
+      componentPath: targetComponentPath,
       round: nextRound,
       createdAt: new Date().toISOString(),
       kind: "restore" as const,
@@ -167,8 +171,10 @@ export async function POST(
       notes: `ラウンド ${round} から復元`,
     });
 
-    // demo_revision_ready に遷移
-    await transitionStatus(submissionId, "demo_revision_ready");
+    // demo_revision_ready に遷移（既に同状態ならそのまま継続）
+    if (status !== "demo_revision_ready") {
+      await transitionStatus(submissionId, "demo_revision_ready");
+    }
 
     return Response.json({
       ok: true,
