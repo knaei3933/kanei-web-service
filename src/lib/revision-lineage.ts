@@ -11,6 +11,7 @@ import {
   readArtifact,
   artifactExists,
 } from "@/server/submission-storage";
+import { resolveShowcaseComponentPath } from "@/lib/showcase-map";
 
 /** ラウンドの種類 */
 export type RoundKind = "initial" | "revision" | "restore" | "reuse";
@@ -119,7 +120,14 @@ export async function readLineage(
       "rounds" in parsed &&
       Array.isArray(parsed.rounds)
     ) {
-      return parsed as RevisionLineage;
+      const lineage = backfillLineageMetadata(parsed as RevisionLineage);
+      const shouldPersist =
+        lineage.componentPath !== (parsed as RevisionLineage).componentPath ||
+        lineage.targetComponent !== (parsed as RevisionLineage).targetComponent;
+      if (shouldPersist) {
+        await writeLineage(submissionId, lineage);
+      }
+      return lineage;
     }
     // 構造が不正な場合は初期状態を返す
     console.warn(`[revision-lineage] 構造が不正なため初期状態を返します: ${submissionId}`);
@@ -128,6 +136,23 @@ export async function readLineage(
     console.error(`[revision-lineage] パースエラー: ${submissionId}`, err);
     return createInitialLineage(submissionId);
   }
+}
+
+function deriveTargetComponentFromPath(componentPath: string | null): string | null {
+  if (!componentPath) return null;
+  return componentPath;
+}
+
+function backfillLineageMetadata(lineage: RevisionLineage): RevisionLineage {
+  const mappedPath = resolveShowcaseComponentPath(lineage.submissionId);
+  const resolvedPath = lineage.componentPath ?? mappedPath ?? null;
+  const resolvedTarget = lineage.targetComponent ?? deriveTargetComponentFromPath(resolvedPath);
+
+  return {
+    ...lineage,
+    componentPath: resolvedPath,
+    targetComponent: resolvedTarget,
+  };
 }
 
 /** revision-lineage.json を書き込む */
@@ -223,14 +248,23 @@ export async function appendRound(
   lineage.rounds.push(newRound);
   lineage.currentRound = params.round;
 
-  // 初回のみ targetComponent と componentPath を設定
+  // 初回 또는 메타데이터 누락 시 targetComponent / componentPath 를 보정
   if (params.kind === "initial") {
     lineage.targetComponent = params.targetComponent ?? null;
     lineage.componentPath = params.componentPath ?? null;
+  } else {
+    if (!lineage.componentPath) {
+      lineage.componentPath = params.componentPath ?? resolveShowcaseComponentPath(submissionId);
+    }
+    if (!lineage.targetComponent) {
+      lineage.targetComponent =
+        params.targetComponent ?? deriveTargetComponentFromPath(lineage.componentPath);
+    }
   }
 
-  await writeLineage(submissionId, lineage);
-  return lineage;
+  const normalized = backfillLineageMetadata(lineage);
+  await writeLineage(submissionId, normalized);
+  return normalized;
 }
 
 /**
