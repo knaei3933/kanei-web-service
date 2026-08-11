@@ -198,7 +198,8 @@ export async function POST(
   const customerEmail =
     asString(payload.email) || asString(payload.contactEmail);
   const customerName = asString(payload.name);
-  const companyName = asString(payload.companyName);
+  const companyName =
+    asString(payload.companyName) || asString(payload.enterpriseName);
 
   // selectedItems のラベルから followupQuestions を構築
   const followupQuestions: string[] = [];
