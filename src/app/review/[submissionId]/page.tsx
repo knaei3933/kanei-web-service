@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { notFound } from "next/navigation";
 import {
   buildExecutionSectionPromptsMarkdown,
@@ -412,6 +413,31 @@ function Section({
   badge?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  // 内部専用 / 代表専用 のセクションは、オペレータの高速スキャンを妨げないよう
+  // デフォルトで折りたたむ。<details> を使うことで JavaScript 不要で開閉できる。
+  // 運用必須セクション（概要・品質判定・参考URL/素材分析・追加情報の入力・
+  // 計画アーティファクト・承認アクション 等）は、これまで通り常に展開する。
+  const defaultCollapsed =
+    title.includes("内部専用") || title.includes("代表専用");
+
+  if (defaultCollapsed) {
+    return (
+      <details className="group rounded-3xl border border-border bg-white shadow-sm">
+        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 p-6 sm:p-8 [&::-webkit-details-marker]:hidden">
+          <ChevronDown
+            className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+            aria-hidden="true"
+          />
+          <h2 className="text-lg font-bold text-foreground sm:text-xl">{title}</h2>
+          {badge}
+        </summary>
+        <div className="border-t border-border/60 px-6 pb-6 pt-5 sm:px-8 sm:pb-8">
+          {children}
+        </div>
+      </details>
+    );
+  }
+
   return (
     <section className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8">
       <div className="flex flex-wrap items-center gap-3">

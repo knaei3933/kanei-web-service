@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Link2,
   PencilLine,
+  ChevronDown,
 } from "lucide-react";
 import { DEMO_SECTION_OPTIONS } from "@/lib/demo-sections";
 
@@ -43,6 +44,9 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
     message: "",
   });
   const [isPending, startTransition] = useTransition();
+  // 詳細な修正入力（箇所選択・箇所別メモ・参考画像）は初期表示では隠し、
+  // 必要な顧客だけ展開する。第一印象を軽くし、承認だけで進む導線を妨げない。
+  const [revisionMode, setRevisionMode] = useState(false);
 
   // 選択中の修正対象セクション（ライブサマリ表示用）
   const selectedSections = DEMO_SECTION_OPTIONS.filter((section) =>
@@ -208,8 +212,8 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           <li className="flex items-start gap-2">
             <PencilLine className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <span>
-              直したい箇所があれば、下で<b>該当箇所を選んで</b>「
-              <b>選択した箇所を修正依頼</b>」を押してください。
+              直したい箇所があれば、下の<b>「直したい箇所がある場合」を開いて</b>
+              該当箇所を選び、「<b>選択した箇所を修正依頼</b>」を押してください。
               <span className="text-amber-700">
                 （選んでいない箇所は、そのまま承認扱いで進みます）
               </span>
@@ -266,90 +270,111 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </p>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-amber-200 bg-white/80 p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-sm font-semibold text-amber-900">
-              修正したい箇所を選択
-            </p>
-            <p className="mt-1 text-xs text-amber-700">
-              ヘッダー・メインビジュアル・フッターなど、気になる部分だけを選んで、箇所ごとにメモを残せます。
-            </p>
-          </div>
-          {selectedCount > 0 && (
-            <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-              {selectedCount}件 選択中
-            </span>
-          )}
-        </div>
-        <div className="space-y-3">
-          {DEMO_SECTION_OPTIONS.map((section) => {
-            const checked = feedback.selectedSectionIds.includes(section.id);
-            return (
-              <div
-                key={section.id}
-                className={`rounded-xl border bg-white p-3 transition ${
-                  checked ? "border-amber-400 ring-1 ring-amber-300" : "border-amber-100"
-                }`}
-              >
-                <label className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleSection(section.id)}
-                    disabled={isSubmitting}
-                    className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-amber-950">
-                      {section.name}
-                      {checked && (
-                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                          修正対象
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2">
-                      <textarea
-                        value={feedback.sectionFeedback[section.id] ?? ""}
-                        onChange={(e) =>
-                          handleSectionFeedbackChange(section.id, e.target.value)
-                        }
-                        disabled={isSubmitting || !checked}
-                        rows={2}
-                        maxLength={400}
-                        className="w-full rounded-lg border-amber-200 bg-white px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        placeholder={`${section.name}の修正したい点をご記入ください`}
-                      />
-                    </div>
-                  </div>
-                </label>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="mb-6">
-        <label
-          htmlFor="referenceImageUrls"
-          className="mb-2 flex items-center gap-2 text-sm font-medium text-amber-900"
-        >
-          <Link2 className="h-4 w-4" />
-          参考画像 / スクリーンショット URL
-        </label>
-        <textarea
-          id="referenceImageUrls"
-          value={feedback.referenceImageUrls}
-          onChange={handleReferenceUrlsChange}
+        <button
+          type="button"
+          onClick={() => setRevisionMode((v) => !v)}
           disabled={isSubmitting}
-          rows={3}
-          className="w-full rounded-lg border-amber-200 bg-white px-4 py-3 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
-          placeholder="https://... 形式で1行に1つずつご入力ください"
-        />
-        <p className="mt-1 text-xs text-amber-700">
-          例: 参考サイトのスクリーンショット、ご希望のレイアウト画像、カラーの参考など
-        </p>
+          aria-expanded={revisionMode}
+          aria-controls="revision-details"
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-white/70 px-4 py-3 text-left transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-amber-900">
+            <PencilLine className="h-4 w-4 shrink-0 text-amber-600" />
+            直したい箇所がある場合（オプション）
+            {selectedCount > 0 && (
+              <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                {selectedCount}件 選択中
+              </span>
+            )}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-amber-600 transition-transform ${
+              revisionMode ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {revisionMode && (
+          <div id="revision-details" className="mt-3 space-y-4">
+            <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
+              <p className="mb-1 text-sm font-semibold text-amber-900">
+                修正したい箇所を選択
+              </p>
+              <p className="mb-3 text-xs text-amber-700">
+                ヘッダー・メインビジュアル・フッターなど、気になる部分だけを選んで、箇所ごとにメモを残せます。
+              </p>
+              <div className="space-y-3">
+                {DEMO_SECTION_OPTIONS.map((section) => {
+                  const checked = feedback.selectedSectionIds.includes(section.id);
+                  return (
+                    <div
+                      key={section.id}
+                      className={`rounded-xl border bg-white p-3 transition ${
+                        checked ? "border-amber-400 ring-1 ring-amber-300" : "border-amber-100"
+                      }`}
+                    >
+                      <label className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSection(section.id)}
+                          disabled={isSubmitting}
+                          className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-amber-950">
+                            {section.name}
+                            {checked && (
+                              <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                                修正対象
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2">
+                            <textarea
+                              value={feedback.sectionFeedback[section.id] ?? ""}
+                              onChange={(e) =>
+                                handleSectionFeedbackChange(section.id, e.target.value)
+                              }
+                              disabled={isSubmitting || !checked}
+                              rows={2}
+                              maxLength={400}
+                              className="w-full rounded-lg border-amber-200 bg-white px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+                              placeholder={`${section.name}の修正したい点をご記入ください`}
+                            />
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="referenceImageUrls"
+                className="mb-2 flex items-center gap-2 text-sm font-medium text-amber-900"
+              >
+                <Link2 className="h-4 w-4" />
+                参考画像 / スクリーンショット URL
+              </label>
+              <textarea
+                id="referenceImageUrls"
+                value={feedback.referenceImageUrls}
+                onChange={handleReferenceUrlsChange}
+                disabled={isSubmitting}
+                rows={3}
+                className="w-full rounded-lg border-amber-200 bg-white px-4 py-3 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="https://... 形式で1行に1つずつご入力ください"
+              />
+              <p className="mt-1 text-xs text-amber-700">
+                例: 参考サイトのスクリーンショット、ご希望のレイアウト画像、カラーの参考など
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {formState.status === "error" && (
@@ -385,7 +410,14 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </button>
         <button
           type="button"
-          onClick={() => handleSubmit("revision")}
+          onClick={() => {
+            // 詳細入力が折りたたまれているときは、まず展開して入力を促す（送信しない）
+            if (!revisionMode) {
+              setRevisionMode(true);
+              return;
+            }
+            handleSubmit("revision");
+          }}
           disabled={isSubmitting || feedback.rating === 0}
           className="flex flex-1 items-center justify-center gap-2 rounded-full border border-amber-400 bg-white px-6 py-3 font-medium text-amber-900 transition-all hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
         >

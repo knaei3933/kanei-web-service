@@ -230,10 +230,6 @@ function BrowserChrome({ item }: { item: Industry }) {
           {item.domain}
         </span>
       </div>
-      <span className="hidden shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-600 sm:inline-flex">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        常時SSL
-      </span>
     </div>
   );
 }
@@ -242,11 +238,7 @@ function StatusBar({ item }: { item: Industry }) {
   return (
     <div className="flex items-center justify-between gap-2 border-t border-black/5 bg-white/80 px-3.5 py-2 text-[9px] text-slate-400 backdrop-blur">
       <span className="truncate font-medium">{item.footer}</span>
-      <span className="flex shrink-0 items-center gap-2">
-        <span className="hidden sm:inline">レスポンシブ</span>
-        <span className="hidden sm:inline">•</span>
-        <span>検索対策済み</span>
-      </span>
+      <span className="shrink-0">検索対策済み</span>
     </div>
   );
 }
