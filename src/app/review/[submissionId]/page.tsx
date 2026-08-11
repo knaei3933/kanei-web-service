@@ -2251,6 +2251,8 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   const adminUrl = `/admin/${pkg.submissionId}`;
   const canOpenDemo = isDemoVisibleStatus(pkg.status);
   const canOpenExecution = isExecutionVisibleStatus(pkg.status);
+  // 品質判定の表示トーン（ready なら進行可能・それ以外は追加確認が必要）
+  const intakeReady = pkg.intakeQuality.status === "ready";
   const routeGuidance = reviewRouteGuidance(pkg.status);
   const nextAction = nextActionMeta(pkg.status, {
     adminUrl,
@@ -2335,54 +2337,69 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
         <div className="grid gap-6">
           <Section title="概要">
+            {/* 主要事実を上にコンパクトに並べる */}
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-bold text-muted-foreground">受領日時</p>
-                <p className="mt-1 text-sm text-foreground">{pkg.receivedAt}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-muted-foreground">顧客向け表示状態</p>
-                <p className="mt-1 text-sm text-foreground">{pkg.customerFacingStatus}</p>
-              </div>
-              <div className="sm:col-span-2">
+              <div className="rounded-2xl bg-accent p-4 sm:col-span-2">
                 <p className="text-xs font-bold text-muted-foreground">事業要約</p>
                 <p className="mt-1 text-sm leading-relaxed text-foreground">
                   {pkg.reviewSummary.businessSummary || "未整理"}
                 </p>
               </div>
-              <div>
+              <div className="rounded-2xl bg-accent p-4 sm:col-span-2">
                 <p className="text-xs font-bold text-muted-foreground">ターゲット要約</p>
                 <p className="mt-1 text-sm leading-relaxed text-foreground">
                   {pkg.reviewSummary.targetUserSummary || "未整理"}
                 </p>
               </div>
-              <div>
-                <p className="text-xs font-bold text-muted-foreground">レビューURL</p>
-                <p className="mt-1 break-all text-sm text-foreground">
-                  {pkg.reviewUrl || "未設定"}
+              <div className="rounded-2xl bg-accent p-4">
+                <p className="text-xs font-bold text-muted-foreground">受領日時</p>
+                <p className="mt-1 text-sm text-foreground">{pkg.receivedAt}</p>
+              </div>
+              <div className="rounded-2xl bg-accent p-4">
+                <p className="text-xs font-bold text-muted-foreground">顧客向け表示状態</p>
+                <p className="mt-1 text-sm text-foreground">
+                  {pkg.customerFacingStatus}
                 </p>
               </div>
+            </div>
+            {/* 補足情報（優先度低・目立たせない） */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <span className="font-bold">レビューURL:</span>
+              <span className="break-all font-mono text-foreground/70">
+                {pkg.reviewUrl || "未設定"}
+              </span>
             </div>
           </Section>
 
           <Section title="品質判定">
-            <div className="grid gap-4 sm:grid-cols-3">
+            {/* 判定を先頭に・色で状態をひと目で */}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div
+                className={`rounded-2xl border p-4 ${
+                  intakeReady
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-amber-200 bg-amber-50"
+                }`}
+              >
+                <p className="text-xs font-bold text-muted-foreground">総合判定</p>
+                <p
+                  className={`mt-1 text-base font-bold ${
+                    intakeReady ? "text-emerald-700" : "text-amber-700"
+                  }`}
+                >
+                  {intakeReady ? "進行可能" : "追加確認が必要"}
+                </p>
+              </div>
               <div className="rounded-2xl bg-accent p-4">
-                <p className="text-xs font-bold text-muted-foreground">status</p>
+                <p className="text-xs font-bold text-muted-foreground">品質ステータス</p>
                 <p className="mt-1 text-sm font-semibold text-foreground">
                   {pkg.intakeQuality.status}
                 </p>
               </div>
               <div className="rounded-2xl bg-accent p-4">
-                <p className="text-xs font-bold text-muted-foreground">score</p>
+                <p className="text-xs font-bold text-muted-foreground">スコア</p>
                 <p className="mt-1 text-sm font-semibold text-foreground">
-                  {pkg.intakeQuality.score}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-accent p-4">
-                <p className="text-xs font-bold text-muted-foreground">判定メモ</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">
-                  {pkg.intakeQuality.status === "ready" ? "進行可能" : "追加確認必要"}
+                  {pkg.intakeQuality.score} / 100
                 </p>
               </div>
             </div>

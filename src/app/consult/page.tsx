@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Send,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Mail,
@@ -899,12 +900,16 @@ function ReferenceSiteCard({
 /* アップロード素材の品質ガイド（日本語の指定書） */
 function UploadSpecGuide() {
   return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5 sm:p-6">
-      <p className="mb-4 flex items-center gap-2 text-sm font-bold text-amber-900">
+    <details className="group rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-amber-900 [&::-webkit-details-marker]:hidden">
+        <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
         <Lightbulb className="h-4 w-4 shrink-0" />
-        素材データをより良く活かすために（ご提出前にお読みください）
-      </p>
-      <div className="grid gap-4 sm:grid-cols-2">
+        素材データをより良く活かすためのヒント
+        <span className="text-xs font-normal text-amber-700/80">
+          （対応形式・推奨サイズ・あると助かるもの・取り扱い）
+        </span>
+      </summary>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl bg-white p-4 ring-1 ring-amber-100">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
             <ImageIcon className="h-3.5 w-3.5 text-amber-600" />
@@ -954,7 +959,7 @@ function UploadSpecGuide() {
         ※
         お預かりしたデータはご提案の目的でのみ使用します。機密情報はマスキングのうえ送付いただくか、事前にご相談ください。
       </p>
-    </div>
+    </details>
   );
 }
 
@@ -2684,6 +2689,9 @@ export default function ConsultPage() {
             {/* 5-1. 予算の目安 */}
             <div className="mb-10">
               <FieldLabel required>ご予算の目安</FieldLabel>
+              <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+                一番近いものをひとつお選びください。ぴったりの金額がなくても、近い範囲で構いません。
+              </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {BUDGET_OPTIONS.map((opt) => (
                   <RadioCard
@@ -2752,8 +2760,11 @@ export default function ConsultPage() {
             {/* 6-2. 素材データのアップロード（専用セクション） */}
             <div className="mb-10">
               <FieldLabel hint="（任意）">素材データのアップロード</FieldLabel>
+              <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+                素材がまだなくてもお申し込みいただけます。アップロードは必須ではありません。
+              </p>
 
-              {/* 品質ガイド（日本語の指定書） */}
+              {/* 品質ガイド（折りたたみ・詳細は展開して確認） */}
               <UploadSpecGuide />
 
               {/* ドロップゾーン */}
@@ -3008,22 +3019,56 @@ export default function ConsultPage() {
             {/* 最終ステップ：全ステップの未入力サマリ（送信可否の判断材料） */}
             {currentStep === totalSteps && !isValid && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left">
-                <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  あと{missingRequirements.length}項目で送信できます
-                </p>
-                <ul className="mt-2 flex flex-wrap gap-1.5">
-                  {missingRequirements.map((m) => (
-                    <li
-                      key={m.label}
-                      className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200"
-                    >
-                      {m.label}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2 text-xs text-amber-700/80">
-                  必須項目（<span className="font-bold">*</span>）をすべてご入力いただくと送信できます。該当ステップに戻ってご入力ください。
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    あと{missingRequirements.length}項目で送信できます
+                  </p>
+                  <span className="text-xs text-amber-700/80">
+                    優先度順（上のステップから）
+                  </span>
+                </div>
+
+                {/* ステップ別のグループ表示（行をクリックで該当ステップへ移動） */}
+                <div className="mt-3 space-y-2">
+                  {STEPS.map((s) => ({
+                    stepId: s.id,
+                    title: s.title,
+                    items: missingRequirements.filter((m) => m.step === s.id),
+                  }))
+                    .filter((g) => g.items.length > 0)
+                    .map((g) => (
+                      <button
+                        key={g.stepId}
+                        type="button"
+                        onClick={() => goToStep(g.stepId)}
+                        className="flex w-full flex-wrap items-center gap-x-2 gap-y-1.5 rounded-xl bg-white px-3 py-2 text-left ring-1 ring-amber-200 transition hover:bg-amber-50/70"
+                      >
+                        <span className="text-xs font-bold text-amber-900">
+                          Step {g.stepId}
+                          <span className="ml-1 font-normal text-amber-700/80">
+                            「{g.title}」
+                          </span>
+                        </span>
+                        <span className="flex flex-wrap gap-1.5">
+                          {g.items.map((m) => (
+                            <span
+                              key={m.label}
+                              className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                            >
+                              {m.label}
+                            </span>
+                          ))}
+                        </span>
+                        <span className="ml-auto hidden text-xs font-semibold text-amber-700 sm:inline">
+                          入力する →
+                        </span>
+                      </button>
+                    ))}
+                </div>
+
+                <p className="mt-3 text-xs text-amber-700/80">
+                  必須項目（<span className="font-bold">*</span>）をすべてご入力いただくと送信できます。行をクリックすると該当ステップへ移動します。
                 </p>
               </div>
             )}
