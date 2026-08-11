@@ -433,15 +433,16 @@ const MAX_REFERENCE_SITES = 8;
  * ウィザードの7ステップ定義。
  * 既存のSectionCard（Step 1〜7）とタイトルを完全に一致させる。
  * 進捗UI・ステップジャンプ・不足ヒントのマッピングはすべてこの定義を正とする。
+ * title は広い画面用・shortTitle はナローウィンドウ（モバイル）の進捗チップ用。
  */
-const STEPS: { id: number; title: string }[] = [
-  { id: 1, title: "事業について" },
-  { id: 2, title: "ターゲットと伝えたいこと" },
-  { id: 3, title: "どんなホームページにしたいか" },
-  { id: 4, title: "サイトの目的と機能" },
-  { id: 5, title: "ご予算について" },
-  { id: 6, title: "制作素材のご準備" },
-  { id: 7, title: "お客様情報" },
+const STEPS: { id: number; title: string; shortTitle: string }[] = [
+  { id: 1, title: "事業について", shortTitle: "事業" },
+  { id: 2, title: "ターゲットと伝えたいこと", shortTitle: "ターゲット" },
+  { id: 3, title: "どんなホームページにしたいか", shortTitle: "デザイン" },
+  { id: 4, title: "サイトの目的と機能", shortTitle: "目的・機能" },
+  { id: 5, title: "ご予算について", shortTitle: "予算" },
+  { id: 6, title: "制作素材のご準備", shortTitle: "素材" },
+  { id: 7, title: "お客様情報", shortTitle: "情報" },
 ];
 
 /** バイト数を読みやすいサイズ表記に変換 */
@@ -572,7 +573,7 @@ function StepProgress({
               type="button"
               onClick={() => onSelect(s.id)}
               aria-current={isActive ? "step" : undefined}
-              className={`flex shrink-0 items-center gap-1.5 rounded-2xl px-2 py-1.5 text-left transition-all ${
+              className={`flex shrink-0 items-center gap-1 rounded-2xl px-1.5 py-1 text-left transition-all sm:gap-1.5 sm:px-2 sm:py-1.5 ${
                 isActive
                   ? "bg-white shadow-sm ring-2 ring-primary/30"
                   : "hover:bg-white/70"
@@ -593,14 +594,15 @@ function StepProgress({
                   s.id
                 )}
               </span>
-              <span className="hidden sm:block">
-                <span
-                  className={`block text-[11px] font-bold ${
-                    isActive ? "text-primary" : "text-foreground"
-                  }`}
-                >
-                  {s.title}
-                </span>
+              {/* ナローウィンドウは短縮タイトル・広い画面は完全なタイトル。
+                  番号と意味を1行でスキャンできつつ、モバイルの横幅を抑える。 */}
+              <span
+                className={`text-[11px] font-bold ${
+                  isActive ? "text-primary" : "text-foreground"
+                }`}
+              >
+                <span className="sm:hidden">{s.shortTitle}</span>
+                <span className="hidden sm:inline">{s.title}</span>
               </span>
             </button>
           );

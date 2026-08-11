@@ -253,18 +253,18 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         <label className="mb-2 block text-sm font-medium text-amber-900">
           全体の評価
         </label>
-        <div className="flex gap-2">
+        <div className="flex items-center">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
               onClick={() => handleRatingChange(star)}
               disabled={isSubmitting}
-              className="transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-9 w-9 shrink-0 items-center justify-center transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:w-10"
               aria-label={`${star}星`}
             >
               <Star
-                className={`h-8 w-8 ${
+                className={`h-7 w-7 sm:h-8 sm:w-8 ${
                   star <= feedback.rating
                     ? "fill-amber-500 text-amber-500"
                     : "text-gray-300"

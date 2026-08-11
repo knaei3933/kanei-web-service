@@ -2362,24 +2362,24 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
         <div className="grid gap-6">
           <Section title="概要">
             {/* 主要事実を上にコンパクトに並べる */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl bg-accent p-4 sm:col-span-2">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-accent p-3 sm:col-span-2 sm:p-4">
                 <p className="text-xs font-bold text-muted-foreground">事業要約</p>
-                <p className="mt-1 text-sm leading-relaxed text-foreground">
+                <p className="mt-1 text-sm leading-normal text-foreground">
                   {pkg.reviewSummary.businessSummary || "未整理"}
                 </p>
               </div>
-              <div className="rounded-2xl bg-accent p-4 sm:col-span-2">
+              <div className="rounded-2xl bg-accent p-3 sm:col-span-2 sm:p-4">
                 <p className="text-xs font-bold text-muted-foreground">ターゲット要約</p>
-                <p className="mt-1 text-sm leading-relaxed text-foreground">
+                <p className="mt-1 text-sm leading-normal text-foreground">
                   {pkg.reviewSummary.targetUserSummary || "未整理"}
                 </p>
               </div>
-              <div className="rounded-2xl bg-accent p-4">
+              <div className="rounded-2xl bg-accent p-3 sm:p-4">
                 <p className="text-xs font-bold text-muted-foreground">受領日時</p>
                 <p className="mt-1 text-sm text-foreground">{pkg.receivedAt}</p>
               </div>
-              <div className="rounded-2xl bg-accent p-4">
+              <div className="rounded-2xl bg-accent p-3 sm:p-4">
                 <p className="text-xs font-bold text-muted-foreground">顧客向け表示状態</p>
                 <p className="mt-1 text-sm text-foreground">
                   {pkg.customerFacingStatus}
@@ -2399,7 +2399,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             {/* 判定を先頭に・色で状態をひと目で */}
             <div className="grid gap-3 sm:grid-cols-3">
               <div
-                className={`rounded-2xl border p-4 ${
+                className={`rounded-2xl border p-3 sm:p-4 ${
                   intakeReady
                     ? "border-emerald-200 bg-emerald-50"
                     : "border-amber-200 bg-amber-50"
@@ -2414,20 +2414,20 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                   {intakeReady ? "進行可能" : "追加確認が必要"}
                 </p>
               </div>
-              <div className="rounded-2xl bg-accent p-4">
+              <div className="rounded-2xl bg-accent p-3 sm:p-4">
                 <p className="text-xs font-bold text-muted-foreground">品質ステータス</p>
                 <p className="mt-1 text-sm font-semibold text-foreground">
                   {pkg.intakeQuality.status}
                 </p>
               </div>
-              <div className="rounded-2xl bg-accent p-4">
+              <div className="rounded-2xl bg-accent p-3 sm:p-4">
                 <p className="text-xs font-bold text-muted-foreground">スコア</p>
                 <p className="mt-1 text-sm font-semibold text-foreground">
                   {pkg.intakeQuality.score} / 100
                 </p>
               </div>
             </div>
-            <div className="mt-5 grid gap-5 sm:grid-cols-3">
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <div>
                 <p className="mb-2 text-sm font-bold text-foreground">理由</p>
                 <BulletList items={pkg.intakeQuality.reasons} />
