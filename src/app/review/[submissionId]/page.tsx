@@ -2271,8 +2271,6 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
           </div>
         </div>
 
-        <NextActionCard meta={nextAction} />
-
         {/* スティッキー次アクションバー：スクロール中も「次にやること」と
             「開くべきページ」を常時表示し、担当者が次の操作を見失わないようにする。
             グローバルヘッダー（z-50）の下に潜り込ませるため top-12 / z-40 とし、
