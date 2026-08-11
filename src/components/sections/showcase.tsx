@@ -709,11 +709,10 @@ export default function Showcase() {
             実写真と完成画面を並べて確認できます
           </div>
           <h2 className="mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            写真が先に見えて、<span className="text-blue-600">完成後の雰囲気がすぐ伝わる</span>構成にしました。
+            写真が先に見えて、<span className="text-blue-600">完成後の雰囲気がすぐ伝わる</span>構成です。
           </h2>
           <p className="mx-auto max-w-3xl text-lg leading-relaxed text-muted-foreground">
-            実写真と完成画面を組み合わせ、業種ごとの仕上がりを具体的に確認できます。
-            写真で空気感を伝えたうえで、完成画面で導線や機能を確認できる構成です。
+            実写真で空気感を、完成画面で導線や機能を、業種ごとに確認できます。
           </p>
         </div>
 

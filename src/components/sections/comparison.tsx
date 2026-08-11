@@ -58,13 +58,13 @@ const comparisons: ComparisonRow[] = [
   },
   {
     label: "更新のしやすさ",
-    ours: { text: "依頼だけでも運用可能（軽微修正も相談しやすい）", rating: 5 },
+    ours: { text: "依頼だけで運用可能（小修正も気軽に相談）", rating: 5 },
     nocode: { text: "自分で操作（慣れるまで時間がかかる）", rating: 2 },
-    agency: { text: "依頼ベース（小修正も都度相談になりやすい）", rating: 3 },
+    agency: { text: "依頼ベース（小修正も都度相談）", rating: 3 },
   },
   {
     label: "所有権・移行",
-    ours: { text: "お客様の資産（ソースコード納品・移行しやすい）", rating: 5 },
+    ours: { text: "お客様の資産（ソース納品・移行も容易）", rating: 5 },
     nocode: { text: "プラットフォーム依存（データ持ち出しに制約）", rating: 1 },
     agency: { text: "契約次第（管理方法が会社ごとに異なる）", rating: 3 },
   },

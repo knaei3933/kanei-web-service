@@ -64,7 +64,7 @@ export default function FAQ({ className }: { className?: string }) {
             よくあるご質問
           </h2>
           <p className="text-muted-foreground">
-            初めてホームページを依頼する方が気になりやすい点を、先に分かりやすく整理しています。
+            初めてホームページを依頼する方が気になる点を、先にまとめました。
           </p>
         </div>
         <div className="space-y-3">
