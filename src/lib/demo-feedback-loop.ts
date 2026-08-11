@@ -11,6 +11,7 @@ import {
   isSafeSubmissionId,
 } from "@/server/submission-storage";
 import { readApprovalPackage } from "@/lib/approval-package";
+import { resolveShowcaseComponentPath } from "@/lib/showcase-map";
 import { resolveMailProvider } from "@/server/mail";
 import type { MailResult, SendMailInput } from "@/server/mail/types";
 import { DEMO_SECTION_OPTIONS, demoSectionName } from "@/lib/demo-sections";
@@ -87,7 +88,7 @@ export interface RevisionHandoff {
   feedbackData?: DemoFeedbackData;
   /** Claude Code に渡す修正プロンプト */
   revisionPrompt: string;
-  /** ターゲットとなる showcase コンポーネント名 */
+  /** ターゲットとなる showcase コンポーネントパス */
   targetComponent: string | null;
   /** 修正ラウンド数（1-indexed） */
   round: number;
@@ -366,7 +367,8 @@ export async function sendDemoReadyEmail(
  */
 export function generateRevisionPrompt(
   submissionId: string,
-  feedbackData: DemoFeedbackData
+  feedbackData: DemoFeedbackData,
+  targetComponentPath?: string | null
 ): string {
   const lines: string[] = [];
   lines.push(`# 顧客フィードバックに基づく修正指示 — ${submissionId}`);
@@ -395,6 +397,14 @@ export function generateRevisionPrompt(
     for (const url of feedbackData.referenceImages) {
       lines.push(`- ${url}`);
     }
+    lines.push("");
+  }
+
+  if (targetComponentPath) {
+    lines.push("## 必ず編集する対象ファイル");
+    lines.push(`- ${targetComponentPath}`);
+    lines.push("- 新しい showcase ファイルを増やさず、上記の既存ファイルを直接修正すること");
+    lines.push("- runtime が参照中の既存コンポーネントを更新し、差分が残ること");
     lines.push("");
   }
 
@@ -504,13 +514,18 @@ export async function buildRevisionHandoff(
     }
   }
 
-  // ターゲットコンポーネントを特定（SHOWCASE_MAP または approval-package.json から）
-  const pkg = await readApprovalPackage(submissionId);
-  const targetComponent = pkg
-    ? pkg.reviewSummary.businessSummary.match(/事業体=([^/]+)/)?.[1] || null
-    : null;
+  // ターゲットコンポーネントを特定（runtime が実際に読む showcase パスを正として使う）
+  const targetComponent = resolveShowcaseComponentPath(submissionId);
 
-  const revisionPrompt = generateRevisionPrompt(submissionId, feedbackData);
+  // approval-package は存在確認と将来の拡張余地のために読むが、
+  // targetComponent には使わない（会社名などの非パス値を混入させない）。
+  await readApprovalPackage(submissionId);
+
+  const revisionPrompt = generateRevisionPrompt(
+    submissionId,
+    feedbackData,
+    targetComponent
+  );
 
   const handoff: RevisionHandoff = {
     schemaVersion: "1.0.0",
