@@ -243,26 +243,10 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       </p>
 
       {/* 2つの回答モードの説明（全体承認 vs 箇所別修正） */}
-      <div className="mb-5 space-y-2 rounded-2xl border border-amber-200 bg-white/70 p-3.5 text-sm text-amber-900">
-        <p className="font-semibold">ご回答はどちらでも構いません</p>
-        <ul className="space-y-1.5">
-          <li className="flex items-start gap-2">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-            <span>
-              全体で問題なければ「<b>このまま進める</b>」で承認してください。
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <PencilLine className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <span>
-              直したい箇所があれば、下の<b>「直したい箇所がある場合」を開いて</b>
-              該当箇所を選び、「<b>選択した箇所を修正依頼</b>」を押してください。
-              <span className="text-amber-700">
-                （選んでいない箇所は、そのまま承認扱いで進みます）
-              </span>
-            </span>
-          </li>
-        </ul>
+      <div className="mb-5 rounded-2xl border border-amber-200 bg-white/70 p-3 text-sm text-amber-900">
+        <p className="font-semibold">
+          問題なければ「このまま進める」で完了。直したい箇所があれば下の「直したい箇所がある場合」を開いて選んでください。
+        </p>
       </div>
 
       <div className="mb-5">
@@ -501,14 +485,6 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
               （それ以外の箇所は承認扱いで進みます）
             </p>
           )}
-          <div className="mt-3 space-y-1 border-t border-amber-100 pt-3 text-xs leading-relaxed text-amber-800">
-            <p>
-              <b>このまま進める</b>を選ぶと、現在の内容で承認し、制作工程へ進みます。
-            </p>
-            <p>
-              <b>選択した箇所を修正依頼</b>を選ぶと、選択した箇所を修正し、修正後に改めてご確認いただきます。
-            </p>
-          </div>
         </div>
       )}
 

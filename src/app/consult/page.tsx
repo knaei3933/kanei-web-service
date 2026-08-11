@@ -536,30 +536,24 @@ function StepProgress({
   const progressPct = Math.round((currentStep / total) * 100);
 
   return (
-    <div className="rounded-3xl border border-border bg-accent/40 p-5 sm:p-6">
+    <div className="rounded-3xl border border-border bg-accent/40 p-4 sm:p-6">
       {/* サマリ行：現在位置と残り */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            入力ステップ
-          </p>
-          <p className="mt-1 text-base font-bold text-foreground sm:text-lg">
-            ステップ{" "}
-            <span className="text-primary">{currentStep}</span> / {total}
-            {currentMeta && (
-              <span className="ml-2 font-normal text-muted-foreground">
-                — {currentMeta.title}
-              </span>
-            )}
-          </p>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {remaining > 0 ? `残り ${remaining} ステップ` : "最後のステップです"}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-bold text-foreground">
+          Step <span className="text-primary">{currentStep}</span>/{total}
+          <span className="ml-2 font-normal text-muted-foreground">
+            {currentMeta?.title}
+          </span>
         </p>
+        {remaining > 0 && (
+          <p className="text-xs text-muted-foreground">
+            残り{remaining}ステップ
+          </p>
+        )}
       </div>
 
       {/* 進捗バー */}
-      <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-border">
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-border">
         <div
           className="h-full rounded-full bg-primary transition-all duration-300"
           style={{ width: `${progressPct}%` }}
@@ -567,7 +561,7 @@ function StepProgress({
       </div>
 
       {/* ステップタブ（クリックで直接移動） */}
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
         {STEPS.map((s) => {
           const isActive = s.id === currentStep;
           const missing = missingByStep[s.id - 1] ?? 0;
@@ -578,14 +572,14 @@ function StepProgress({
               type="button"
               onClick={() => onSelect(s.id)}
               aria-current={isActive ? "step" : undefined}
-              className={`flex shrink-0 items-center gap-2 rounded-2xl px-3 py-2 text-left transition-all ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-2xl px-2 py-1.5 text-left transition-all ${
                 isActive
                   ? "bg-white shadow-sm ring-2 ring-primary/30"
                   : "hover:bg-white/70"
               }`}
             >
               <span
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all ${
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all ${
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : isComplete
@@ -594,20 +588,17 @@ function StepProgress({
                 }`}
               >
                 {isComplete && !isActive ? (
-                  <Check className="h-4 w-4" strokeWidth={3} />
+                  <Check className="h-3 w-3" strokeWidth={3} />
                 ) : (
                   s.id
                 )}
               </span>
               <span className="hidden sm:block">
                 <span
-                  className={`block text-xs font-bold ${
+                  className={`block text-[11px] font-bold ${
                     isActive ? "text-primary" : "text-foreground"
                   }`}
                 >
-                  Step {s.id}
-                </span>
-                <span className="block max-w-[7.5rem] truncate text-[11px] text-muted-foreground">
                   {s.title}
                 </span>
               </span>
