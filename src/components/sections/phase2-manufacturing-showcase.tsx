@@ -51,12 +51,12 @@ const FAQ_ITEMS = [
   },
 ];
 
-// 実績数値データ
+// 実績数値データ - 鮮明化
 const STATS = [
-  { value: "15年", label: "輸入実績" },
-  { value: "50件+", label: "導入実績" },
-  { value: "100%", label: "日本語サポート" },
-  { value: "24時間", label: "対応保証" },
+  { value: "15年", label: "実績" },
+  { value: "50件+", label: "導入" },
+  { value: "完全", label: "日本語" },
+  { value: "365日", label: "サポート" },
 ];
 
 // 技術・設備データ
@@ -192,9 +192,9 @@ export default function SubmissionShowcase() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="mb-4 inline-flex items-center rounded-full bg-blue-500/20 px-4 py-1.5 text-sm font-medium text-blue-200">
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              韓国設備輸入の実績50件以上
+            <div className="mb-4 inline-flex items-center rounded-full bg-amber-500/20 border border-amber-400/30 px-4 py-1.5 text-sm font-bold text-amber-300">
+              <Award className="mr-2 h-4 w-4" />
+              導入実績50件以上・15年の信頼
             </div>
             <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               化粧品製造設備の
@@ -207,19 +207,22 @@ export default function SubmissionShowcase() {
               化粧品メーカーの設備投資を成功に導きます。
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-lg" asChild>
+              <Button size="lg" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-xl shadow-amber-500/30 transform hover:scale-105 transition-all" asChild>
                 <a href="#contact">
                   <Send className="mr-2 h-5 w-5" />
-                  今すぐ無料相談する
+                  今すぐ無料相談して最短1日で回答
                 </a>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-slate-900"
+                className="border-2 border-white text-white hover:bg-white hover:text-slate-900 font-semibold"
                 asChild
               >
-                <a href="#equipment">設備一覧を見る</a>
+                <a href="#equipment">
+                  <ArrowRight className="mr-2 h-5 w-5" />
+                  設備一覧を見る
+                </a>
               </Button>
             </div>
           </motion.div>
@@ -649,10 +652,10 @@ export default function SubmissionShowcase() {
               <Button
                 type="submit"
                 size="lg"
-                className="bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-md"
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-xl shadow-amber-500/30 transform hover:scale-105 transition-all px-12 py-6 text-lg"
               >
                 <Send className="mr-2 h-5 w-5" />
-                今すぐ無料相談を申し込む
+                今すぐ無料相談して最短1日で回答
               </Button>
             </div>
           </form>
