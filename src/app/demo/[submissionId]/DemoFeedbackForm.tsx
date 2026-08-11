@@ -448,7 +448,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ThumbsUp className="h-4 w-4" />
-          このまま進める（すべて承認）
+          {feedback.rating === 0 ? "まず評価を選択してください" : "このまま進める（すべて承認）"}
         </button>
         <button
           type="button"
@@ -464,7 +464,13 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           className="flex flex-1 items-center justify-center gap-2 rounded-full border border-amber-400 bg-white px-6 py-3 font-medium text-amber-900 transition-all hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <MessageSquare className="h-4 w-4" />
-          選択した箇所を修正依頼
+          {feedback.rating === 0
+            ? "まず評価を選択してください"
+            : !revisionMode
+              ? "修正箇所を選択（展開して詳細入力）"
+              : selectedCount > 0
+                ? `選択した${selectedCount}箇所を修正依頼`
+                : "箇所を選択して修正依頼"}
           {selectedCount > 0 && (
             <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">
               {selectedCount}
