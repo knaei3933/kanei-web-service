@@ -268,8 +268,9 @@ export default function AdminDetailPage() {
   const router = useRouter();
   const id = (params?.id as string) ?? "";
 
+  // 初期値: idが空ならロード不要とみなしてloading=falseにする
   const [data, setData] = useState<ApiResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!id);
   const [error, setError] = useState<string | null>(null);
 
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
@@ -307,8 +308,6 @@ export default function AdminDetailPage() {
       return;
     }
     if (!id) {
-      setError("IDが不正です。");
-      setLoading(false);
       return;
     }
     let cancelled = false;
@@ -777,10 +776,10 @@ export default function AdminDetailPage() {
     if (!secret || !id) return;
 
     let cancelled = false;
-    setRoundsLoading(true);
-    setRoundsError(null);
     (async () => {
       try {
+        setRoundsLoading(true);
+        setRoundsError(null);
         const res = await fetch(
           `/api/admin/submissions/${encodeURIComponent(id)}/rounds`,
           { headers: { Authorization: `Bearer ${secret}` } },

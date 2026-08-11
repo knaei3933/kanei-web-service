@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { spawn } from "node:child_process";
 import { readApprovalPackage, writeApprovalPackage, buildExecutionHandoff, buildPlanningArtifact } from "@/lib/approval-package";
-import { readArtifact, artifactExists } from "@/server/submission-storage";
+import { artifactExists } from "@/server/submission-storage";
 
 /* ------------------------------------------------------------------ */
 /*  /api/admin/submissions/[id]/execute-demo （デモ生成エンドポイント）    */
@@ -57,6 +57,10 @@ const PYTHON_SCRIPT = "kanei_demo_handoff_watch.py";
 
 /** デモ生成が可能なステータス */
 const ALLOWED_STATUSES = ["approved_for_execution", "demo_revision_ready"] as const;
+type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
+
+/** アーティファクトファイル名 */
+type ArtifactName = "revision-handoff.json" | "execution-handoff.json" | "omc-plan.json" | "execution-prompt.md" | "execution-section-prompts.md";
 
 /** ステータスチェックとハンドオフファイルの準備 */
 async function prepareHandoff(
@@ -64,7 +68,7 @@ async function prepareHandoff(
   currentStatus: string
 ): Promise<{ ok: true; handoffType: "execution" | "revision" } | { ok: false; error: string; status: number }> {
   // ステータスチェック
-  if (!ALLOWED_STATUSES.includes(currentStatus as any)) {
+  if (!ALLOWED_STATUSES.includes(currentStatus as AllowedStatus)) {
     return {
       ok: false,
       error: `現在のステータス (${currentStatus}) ではデモ生成を開始できません。${ALLOWED_STATUSES.join(" または ")} である必要があります。`,
@@ -74,7 +78,7 @@ async function prepareHandoff(
 
   // demo_revision_ready の場合は revision-handoff.json を使用
   if (currentStatus === "demo_revision_ready") {
-    const revisionHandoffExists = await artifactExists(submissionId, "revision-handoff.json" as any);
+    const revisionHandoffExists = await artifactExists(submissionId, "revision-handoff.json" as ArtifactName);
     if (!revisionHandoffExists) {
       return {
         ok: false,
@@ -86,7 +90,7 @@ async function prepareHandoff(
   }
 
   // approved_for_execution の場合は execution-handoff.json を使用
-  const executionHandoffExists = await artifactExists(submissionId, "execution-handoff.json" as any);
+  const executionHandoffExists = await artifactExists(submissionId, "execution-handoff.json" as ArtifactName);
 
   if (!executionHandoffExists) {
     // execution-handoff.json がない場合は生成を試みる
@@ -115,10 +119,10 @@ async function prepareHandoff(
     try {
       // ファイル書き出し
       const { writeArtifact } = await import("@/server/submission-storage");
-      await writeArtifact(submissionId, "omc-plan.json" as any, JSON.stringify(plan, null, 2));
-      await writeArtifact(submissionId, "execution-prompt.md" as any, promptMarkdown);
-      await writeArtifact(submissionId, "execution-section-prompts.md" as any, sectionPromptsMarkdown);
-      await writeArtifact(submissionId, "execution-handoff.json" as any, JSON.stringify(handoff, null, 2));
+      await writeArtifact(submissionId, "omc-plan.json" as ArtifactName, JSON.stringify(plan, null, 2));
+      await writeArtifact(submissionId, "execution-prompt.md" as ArtifactName, promptMarkdown);
+      await writeArtifact(submissionId, "execution-section-prompts.md" as ArtifactName, sectionPromptsMarkdown);
+      await writeArtifact(submissionId, "execution-handoff.json" as ArtifactName, JSON.stringify(handoff, null, 2));
 
       // パッケージ更新
       await writeApprovalPackage(pkg);

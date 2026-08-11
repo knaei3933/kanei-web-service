@@ -332,7 +332,8 @@ export default function AdminListPage() {
   // 保存された secret は API で検証するまで認証済みとみなさない。
   // "checking" の間はログインフォームもダッシュボードも出さず、
   // 無効な認証でダッシュボードが一瞬見える（フラッシュする）のを防ぐ。
-  const [authStatus, setAuthStatus] = useState<AuthStatus>("checking");
+  // 初期値は "unauthed" とし、secret がある場合のみ "checking" へ移行する。
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("unauthed");
   // ログイン画面に表示する認証エラー（無効なパスワード・セッション切れなど）。
   const [authError, setAuthError] = useState<string | null>(null);
   // ログイン送信中（ボタン無効化・二重送信防止）。
@@ -343,8 +344,11 @@ export default function AdminListPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<AdminFilterKey>("all");
   // ログイン成功後に戻るべき元のパス（/admin/[id] から送られた場合）。
-  // URL の returnTo クエリから取り出し、isSafeInternalPath で検証してから使う。
-  const [returnTo, setReturnTo] = useState<string | null>(null);
+  // URL の returnTo クエリから取り出した値を派生値として使う。
+  const returnTo = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("returnTo");
+  }, []);
 
   // デフォルトの表示順（優先度ティア → 新着順）を一度だけ適用する。
   // フィルタ（タブ・KPI）はこの順序を保ったまま絞り込むため、
@@ -423,26 +427,20 @@ export default function AdminListPage() {
   useEffect(() => {
     const secret =
       typeof window !== "undefined" ? sessionStorage.getItem("admin_secret") : null;
-    // 元のページへ戻るための returnTo を URL から取り出す。
-    // 外部 URL やプロトコル相対 URL は後段（isSafeInternalPath）で弾く。
-    const candidate =
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("returnTo")
-        : null;
-    if (candidate) setReturnTo(candidate);
 
     if (!secret) {
-      setAuthStatus("unauthed");
-      return;
+      return; // 初期値 "unauthed" のまま
     }
 
     let cancelled = false;
-    loadSubmissions(secret).then((outcome) => {
+    (async () => {
+      setAuthStatus("checking");
+      const outcome = await loadSubmissions(secret);
       if (cancelled) return;
       if (outcome === "ok") {
         // 有効な認証: 安全な returnTo があれば元のページへ復帰。
-        if (candidate && isSafeInternalPath(candidate)) {
-          router.replace(candidate);
+        if (returnTo && isSafeInternalPath(returnTo)) {
+          router.replace(returnTo);
           return;
         }
         setAuthStatus("authed");
@@ -453,11 +451,11 @@ export default function AdminListPage() {
             : "認証情報の確認中にエラーが発生しました。もう一度入力してください。",
         );
       }
-    });
+    })();
     return () => {
       cancelled = true;
     };
-  }, [loadSubmissions, backToLogin, router]);
+  }, [loadSubmissions, backToLogin, router, returnTo]);
 
   // ログイン送信: 入力されたパスワードを API で検証し、成功時のみ secret を保存する。
   const handleLogin = async (e: React.FormEvent) => {

@@ -1084,7 +1084,7 @@ export async function POST(request: Request): Promise<Response> {
   // --- 高品質自動ゲート ---
   // スコア100 + 必須項目全て充実 → Gate1・Gate2 を自動通過して execution 待ちにする
   const AUTO_APPROVE_THRESHOLD = 100;
-  let autoGateResult: {
+  const autoGateResult: {
     skipped: boolean;
     approved: boolean;
     reason?: string;
