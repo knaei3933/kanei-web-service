@@ -281,9 +281,7 @@ export function CTA() {
           まずは無料相談から
         </h2>
         <p className="mb-8 text-lg leading-relaxed text-muted-foreground">
-          会社案内、メモ書き、既存サイトのURLだけでも大丈夫です。
-          <br />
-          どんな構成が合うか、完成イメージを交えて具体的にご提案します。
+          会社案内・メモ書き・既存サイトのURLだけでも大丈夫。完成イメージを交えて、最適な構成をご提案します。
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Button asChild size="lg">
@@ -297,7 +295,7 @@ export function CTA() {
           </Button>
         </div>
         <div className="mt-4 text-sm text-muted-foreground">
-          必要であれば、価格イメージや構成例をまとめた資料案内も可能です。
+          価格イメージや構成例の資料も、ご案内できます。
         </div>
       </div>
     </Section>

@@ -917,9 +917,7 @@ export default function Hero() {
           >
             ただ作るだけではありません。
             <br />
-            <strong className="text-foreground">会社の信頼感、問い合わせ導線、更新しやすさまで整えた、公開後に使い続けられるホームページ</strong>を、
-            <br className="hidden sm:block" />
-            初期費用0円・月額10,000円からご提供します。
+            <strong className="text-foreground">信頼感、問い合わせ導線、更新のしやすさまで整え、公開後も長く使えるホームページ</strong>を、初期費用0円・月額10,000円からご提供します。
           </motion.p>
 
           <motion.div
