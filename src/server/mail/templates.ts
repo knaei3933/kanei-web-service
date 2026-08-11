@@ -361,6 +361,9 @@ export function buildCustomerFollowupMail(
           ? s.currentValue.trim()
           : null,
     }));
+  const followupItemCount =
+    supplements.length > 0 ? supplements.length : Math.max(questions.length, items.length);
+  const showEstimatedTime = followupItemCount >= 2;
 
   const lines: string[] = [];
   lines.push(`${displayName} 様`);
@@ -465,6 +468,11 @@ export function buildCustomerFollowupMail(
     ? `<div style="margin:20px 0;padding:16px;border:1px solid #a78bfa;border-radius:12px;background:#f5f3ff;text-align:center;">
         <p style="margin:0 0 8px;font-size:13px;font-weight:bold;color:#6d28d9;">追加情報入力ページ</p>
         <p style="margin:0 0 14px;font-size:13px;color:#4c1d95;">メールへの返信だけでなく、下記のページからも追加情報をご入力いただけます。</p>
+        ${
+          showEstimatedTime
+            ? `<p style="margin:0 0 14px;font-size:12px;font-weight:bold;color:#7c2d12;">所要時間の目安: 1〜2分</p>`
+            : ""
+        }
         <p style="margin:0 0 14px;">
           <a href="${escapeHtml(
             input.followupUrl
