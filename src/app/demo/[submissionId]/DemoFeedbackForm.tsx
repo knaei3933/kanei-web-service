@@ -210,16 +210,16 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
   const isSubmitting = formState.status === "submitting" || isPending;
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
-      <h3 className="mb-2 text-center text-lg font-semibold text-amber-900">
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
+      <h3 className="mb-1.5 text-center text-lg font-semibold text-amber-900">
         デモをご確認いただき、ありがとうございます。
       </h3>
-      <p className="mb-6 text-center text-sm text-amber-800">
+      <p className="mb-5 text-center text-sm text-amber-800">
         ご確認後、以下のどちらかの方法でご回答をお願いします。
       </p>
 
       {/* 2つの回答モードの説明（全体承認 vs 箇所別修正） */}
-      <div className="mb-6 space-y-2 rounded-2xl border border-amber-200 bg-white/70 p-4 text-sm text-amber-900">
+      <div className="mb-5 space-y-2 rounded-2xl border border-amber-200 bg-white/70 p-3.5 text-sm text-amber-900">
         <p className="font-semibold">ご回答はどちらでも構いません</p>
         <ul className="space-y-1.5">
           <li className="flex items-start gap-2">
@@ -241,7 +241,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </ul>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-5">
         <label className="mb-2 block text-sm font-medium text-amber-900">
           全体の評価
         </label>
@@ -267,7 +267,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-5">
         <label
           htmlFor="comment"
           className="mb-2 block text-sm font-medium text-amber-900"
@@ -289,7 +289,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </p>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-5">
         <button
           type="button"
           onClick={() => setRevisionMode((v) => !v)}
@@ -422,7 +422,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           評価（必須）が未選択のあいだはCTAが無効なため、評価後にだけ表示し、
           確認のノイズにならないようにする。 */}
       {feedback.rating > 0 && (
-        <div className="mb-4 rounded-2xl border border-amber-200 bg-white/80 p-4 text-sm text-amber-900">
+        <div className="mb-3 rounded-2xl border border-amber-200 bg-white/80 p-3.5 text-sm text-amber-900">
           <p className="mb-3 flex items-center gap-2 font-semibold">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             送信前のご確認
@@ -499,7 +499,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       )}
 
       {/* 修正依頼後の流れ（3ステップ） */}
-      <div className="mt-6 rounded-2xl border border-amber-200 bg-white/60 p-4 text-xs text-amber-900">
+      <div className="mt-5 rounded-2xl border border-amber-200 bg-white/60 p-3.5 text-xs text-amber-900">
         <p className="mb-2 font-semibold text-amber-800">修正依頼後の流れ</p>
         <ol className="space-y-1.5">
           <li className="flex items-start gap-2">

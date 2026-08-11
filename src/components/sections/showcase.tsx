@@ -747,9 +747,9 @@ export default function Showcase() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              ["信頼感の構築", "所在地・沿革・代表者・実績・資格を整理し、初見で安心感が伝わる構成"],
-              ["問い合わせしやすい導線", "電話・フォーム・地図・予約を一画面に集約し、迷わず次の行動へ進める"],
-              ["運用のしやすさ", "お知らせ更新や画像差し替えを、社内で無理なく続けられる設計"],
+              ["信頼感の構築", "所在地・沿革・実績・資格を整理し、初見で安心感を伝える"],
+              ["問い合わせしやすい導線", "電話・フォーム・地図・予約を一画面に集約し、迷わず次へ進める"],
+              ["運用のしやすさ", "お知らせ更新や画像差し替えを、社内で無理なく続けられる"],
             ].map(([title, text]) => (
               <div key={title} className="rounded-2xl border bg-muted/30 p-4">
                 <div className="text-sm font-semibold">{title}</div>
