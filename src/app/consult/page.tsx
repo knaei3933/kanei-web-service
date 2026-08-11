@@ -2935,69 +2935,68 @@ export default function ConsultPage() {
           )}
 
           {/* ステップナビゲーション（Prev / Next / 送信） */}
-          <div className="flex flex-col gap-4 pb-8">
+          <div className="flex flex-col gap-3 pb-6 sm:gap-4">
             {/* 現在のステップの不足ヒント（未入力でも進めるので「あとで戻れる」ことを明示） */}
-            {/* コンパクトな1行ヒント：件数・「あとで戻れる」案内・未入力ラベルを
-                ワンラインに折り返して並べ、モバイルでの縦長さと反復を減らす。
-                バリデーションのソースと意味は変更しない（currentStepMissing）。 */}
+            {/* モバイルコンパクト化：ヒントを1行にまとめ、高さを削減 */}
             {currentStepMissing.length > 0 && (
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2.5">
-                <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
-                <span className="text-xs font-bold text-amber-800">
-                  未入力の必須項目 {currentStepMissing.length}件
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                <span className="text-xs font-medium text-amber-800">
+                  未入力 {currentStepMissing.length}件・あとで戻れます
                 </span>
-                <span className="text-xs text-amber-700/80">
-                  このまま次へ進めます・あとで戻って入力できます
+                <span className="hidden sm:inline text-xs text-amber-700/80">
+                  /
                 </span>
-                {currentStepMissing.map((m) => (
-                  <span
-                    key={m.label}
-                    className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-200"
-                  >
-                    {m.label}
-                  </span>
-                ))}
+                <div className="flex flex-wrap gap-1">
+                  {currentStepMissing.map((m) => (
+                    <span
+                      key={m.label}
+                      className="inline-flex items-center rounded-full bg-white px-1.5 py-0 text-[10px] font-medium text-amber-700"
+                    >
+                      {m.label}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* ボタン群：Prev は step1 で非表示 / Next は最終ステップで送信ボタンに切替 */}
-            <div className="flex items-center justify-between gap-3">
+            {/* ボタン群：モバイル向け高さ削減 */}
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
               <Button
                 type="button"
                 variant="outline"
-                size="lg"
+                size="default"
                 onClick={goPrev}
                 className={currentStep === 1 ? "invisible" : ""}
               >
-                <ChevronLeft className="h-5 w-5" />
-                前のステップへ
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">前のステップへ</span>
+                <span className="sm:hidden">戻る</span>
               </Button>
 
               {currentStep < totalSteps ? (
-                <Button type="submit" size="lg" className="hover:scale-[1.02]">
-                  次のステップへ
-                  <ChevronRight className="h-5 w-5" />
+                <Button type="submit" size="default" className="hover:scale-[1.02]">
+                  <span className="hidden sm:inline">次のステップへ</span>
+                  <span className="sm:hidden">次へ</span>
+                  <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               ) : (
                 <Button
                   type="submit"
-                  size="lg"
+                  size="default"
                   disabled={!isValid || isSubmitting}
-                  className={`text-lg ${
-                    !isValid || isSubmitting
-                      ? "cursor-not-allowed opacity-50"
-                      : "hover:scale-[1.02]"
-                  }`}
+                  className={`${!isValid || isSubmitting ? "cursor-not-allowed opacity-50" : "hover:scale-[1.02]"}`}
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       送信中...
                     </>
                   ) : (
                     <>
-                      <Send className="mr-2 h-5 w-5" />
-                      無料で提案を依頼する
+                      <Send className="mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">無料で提案を依頼する</span>
+                      <span className="sm:hidden">提案を依頼する</span>
                     </>
                   )}
                 </Button>

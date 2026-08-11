@@ -2337,48 +2337,27 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
           </div>
         </div>
 
-        {/* スティッキー次アクションバー：スクロール中も「次にやること」と
-            「開くべきページ」を常時表示し、担当者が次の操作を見失わないようにする。
-            グローバルヘッダー（z-50）の下に潜り込ませるため top-12 / z-40 とし、
-            ヘッダー下部で重なる分は本バーの上余白（py-4）で吸収する。 */}
-        <div className="sticky top-12 z-40 -mx-4 mb-6 border-b border-border bg-slate-50/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-muted-foreground">次のアクション</p>
-              <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
+        {/* スティッキー次アクションバー：どこへ行くかを常時表示 */}
+        <div className="sticky top-12 z-40 -mx-4 mb-4 border-b border-border bg-slate-50/95 px-3 py-2.5 backdrop-blur sm:-mx-6 sm:px-6">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">次の操作</p>
+              <p className="mt-0.5 truncate text-xs font-semibold text-foreground">
                 {nextAction.actionShort}
               </p>
             </div>
-            <Link
-              href={nextAction.href}
-              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition hover:opacity-90"
-            >
-              {nextAction.targetLabel}
-              <span aria-hidden="true">→</span>
-            </Link>
+            <div className="flex shrink-0 items-center gap-1.5 text-xs">
+              <span className="hidden text-muted-foreground/80 sm:inline">開く:</span>
+              <Link
+                href={nextAction.href}
+                className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition hover:opacity-90"
+              >
+                {nextAction.targetLabel}
+                <span aria-hidden="true" className="ml-1">→</span>
+              </Link>
+            </div>
           </div>
         </div>
-
-        <section className={`mb-6 rounded-3xl border p-5 shadow-sm ${routeGuidance.toneClass}`}>
-          <p className="text-xs font-bold uppercase tracking-wide opacity-80">現在どこを見ればよいか</p>
-          <h2 className="mt-1 text-lg font-bold">{routeGuidance.title}</h2>
-          <p className="mt-3 text-sm leading-relaxed opacity-90">{routeGuidance.body}</p>
-
-          <div className="mt-4 grid gap-2 text-xs">
-            <div className="grid grid-cols-[100px_1fr] items-center gap-2 rounded-lg border border-current/10 bg-white/50 px-3 py-2">
-              <span className="font-bold opacity-70">レビュー画面</span>
-              <span className="font-mono opacity-80">/review/{pkg.submissionId}</span>
-            </div>
-            <div className="grid grid-cols-[100px_1fr] items-center gap-2 rounded-lg border border-current/10 bg-white/50 px-3 py-2">
-              <span className="font-bold opacity-70">内部プレビュー</span>
-              <span className="font-mono opacity-80">{executionUrl}</span>
-            </div>
-            <div className="grid grid-cols-[100px_1fr] items-center gap-2 rounded-lg border border-current/10 bg-white/50 px-3 py-2">
-              <span className="font-bold opacity-70">デモページ</span>
-              <span className="font-mono opacity-80">{demoUrl}</span>
-            </div>
-          </div>
-        </section>
 
         <div className="grid gap-6">
           <Section title="概要">
@@ -2628,20 +2607,15 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
           <Section
             title="承認アクション"
             badge={
-              <span className="text-xs text-muted-foreground">
-                現在: {statusLabel(pkg.status)}
+              <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusTone(pkg.status)}`}>
+                {statusLabel(pkg.status)}
               </span>
             }
           >
-            {/* 現在の承認状況サマリ：オペレータが「いまどこにいるか」を最優先で伝える。
-                詳細なゲート別判定はこの下に控えめに並べる（内容は増やさず、読み取り速度を優先）。 */}
-            <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-border bg-white p-4">
-              <span
-                className={`inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-xs font-bold ${statusTone(pkg.status)}`}
-              >
-                {statusLabel(pkg.status)}
-              </span>
-              <p className="min-w-0 flex-1 text-sm font-semibold leading-snug text-foreground">
+            {/* 現在の承認状況：スティッキーバーと重複しないよう、決定操作に直結する状態だけ表示 */}
+            <div className="mb-3 rounded-xl bg-slate-50 px-3 py-2">
+              <p className="text-xs text-muted-foreground">現在の状態</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
                 {approvalStandingSummary(pkg.status)}
               </p>
             </div>
@@ -2760,16 +2734,15 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               </div>
             )}
 
-            {/* ゲート別の判定履歴：現状サマリの補助情報として、視認性を下げて下に集約。
-                決定データ・日時・担当・メモはすべて残す（デザインの強調だけを弱める）。 */}
-            <div className="mt-5 rounded-2xl border border-border/60 bg-muted/30 p-4">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                これまでの判定
+            {/* ゲート別の判定履歴：コンパクト化 */}
+            <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                判定履歴
               </p>
-              <div className="space-y-1.5">
-                <DecisionLine decision={pkg.approval} label="第1ゲート判定（インテイク）" />
-                <DecisionLine decision={pkg.planApproval} label="第2ゲート判定（計画）" />
-                <DecisionLine decision={pkg.preProductionApproval} label="第3ゲート判定（本制作前最終承認）" />
+              <div className="space-y-1">
+                <DecisionLine decision={pkg.approval} label="第1ゲート" />
+                <DecisionLine decision={pkg.planApproval} label="第2ゲート" />
+                <DecisionLine decision={pkg.preProductionApproval} label="第3ゲート" />
               </div>
             </div>
           </Section>

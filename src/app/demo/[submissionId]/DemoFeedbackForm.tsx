@@ -447,9 +447,9 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       </div>
 
       {formState.status === "error" && (
-        <div className="mb-4 rounded-lg border-2 border-red-300 bg-red-50 p-4 text-sm font-semibold text-red-700 shadow-sm">
+        <div className="mb-3 rounded-lg border-2 border-red-300 bg-red-50 p-3 text-xs font-semibold text-red-700 shadow-sm">
           <div className="flex items-start gap-2">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
             <div>
               <p className="font-bold">入力エラー</p>
               <p className="mt-1 font-normal">{formState.message}</p>
@@ -458,63 +458,56 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </div>
       )}
 
-      {/* 送信前確認サマリ：評価・コメント・修正箇所・参考URLと、
-          承認 / 修正依頼それぞれで何が起きるかをコンパクトにまとめる。
-          評価（必須）が未選択のあいだはCTAが無効なため、評価後にだけ表示し、
-          確認のノイズにならないようにする。 */}
+      {/* 送信前確認サマリ：コンパクト化 */}
       {feedback.rating > 0 && (
-        <div className="mb-2.5 rounded-2xl border border-amber-200 bg-white/80 p-3 text-sm text-amber-900">
-          <p className="mb-2.5 flex items-center gap-2 font-semibold">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            送信前のご確認
+        <div className="mb-2 rounded-xl border border-amber-200 bg-white/80 p-2.5 text-xs text-amber-900">
+          <p className="mb-1.5 flex items-center gap-1.5 font-semibold">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            確認
           </p>
-          <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+          <dl className="flex flex-wrap gap-x-3 gap-y-1 sm:grid sm:grid-cols-2">
             {summaryRows.map((row) => (
               <div
                 key={row.label}
-                className="flex items-center justify-between gap-2"
+                className="flex items-center gap-1.5"
               >
-                <dt className="text-xs text-amber-700">{row.label}</dt>
-                <dd className="text-xs font-semibold">{row.value}</dd>
+                <dt className="text-[11px] text-amber-700">{row.label}:</dt>
+                <dd className="text-[11px] font-semibold">{row.value}</dd>
               </div>
             ))}
           </dl>
           {selectedCount > 0 && (
-            <p className="mt-2 text-xs leading-relaxed text-amber-700">
-              修正対象: {selectedSections.map((s) => s.name).join("、")}
-              （それ以外の箇所は承認扱いで進みます）
+            <p className="mt-1.5 text-[11px] leading-snug text-amber-700">
+              修正: {selectedSections.map((s) => s.name).join("、")}
             </p>
           )}
         </div>
       )}
 
-      {/* 修正依頼に必要な入力を案内するコンパクトメッセージ */}
+      {/* 修正依頼ヒント：コンパクト化 */}
       {feedback.rating > 0 && revisionMode && !hasRevisionInput && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          <p className="flex items-center gap-2 font-semibold">
-            <PencilLine className="h-4 w-4 shrink-0 text-amber-600" />
-            修正依頼には追加の入力が必要です
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-amber-800">
-            いずれか1つ以上を入力してください：全体コメント、修正箇所の選択、箇所ごとのメモ、参考画像URL
+        <div className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <p className="flex items-center gap-1.5 font-semibold">
+            <PencilLine className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+            修正依頼には追加入力が必要
           </p>
         </div>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
         <button
           type="button"
           onClick={() => handleSubmit("approve")}
           disabled={isSubmitting || feedback.rating === 0}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3"
         >
-          <ThumbsUp className="h-4 w-4" />
-          {feedback.rating === 0 ? "まず評価を選択してください" : "このまま進める（すべて承認）"}
+          <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          {feedback.rating === 0 ? "評価を選択" : <span className="hidden sm:inline">このまま進める</span>}
+          {feedback.rating === 0 ? "" : <span className="sm:hidden">承認</span>}
         </button>
         <button
           type="button"
           onClick={() => {
-            // 詳細入力が折りたたまれているときは、まず展開して入力を促す（送信しない）
             if (!revisionMode) {
               setRevisionMode(true);
               return;
@@ -526,51 +519,43 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
             feedback.rating === 0 ||
             (revisionMode && !hasRevisionInput)
           }
-          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-amber-400 bg-white px-6 py-3 font-medium text-amber-900 transition-all hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-amber-400 bg-white px-4 py-2.5 text-sm font-medium text-amber-900 transition-all hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3"
         >
-          <MessageSquare className="h-4 w-4" />
-          {feedback.rating === 0
-            ? "まず評価を選択してください"
-            : !revisionMode
-              ? "修正箇所を選択（展開して詳細入力）"
-              : selectedCount > 0
-                ? `選択した${selectedCount}箇所を修正依頼`
-                : "箇所を選択して修正依頼"}
-          {selectedCount > 0 && (
-            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">
-              {selectedCount}
-            </span>
+          <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          {feedback.rating === 0 ? (
+            "評価を選択"
+          ) : !revisionMode ? (
+            <>
+              <span className="hidden sm:inline">修正箇所を選択</span>
+              <span className="sm:hidden">修正選択</span>
+            </>
+          ) : (
+            <>
+              {selectedCount > 0 && (
+                <span className="hidden sm:inline">{selectedCount}件</span>
+              )}
+              <span className="hidden sm:inline">修正依頼</span>
+              <span className="sm:hidden">修正依頼</span>
+              {selectedCount > 0 && (
+                <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
+                  {selectedCount}
+                </span>
+              )}
+            </>
           )}
         </button>
       </div>
 
       {isSubmitting && (
-        <p className="mt-3 text-center text-sm text-amber-700">送信中...</p>
+        <p className="mt-2 text-center text-xs text-amber-700">送信中...</p>
       )}
 
-      {/* 修正依頼後の流れ（3ステップ） */}
-      <div className="mt-4 rounded-2xl border border-amber-200 bg-white/60 p-3 text-xs text-amber-900">
-        <p className="mb-1.5 font-semibold text-amber-800">修正依頼後の流れ</p>
-        <ol className="space-y-1">
-          <li className="flex items-start gap-2">
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-700">
-              1
-            </span>
-            <span>修正要望を確認し、該当箇所を修正します</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-700">
-              2
-            </span>
-            <span>修正版デモを再公開し、メールでご案内します</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-700">
-              3
-            </span>
-            <span>再度ご確認いただき、問題なければ本制作へ進みます</span>
-          </li>
-        </ol>
+      {/* 修正依頼後の流れ：コンパクト化 */}
+      <div className="mt-3 rounded-xl border border-amber-200 bg-white/60 px-3 py-2 text-xs text-amber-900">
+        <p className="font-semibold text-amber-800">修正依頼後の流れ</p>
+        <p className="mt-1 text-[11px] leading-snug text-amber-700">
+          修正確認 → 修正版再公開 → 再確認後、本制作へ進みます
+        </p>
       </div>
     </div>
   );
