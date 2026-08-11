@@ -116,6 +116,48 @@ function statusTone(status: ApprovalStatus): string {
   }
 }
 
+/**
+ * 承認アクション欄の最上部に出す「いまどこにいるか」の1行サマリ。
+ * ステータスラベル（バッジ）と組み合わせて、オペレータが現在地を
+ * 一目で把握できるようにする。ゲート別の判定履歴はこの下に控えめに並べる。
+ */
+function approvalStandingSummary(status: ApprovalStatus): string {
+  switch (status) {
+    case "received":
+      return "受領済み・品質判定待ちです。";
+    case "needs_followup":
+      return "追加情報の入力待ちです（上のフォームで更新してください）。";
+    case "awaiting_representative_approval":
+      return "第1ゲート（インテイク）の承認待ちです。";
+    case "awaiting_plan_approval":
+      return "第2ゲート（計画）の承認待ちです。計画を確認して承認 or 差し戻し。";
+    case "approved_for_execution":
+      return "承認済み・実行準備完了。実行ハンドオフをローカルで実行してください。";
+    case "demo_generating":
+      return "デモ生成中です。";
+    case "demo_deployed":
+      return "デモ公開済み・顧客の確認待ちです。";
+    case "demo_revision_ready":
+      return "修正要望を受領しています。デモを修正して再公開してください。";
+    case "demo_revised":
+      return "修正版公開済み・顧客の再確認待ちです。";
+    case "customer_approved":
+      return "顧客承認済み・本制作前ヒアリング待ちです。";
+    case "pre_production_interview":
+      return "本制作前ヒアリング中（第3ゲート前）。";
+    case "pre_production_review":
+      return "第3ゲート（本制作前最終承認）待ちです。";
+    case "production_ready":
+      return "本制作可能です（第3ゲート承認済み）。";
+    case "delivered":
+      return "納品済みです。";
+    case "rejected":
+      return "この相談は却下されています。";
+    default:
+      return statusLabel(status);
+  }
+}
+
 function isDemoVisibleStatus(status: ApprovalStatus): boolean {
   return [
     "demo_deployed",
@@ -732,6 +774,8 @@ function AttachmentPreviewCard({
 /**
  * 代表者の判定（第1ゲート / 第2ゲート共通）を1行で表示する。
  * 未判定のときは「未判定」を出す。
+ * 承認アクション欄では「現在の状況サマリ」を最優先に置くため、
+ * 判定履歴は小さく控えめなフラット行として下に並べる。
  */
 function DecisionLine({
   decision,
@@ -749,18 +793,19 @@ function DecisionLine({
           ? "保留"
           : "未判定";
   return (
-    <div className="rounded-2xl bg-accent p-4 text-sm text-muted-foreground">
-      <span className="font-semibold text-foreground">{label}: </span>
+    <div className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground">
+      <span className="font-semibold text-foreground/80">{label}:</span>
       <span className="font-semibold text-foreground">{decisionLabel}</span>
       {decision.decidedAt && (
-        <span>
-          {" "}
+        <span className="text-muted-foreground">
           / {decision.decidedAt}
           {decision.decidedBy ? `（${decision.decidedBy}）` : ""}
         </span>
       )}
       {decision.memo && (
-        <p className="mt-2 text-foreground">メモ: {decision.memo}</p>
+        <p className="mt-1 w-full break-words text-foreground/80">
+          メモ: {decision.memo}
+        </p>
       )}
     </div>
   );
@@ -2588,6 +2633,19 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               </span>
             }
           >
+            {/* 現在の承認状況サマリ：オペレータが「いまどこにいるか」を最優先で伝える。
+                詳細なゲート別判定はこの下に控えめに並べる（内容は増やさず、読み取り速度を優先）。 */}
+            <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-border bg-white p-4">
+              <span
+                className={`inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-xs font-bold ${statusTone(pkg.status)}`}
+              >
+                {statusLabel(pkg.status)}
+              </span>
+              <p className="min-w-0 flex-1 text-sm font-semibold leading-snug text-foreground">
+                {approvalStandingSummary(pkg.status)}
+              </p>
+            </div>
+
             {isGate2 && (
               <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm leading-relaxed text-indigo-900">
                 計画アーティファクトが生成済みです。内容を確認のうえ、第2ゲート（計画承認）で
@@ -2702,10 +2760,17 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               </div>
             )}
 
-            <div className="mt-6 space-y-3">
-              <DecisionLine decision={pkg.approval} label="第1ゲート判定（インテイク）" />
-              <DecisionLine decision={pkg.planApproval} label="第2ゲート判定（計画）" />
-              <DecisionLine decision={pkg.preProductionApproval} label="第3ゲート判定（本制作前最終承認）" />
+            {/* ゲート別の判定履歴：現状サマリの補助情報として、視認性を下げて下に集約。
+                決定データ・日時・担当・メモはすべて残す（デザインの強調だけを弱める）。 */}
+            <div className="mt-5 rounded-2xl border border-border/60 bg-muted/30 p-4">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                これまでの判定
+              </p>
+              <div className="space-y-1.5">
+                <DecisionLine decision={pkg.approval} label="第1ゲート判定（インテイク）" />
+                <DecisionLine decision={pkg.planApproval} label="第2ゲート判定（計画）" />
+                <DecisionLine decision={pkg.preProductionApproval} label="第3ゲート判定（本制作前最終承認）" />
+              </div>
             </div>
           </Section>
 

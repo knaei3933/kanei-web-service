@@ -2937,22 +2937,26 @@ export default function ConsultPage() {
           {/* ステップナビゲーション（Prev / Next / 送信） */}
           <div className="flex flex-col gap-4 pb-8">
             {/* 現在のステップの不足ヒント（未入力でも進めるので「あとで戻れる」ことを明示） */}
+            {/* コンパクトな1行ヒント：件数・「あとで戻れる」案内・未入力ラベルを
+                ワンラインに折り返して並べ、モバイルでの縦長さと反復を減らす。
+                バリデーションのソースと意味は変更しない（currentStepMissing）。 */}
             {currentStepMissing.length > 0 && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  このステップで未入力の必須項目（{currentStepMissing.length}件） — このまま次へ進めます。あとで戻って入力できます
-                </p>
-                <ul className="mt-2 flex flex-wrap gap-1.5">
-                  {currentStepMissing.map((m) => (
-                    <li
-                      key={m.label}
-                      className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200"
-                    >
-                      {m.label}
-                    </li>
-                  ))}
-                </ul>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2.5">
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                <span className="text-xs font-bold text-amber-800">
+                  未入力の必須項目 {currentStepMissing.length}件
+                </span>
+                <span className="text-xs text-amber-700/80">
+                  このまま次へ進めます・あとで戻って入力できます
+                </span>
+                {currentStepMissing.map((m) => (
+                  <span
+                    key={m.label}
+                    className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-200"
+                  >
+                    {m.label}
+                  </span>
+                ))}
               </div>
             )}
 
