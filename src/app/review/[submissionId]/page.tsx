@@ -830,10 +830,10 @@ function PlanningArtifactSection({ plan }: { plan: PlanningArtifact }) {
         確認します。生成日時: {plan.generatedAt || "不明"}
       </p>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <p className="mb-2 text-sm font-bold text-foreground">ブリーフ要点</p>
-          <div className="space-y-2 rounded-2xl bg-accent p-4 text-sm text-foreground">
+          <p className="mb-1.5 text-sm font-bold text-foreground">ブリーフ要点</p>
+          <div className="space-y-1.5 rounded-2xl bg-accent p-3 text-sm text-foreground">
             <p>{plan.briefSnapshot.businessSummary || "（要約なし）"}</p>
             <p className="text-muted-foreground">
               ターゲット: {plan.briefSnapshot.targetUserSummary || "（未整理）"}
@@ -855,29 +855,29 @@ function PlanningArtifactSection({ plan }: { plan: PlanningArtifact }) {
             )}
           </div>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div>
-            <p className="mb-2 text-sm font-bold text-foreground">実行前の前提</p>
+            <p className="mb-1.5 text-sm font-bold text-foreground">実行前の前提</p>
             <BulletList items={plan.prerequisites} />
           </div>
           <div>
-            <p className="mb-2 text-sm font-bold text-foreground">ブロッカー・リスク前提</p>
+            <p className="mb-1.5 text-sm font-bold text-foreground">ブロッカー・リスク前提</p>
             <BulletList items={plan.blockers} />
           </div>
           <div>
-            <p className="mb-2 text-sm font-bold text-foreground">計画策定の根拠</p>
+            <p className="mb-1.5 text-sm font-bold text-foreground">計画策定の根拠</p>
             <BulletList items={plan.rationale} />
           </div>
         </div>
       </div>
 
-      <div className="mt-6">
-        <p className="mb-3 text-sm font-bold text-foreground">
+      <div className="mt-5">
+        <p className="mb-2 text-sm font-bold text-foreground">
           実行ステップ（厳密な順序: {plan.orderedStageIds.join(" → ")}）
         </p>
         <div className="space-y-3">
           {plan.stages.map((stage, index) => (
-            <div key={stage.id} className="rounded-2xl border border-border bg-slate-50 p-5">
+            <div key={stage.id} className="rounded-2xl border border-border bg-slate-50 p-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-bold text-primary">STEP {index + 1}</p>
@@ -889,14 +889,14 @@ function PlanningArtifactSection({ plan }: { plan: PlanningArtifact }) {
                   </span>
                 )}
               </div>
-              <p className="mt-3 text-sm leading-relaxed text-foreground">{stage.objective}</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <p className="mt-2.5 text-sm leading-relaxed text-foreground">{stage.objective}</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div>
-                  <p className="mb-2 text-xs font-bold text-muted-foreground">入力</p>
+                  <p className="mb-1.5 text-xs font-bold text-muted-foreground">入力</p>
                   <BulletList items={stage.inputs} />
                 </div>
                 <div>
-                  <p className="mb-2 text-xs font-bold text-muted-foreground">期待成果物</p>
+                  <p className="mb-1.5 text-xs font-bold text-muted-foreground">期待成果物</p>
                   <BulletList items={stage.outputs} />
                 </div>
               </div>

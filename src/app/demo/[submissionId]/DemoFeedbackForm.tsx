@@ -238,18 +238,18 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       <h3 className="mb-1.5 text-center text-lg font-semibold text-amber-900">
         デモをご確認いただき、ありがとうございます。
       </h3>
-      <p className="mb-3 text-center text-sm text-amber-800 sm:mb-4">
+      <p className="mb-2.5 text-center text-sm text-amber-800">
         ご確認後、以下のどちらかの方法でご回答をお願いします。
       </p>
 
       {/* 2つの回答モードの説明（全体承認 vs 箇所別修正） */}
-      <div className="mb-3 rounded-2xl border border-amber-200 bg-white/70 p-3 text-sm text-amber-900 sm:mb-4">
+      <div className="mb-2.5 rounded-2xl border border-amber-200 bg-white/70 p-2.5 text-sm text-amber-900">
         <p className="font-semibold">
           問題なければ「このまま進める」で完了。直したい箇所があれば下の「直したい箇所がある場合」を開いて選んでください。
         </p>
       </div>
 
-      <div className="mb-3 sm:mb-4">
+      <div className="mb-2.5">
         <label className="mb-2 block text-sm font-medium text-amber-900">
           全体の評価
         </label>
@@ -275,7 +275,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-3">
         <label
           htmlFor="comment"
           className="mb-2 block text-sm font-medium text-amber-900"
@@ -297,7 +297,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </p>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-3">
         <button
           type="button"
           onClick={() => setRevisionMode((v) => !v)}
@@ -338,10 +338,10 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         )}
 
         {revisionMode && (
-          <div id="revision-details" className="mt-3 space-y-3 sm:space-y-4">
+          <div id="revision-details" className="mt-3 space-y-3">
             {/* セクション別メモの案内（選択中のセクションがある時だけ表示） */}
             {selectedCount > 0 && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 sm:p-4">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-2.5 sm:p-3">
                 <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
                   <PencilLine className="h-4 w-4 shrink-0" />
                   各選択箇所に短いメモを残すと、修正がスムーズになります
@@ -357,7 +357,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
               </div>
             )}
 
-            <div className="rounded-2xl border border-amber-200 bg-white/80 p-3 sm:p-4">
+            <div className="rounded-2xl border border-amber-200 bg-white/80 p-3">
               <p className="mb-1 text-sm font-semibold text-amber-900">
                 修正したい箇所を選択
               </p>
@@ -551,7 +551,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       )}
 
       {/* 修正依頼後の流れ：コンパクト化 */}
-      <div className="mt-3 rounded-xl border border-amber-200 bg-white/60 px-3 py-2 text-xs text-amber-900">
+      <div className="mt-2.5 rounded-xl border border-amber-200 bg-white/60 px-3 py-2 text-xs text-amber-900">
         <p className="font-semibold text-amber-800">修正依頼後の流れ</p>
         <p className="mt-1 text-[11px] leading-snug text-amber-700">
           修正確認 → 修正版再公開 → 再確認後、本制作へ進みます

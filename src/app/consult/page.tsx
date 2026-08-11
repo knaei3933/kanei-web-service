@@ -648,7 +648,7 @@ function RadioCard({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition-all ${
+      className={`flex items-center gap-2.5 rounded-2xl border-2 px-3 py-2 text-left transition-all sm:px-4 sm:py-2.5 ${
         checked
           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
           : "border-border bg-white hover:border-primary/40 hover:bg-accent"
@@ -682,7 +682,7 @@ function CheckCard({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition-all ${
+      className={`flex items-center gap-2.5 rounded-2xl border-2 px-3 py-2 text-left transition-all sm:px-4 sm:py-2.5 ${
         checked
           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
           : "border-border bg-white hover:border-primary/40 hover:bg-accent"
@@ -716,7 +716,7 @@ function CheckboxTag({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl border px-3 py-2 text-sm transition ${
+      className={`rounded-xl border px-2.5 py-1.5 text-sm transition sm:px-3 sm:py-2 ${
         selected
           ? "border-primary bg-primary/10 text-primary font-medium"
           : "border-border bg-white text-muted-foreground hover:border-primary/50"
@@ -739,7 +739,7 @@ function SuggestTag({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center rounded-full border border-border bg-white px-2.5 py-0.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary"
+      className="inline-flex items-center rounded-full border border-border bg-white px-2 py-0.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary sm:px-2.5"
     >
       {label}
     </button>
@@ -1875,7 +1875,7 @@ export default function ConsultPage() {
 
               <div className="mb-5 rounded-2xl bg-accent/30 p-4 sm:p-5">
                 {/* カテゴリボタン */}
-                <div className="mb-4 flex flex-wrap gap-2">
+                <div className="mb-3 flex flex-wrap gap-1.5">
                   {[
                     { key: "年齢", items: ["20代以下", "30代", "40代", "50代", "60代以上"] },
                     { key: "性別", items: ["男性", "女性", "どちらでも"] },
@@ -1886,7 +1886,7 @@ export default function ConsultPage() {
                       key={cat.key}
                       type="button"
                       onClick={() => setSelectedTargetCategory(cat.key)}
-                      className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      className={`rounded-xl border-2 px-3 py-1.5 text-sm font-medium transition-all sm:px-4 sm:py-2 ${
                         selectedTargetCategory === cat.key
                           ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
                           : "border-border bg-white text-muted-foreground hover:border-primary/40"
@@ -1900,8 +1900,8 @@ export default function ConsultPage() {
                 {/* 選択カテゴリの詳細チップ */}
                 {selectedTargetCategory === "年齢" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">年齢</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">年齢</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["20代以下", "30代", "40代", "50代", "60代以上"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -1922,8 +1922,8 @@ export default function ConsultPage() {
                 )}
                 {selectedTargetCategory === "性別" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">性別</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">性別</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["男性", "女性", "どちらでも"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -1944,8 +1944,8 @@ export default function ConsultPage() {
                 )}
                 {selectedTargetCategory === "地域" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">地域</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">地域</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["地元・近隣", "県内", "全国", "海外・インバウンド"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -1966,8 +1966,8 @@ export default function ConsultPage() {
                 )}
                 {selectedTargetCategory === "顧客層" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">顧客層</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">顧客層</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["個人（B2C）", "企業（B2B）", "両方"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2009,7 +2009,7 @@ export default function ConsultPage() {
 
               <div className="mb-5 rounded-2xl bg-accent/30 p-4 sm:p-5">
                 {/* カテゴリボタン */}
-                <div className="mb-4 flex flex-wrap gap-2">
+                <div className="mb-3 flex flex-wrap gap-1.5">
                   {[
                     { key: "技術・品質", items: ["確かな実績・ノウハウ", "特許・独自技術", "業界最高水準の品質", "ISO・認証取得"] },
                     { key: "サービス", items: ["スピード・短納期", "24時間対応", "完全予約制", "アフターサービス充実"] },
@@ -2021,7 +2021,7 @@ export default function ConsultPage() {
                       key={cat.key}
                       type="button"
                       onClick={() => setSelectedStrengthCategory(cat.key)}
-                      className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      className={`rounded-xl border-2 px-3 py-1.5 text-sm font-medium transition-all sm:px-4 sm:py-2 ${
                         selectedStrengthCategory === cat.key
                           ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
                           : "border-border bg-white text-muted-foreground hover:border-primary/40"
@@ -2035,8 +2035,8 @@ export default function ConsultPage() {
                 {/* 選択カテゴリの詳細チップ */}
                 {selectedStrengthCategory === "技術・品質" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">技術・品質</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">技術・品質</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["確かな実績・ノウハウ", "特許・独自技術", "業界最高水準の品質", "ISO・認証取得"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2057,8 +2057,8 @@ export default function ConsultPage() {
                 )}
                 {selectedStrengthCategory === "サービス" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">サービス</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">サービス</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["スピード・短納期", "24時間対応", "完全予約制", "アフターサービス充実"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2079,8 +2079,8 @@ export default function ConsultPage() {
                 )}
                 {selectedStrengthCategory === "価格" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">価格</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">価格</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["業界最安レベル", "コストパフォーマンス重視", "盛り値なし・明朗会計"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2101,8 +2101,8 @@ export default function ConsultPage() {
                 )}
                 {selectedStrengthCategory === "立地・設備" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">立地・設備</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">立地・設備</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["好立地・アクセス便利", "最新設備・設備投資", "広い駐車場"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2123,8 +2123,8 @@ export default function ConsultPage() {
                 )}
                 {selectedStrengthCategory === "スタッフ" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">スタッフ</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">スタッフ</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["資格保有スタッフ", "長年のベテラン", "若手育成", "専門チーム体制"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2166,7 +2166,7 @@ export default function ConsultPage() {
 
               <div className="mb-5 rounded-2xl bg-accent/30 p-4 sm:p-5">
                 {/* カテゴリボタン */}
-                <div className="mb-4 flex flex-wrap gap-2">
+                <div className="mb-3 flex flex-wrap gap-1.5">
                   {[
                     { key: "基本", items: ["会社概要・沿革", "代表挨拶", "アクセス・地図", "電話番号"] },
                     { key: "サービス", items: ["サービス・メニュー一覧", "料金表・コース一覧", "施工事例・実績紹介", "よくある質問（FAQ）"] },
@@ -2177,7 +2177,7 @@ export default function ConsultPage() {
                       key={cat.key}
                       type="button"
                       onClick={() => setSelectedInfoCategory(cat.key)}
-                      className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      className={`rounded-xl border-2 px-3 py-1.5 text-sm font-medium transition-all sm:px-4 sm:py-2 ${
                         selectedInfoCategory === cat.key
                           ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
                           : "border-border bg-white text-muted-foreground hover:border-primary/40"
@@ -2191,8 +2191,8 @@ export default function ConsultPage() {
                 {/* 選択カテゴリの詳細チップ */}
                 {selectedInfoCategory === "基本" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">基本</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">基本</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["会社概要・沿革", "代表挨拶", "アクセス・地図", "電話番号"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2213,8 +2213,8 @@ export default function ConsultPage() {
                 )}
                 {selectedInfoCategory === "サービス" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">サービス</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">サービス</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["サービス・メニュー一覧", "料金表・コース一覧", "施工事例・実績紹介", "よくある質問（FAQ）"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2235,8 +2235,8 @@ export default function ConsultPage() {
                 )}
                 {selectedInfoCategory === "信頼性" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">信頼性</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">信頼性</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["保有資格・許認可", "取引先一覧", "スタッフ紹介", "設備紹介"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2257,8 +2257,8 @@ export default function ConsultPage() {
                 )}
                 {selectedInfoCategory === "コンバージョン" && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">コンバージョン</p>
-                    <div className="flex flex-wrap gap-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">コンバージョン</p>
+                    <div className="flex flex-wrap gap-1.5">
                       {["お問い合わせフォーム", "電話番号の目立つ表示", "予約・申し込み導線", "SNS連携"].map((label) => (
                         <CheckboxTag
                           key={label}
@@ -2299,7 +2299,7 @@ export default function ConsultPage() {
               </p>
 
               <div className="mb-5 rounded-2xl bg-accent/30 p-4 sm:p-5">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {["見た目が古い", "スマホで見にくい", "更新が手間", "問い合わせが来ない", "検索で出てこない", "競合より見劣りする", "情報が少なすぎる"].map((label) => (
                     <CheckboxTag
                       key={label}
