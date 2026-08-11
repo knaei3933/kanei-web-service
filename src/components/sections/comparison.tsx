@@ -42,18 +42,18 @@ const comparisons: ComparisonRow[] = [
     label: "初期費用",
     ours: { text: "0円（制作・設計込み）", rating: 5 },
     nocode: { text: "数万円前後（調整で追加費用発生）", rating: 3 },
-    agency: { text: "30万〜100万円以上（デザイン次第で大幅変動）", rating: 1 },
+    agency: { text: "30万〜100万円以上（デザインで大きく変動）", rating: 1 },
   },
   {
     label: "月額費用",
     ours: { text: "10,000円〜（保守・更新・サーバー込み）", rating: 4 },
     nocode: { text: "2,000〜20,000円（機能追加で上がる）", rating: 3 },
-    agency: { text: "保守費 + サーバー代（更新代行で毎月コスト化）", rating: 2 },
+    agency: { text: "保守費 + サーバー代（更新代行で毎月コスト）", rating: 2 },
   },
   {
     label: "完成形の見えやすさ",
     ours: { text: "事前に確認しやすい（業種別サンプルあり）", rating: 5 },
-    nocode: { text: "自分で組み立てる前提（公開後を想像しにくい）", rating: 2 },
+    nocode: { text: "自分で組み立てる（公開後を想像しにくい）", rating: 2 },
     agency: { text: "会社次第（提案の解像度に差が出る）", rating: 3 },
   },
   {

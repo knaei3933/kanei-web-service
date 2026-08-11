@@ -893,7 +893,7 @@ export default function Hero() {
             className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700"
           >
             <Sparkles className="h-4 w-4" />
-            中小企業の信頼を整える ホームページ制作
+            中小企業の信頼を整えるホームページ制作
           </motion.div>
 
           <motion.h1
@@ -915,9 +915,9 @@ export default function Hero() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl"
           >
-            ただ作るだけではありません。
+            見た目だけでなく、
             <br />
-            <strong className="text-foreground">信頼感、問い合わせ導線、更新のしやすさまで整え、公開後も長く使えるホームページ</strong>を、初期費用0円・月額10,000円からご提供します。
+            <strong className="text-foreground">信頼感・問い合わせ導線・更新のしやすさまで整え、公開後も長く使えるホームページ</strong>を、初期費用0円・月額10,000円からご提供します。
           </motion.p>
 
           <motion.div
