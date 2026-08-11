@@ -314,6 +314,21 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           />
         </button>
 
+        {/* 選択中の修正箇所をコンパクトに表示（チップ形式） */}
+        {selectedCount > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5 px-1">
+            {selectedSections.map((section) => (
+              <span
+                key={section.id}
+                className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800"
+              >
+                <PencilLine className="h-3 w-3" />
+                {section.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         {revisionMode && (
           <div id="revision-details" className="mt-3 space-y-4">
             <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
