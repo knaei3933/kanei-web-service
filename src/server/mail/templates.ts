@@ -491,6 +491,7 @@ export function buildCustomerFollowupMail(
     ご返答をいただき次第、お客様別の構成提案・お見積りをあらためてお届けいたします。<br/>
     お手数をおかけして恐縮ですが、よろしくお願いいたします。
   </p>
+  ${followupUrlHtml}
   <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb;"/>
   <p style="font-size:13px;color:#6b7280;line-height:1.7;">
     金井ホームページ制作<br/>
