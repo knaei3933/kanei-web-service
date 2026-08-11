@@ -9,7 +9,7 @@ const tiers = [
   {
     name: "スタンダード",
     price: "10,000",
-    description: "名刺代わりの会社案内を、きちんと整えたい方向け",
+    description: "名刺代わりの会社案内を整えたい方",
     features: [
       "最大5ページ制作",
       "レスポンシブ対応",
@@ -24,7 +24,7 @@ const tiers = [
   {
     name: "ビジネス",
     price: "20,000",
-    description: "実績紹介・採用・ブログまで含めて育てたい方向け",
+    description: "実績・採用・ブログまで育てたい方",
     badge: "おすすめ",
     features: [
       "最大20ページ制作",
@@ -41,7 +41,7 @@ const tiers = [
   {
     name: "プレミアム",
     price: "35,000",
-    description: "多言語・高度機能・継続運用まで重視したい方向け",
+    description: "多言語・高度機能・継続運用まで重視する方",
     features: [
       "ページ数無制限",
       "ブログ + 高度機能相談",

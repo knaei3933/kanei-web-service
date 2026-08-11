@@ -197,9 +197,9 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
 
   if (formState.status === "success") {
     return (
-      <div className="rounded-lg bg-green-50 p-6 text-center">
-        <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-green-600" />
-        <h3 className="mb-2 text-lg font-semibold text-green-900">
+      <div className="rounded-lg bg-green-50 p-4 text-center">
+        <CheckCircle2 className="mx-auto mb-2 h-10 w-10 text-green-600" />
+        <h3 className="mb-1 text-lg font-semibold text-green-900">
           送信完了
         </h3>
         <p className="text-green-700">{formState.message}</p>
