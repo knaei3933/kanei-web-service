@@ -234,15 +234,6 @@ function BrowserChrome({ item }: { item: Industry }) {
   );
 }
 
-function StatusBar({ item }: { item: Industry }) {
-  return (
-    <div className="flex items-center justify-between gap-2 border-t border-black/5 bg-white/80 px-3.5 py-2 text-[9px] text-slate-400 backdrop-blur">
-      <span className="truncate font-medium">{item.footer}</span>
-      <span className="shrink-0">検索対策済み</span>
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /*  CSS mock preview                                                   */
 /* ------------------------------------------------------------------ */
@@ -698,7 +689,6 @@ function SiteCard({ item, index }: { item: Industry; index: number }) {
         <div className="flex h-full flex-1 flex-col overflow-hidden rounded-xl border border-black/10 bg-white shadow-2xl transition-transform duration-300 group-hover:scale-[1.015]">
           <BrowserChrome item={item} />
           <div className="flex-1 overflow-hidden">{renderSite(item)}</div>
-          <StatusBar item={item} />
         </div>
       </div>
     </motion.a>

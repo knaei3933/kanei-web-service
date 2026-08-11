@@ -54,6 +54,25 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
   );
   const selectedCount = selectedSections.length;
 
+  // 送信前確認サマリ用の集計値
+  const commentLength = feedback.comment.trim().length;
+  const referenceUrlCount = feedback.referenceImageUrls
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean).length;
+  const summaryRows: { label: string; value: string }[] = [
+    { label: "全体の評価", value: `★ ${feedback.rating} / 5` },
+    {
+      label: "全体コメント",
+      value: commentLength > 0 ? `${commentLength}文字` : "なし",
+    },
+    { label: "修正箇所", value: selectedCount > 0 ? `${selectedCount}件` : "なし" },
+    {
+      label: "参考URL",
+      value: referenceUrlCount > 0 ? `${referenceUrlCount}件` : "なし",
+    },
+  ];
+
   const handleRatingChange = (rating: number) => {
     setFeedback((prev) => ({ ...prev, rating }));
   };
@@ -383,18 +402,41 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </div>
       )}
 
-      {/* 修正対象の確認サマリ（選択中のときだけ表示） */}
-      {selectedCount > 0 && (
-        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-100/70 p-3 text-sm text-amber-900">
-          <p className="font-semibold">
-            修正対象（{selectedCount}件）:{" "}
-            <span className="font-normal">
-              {selectedSections.map((s) => s.name).join("、")}
-            </span>
+      {/* 送信前確認サマリ：評価・コメント・修正箇所・参考URLと、
+          承認 / 修正依頼それぞれで何が起きるかをコンパクトにまとめる。
+          評価（必須）が未選択のあいだはCTAが無効なため、評価後にだけ表示し、
+          確認のノイズにならないようにする。 */}
+      {feedback.rating > 0 && (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-white/80 p-4 text-sm text-amber-900">
+          <p className="mb-3 flex items-center gap-2 font-semibold">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            送信前のご確認
           </p>
-          <p className="mt-1 text-xs text-amber-700">
-            上記以外の箇所は、そのまま承認扱いで制作に進みます。
-          </p>
+          <dl className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+            {summaryRows.map((row) => (
+              <div
+                key={row.label}
+                className="flex items-center justify-between gap-2"
+              >
+                <dt className="text-xs text-amber-700">{row.label}</dt>
+                <dd className="text-xs font-semibold">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          {selectedCount > 0 && (
+            <p className="mt-2 text-xs leading-relaxed text-amber-700">
+              修正対象: {selectedSections.map((s) => s.name).join("、")}
+              （それ以外の箇所は承認扱いで進みます）
+            </p>
+          )}
+          <div className="mt-3 space-y-1 border-t border-amber-100 pt-3 text-xs leading-relaxed text-amber-800">
+            <p>
+              <b>このまま進める</b>を選ぶと、現在の内容で承認し、制作工程へ進みます。
+            </p>
+            <p>
+              <b>選択した箇所を修正依頼</b>を選ぶと、選択した箇所を修正し、修正後に改めてご確認いただきます。
+            </p>
+          </div>
         </div>
       )}
 

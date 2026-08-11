@@ -422,7 +422,7 @@ function Section({
 
   if (defaultCollapsed) {
     return (
-      <details className="group rounded-3xl border border-border bg-white shadow-sm">
+      <details className="group rounded-3xl border border-dashed border-border bg-muted/40">
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 p-6 sm:p-8 [&::-webkit-details-marker]:hidden">
           <ChevronDown
             className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
