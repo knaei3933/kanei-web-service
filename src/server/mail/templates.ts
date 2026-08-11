@@ -401,6 +401,13 @@ export function buildCustomerFollowupMail(
   );
   lines.push("お手数をおかけして恐縮ですが、よろしくお願いいたします。");
   lines.push("");
+  // followupUrl がある場合は追加情報入力ページへのリンクを追加
+  if (input.followupUrl) {
+    lines.push("【追加情報入力ページ】");
+    lines.push("メールへの返信だけでなく、下記のページからも追加情報をご入力いただけます。");
+    lines.push(input.followupUrl);
+    lines.push("");
+  }
   lines.push("金井ホームページ制作");
   lines.push("Email: info@kanei-trade.co.jp");
   lines.push(`お問い合わせ ID: ${input.submissionId}`);
@@ -452,6 +459,19 @@ export function buildCustomerFollowupMail(
     <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#92400e;">お伺いしたいこと</p>
     <ol style="margin:0;padding-left:20px;font-size:14px;color:#111827;">${questionsHtml}</ol>
   </div>`;
+
+  // followupUrl がある場合は追加情報入力ページへのリンクブロックを追加
+  const followupUrlHtml = input.followupUrl
+    ? `<div style="margin:20px 0;padding:16px;border:1px solid #a78bfa;border-radius:12px;background:#f5f3ff;">
+	    <p style="margin:0 0 8px;font-size:13px;font-weight:bold;color:#6d28d9;">追加情報入力ページ</p>
+	    <p style="margin:0 0 4px;font-size:13px;color:#4c1d95;">メールへの返信だけでなく、下記のページからも追加情報をご入力いただけます。</p>
+	    <p style="margin:0;"><a href="${escapeHtml(
+        input.followupUrl
+      )}" style="color:#7c3aed;word-break:break-all;font-weight:bold;">${escapeHtml(
+        input.followupUrl
+      )}</a></p>
+	  </div>`
+    : "";
 
   const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Meiryo,sans-serif;color:#111827;max-width:600px;">
   <p style="font-size:15px;">${escapeHtml(displayName)} 様</p>

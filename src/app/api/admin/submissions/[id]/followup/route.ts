@@ -4,6 +4,23 @@ import { sendCustomerFollowupEmail } from "@/server/mail";
 import type { MailResult } from "@/server/mail/types";
 import type { IntakeSupplementRequest } from "@/lib/approval-package";
 
+/**
+ * リクエストから公開用の絶対ベース URL（プロトコル + ホスト）を組み立てる。
+ * - Vercel 本番: x-forwarded-proto / x-forwarded-host が設定される
+ * - ローカル開発: host が localhost のときは http を使う
+ */
+function absoluteBaseUrl(request: Request): string {
+  const headers = request.headers;
+  const host =
+    headers.get("x-forwarded-host") ||
+    headers.get("host") ||
+    "localhost:3000";
+  const isLocal =
+    host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const proto = headers.get("x-forwarded-proto") || (isLocal ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
 /* ------------------------------------------------------------------ */
 /*  /api/admin/submissions/[id]/followup （フォローアップメール送信）    */
 /* ------------------------------------------------------------------ */
@@ -225,6 +242,7 @@ export async function POST(
       submissionId: id,
       requestedItems: selectedItems,
       followupQuestions,
+      followupUrl: `${absoluteBaseUrl(request)}/review/${id}`,
       // 構造化補足要求があれば本文で項目別ブロックとして優先表示
       supplementRequests:
         supplementRequests.length > 0 ? supplementRequests : undefined,

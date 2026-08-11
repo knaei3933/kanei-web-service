@@ -149,6 +149,12 @@ export interface CustomerFollowupEmailInput {
    * 未指定時は従来の質問リスト表示へ戻る。
    */
   supplementRequests?: IntakeSupplementRequest[];
+  /**
+   * 追加入力ページの絶対 URL（/review/{submissionId}）。
+   * 指定時はメール本文・HTML に「追加情報入力ページ」のリンクを表示する。
+   * 未指定時は従来通りメールへの返信を依頼する。
+   */
+  followupUrl?: string;
 }
 
 /**

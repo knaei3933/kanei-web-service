@@ -1188,6 +1188,7 @@ export async function POST(request: Request): Promise<Response> {
         submissionId,
         requestedItems: intakeQuality.requestedItems,
         followupQuestions: intakeQuality.followupQuestions,
+        followupUrl: `${absoluteBaseUrl(request)}/review/${submissionId}`,
       });
     }
   } catch {

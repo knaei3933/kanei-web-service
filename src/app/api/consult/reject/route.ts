@@ -8,6 +8,23 @@ import { readArtifact } from "@/server/submission-storage";
 import { sendCustomerFollowupEmail } from "@/server/mail";
 import type { MailResult } from "@/server/mail/types";
 
+/**
+ * リクエストから公開用の絶対ベース URL（プロトコル + ホスト）を組み立てる。
+ * - Vercel 本番: x-forwarded-proto / x-forwarded-host が設定される
+ * - ローカル開発: host が localhost のときは http を使う
+ */
+function absoluteBaseUrl(request: Request): string {
+  const headers = request.headers;
+  const host =
+    headers.get("x-forwarded-host") ||
+    headers.get("host") ||
+    "localhost:3000";
+  const isLocal =
+    host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const proto = headers.get("x-forwarded-proto") || (isLocal ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
 // ファイルシステム（node:fs）で承認パッケージを書き換えるため Node ランタイムを明示
 export const runtime = "nodejs";
 // 毎回ディスクへ書き込むため動的にする
@@ -182,6 +199,7 @@ export async function POST(request: NextRequest) {
           submissionId,
           requestedItems: [],
           followupQuestions: [],
+          followupUrl: `${absoluteBaseUrl(request)}/review/${submissionId}`,
           // 構造化差戻しの内容を項目別ブロックとして本文へ展開
           supplementRequests: updated.supplementRequests,
         });
