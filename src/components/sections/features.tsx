@@ -14,7 +14,7 @@ const features = [
     icon: Eye,
     title: "完成イメージを先に確認できる",
     description:
-      "業種別の完成例を見ながら相談できるので、完成形のイメージが固まりやすく、不安を減らせます。",
+      "業種別の完成例を見ながら進めるので、完成形がイメージしやすく、着手前の不安を抑えられます。",
     color: "text-blue-600",
     bg: "bg-blue-50",
   },
@@ -22,7 +22,7 @@ const features = [
     icon: ShieldCheck,
     title: "中小企業でも信頼感が伝わる構成",
     description:
-      "会社情報や実績を整理し、初見でも「ちゃんとした会社」に見える情報設計を整えます。",
+      "会社情報と実績を整理し、初見でも信頼が伝わる情報設計にします。",
     color: "text-emerald-600",
     bg: "bg-emerald-50",
   },
@@ -30,7 +30,7 @@ const features = [
     icon: FolderGit2,
     title: "ソースコード納品で将来も安心",
     description:
-      "自社資産として保有できる前提で整えるため、解約や移行時もスムーズに進められます。",
+      "ソースコードを自社資産として納品するため、解約や移行もスムーズに進みます。",
     color: "text-purple-600",
     bg: "bg-purple-50",
   },
@@ -38,7 +38,7 @@ const features = [
     icon: HeartHandshake,
     title: "更新・保守まで任せやすい",
     description:
-      "公開後もお知らせ更新や軽微修正など、継続的な運用サポートを受けられます。",
+      "公開後のお知らせ更新や軽微修正も、継続してご相談いただけます。",
     color: "text-orange-600",
     bg: "bg-orange-50",
   },
