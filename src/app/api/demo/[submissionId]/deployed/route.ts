@@ -130,14 +130,18 @@ export async function POST(
     submissionId,
     "revision-handoff.json"
   );
-  const kind: "initial" | "revision" =
-    kindRaw === "revision"
-      ? "revision"
-      : kindRaw === "initial"
-        ? "initial"
-        : hasRevisionHandoff
+  const kind: "initial" | "revision" | "restore" | "reuse" =
+    kindRaw === "restore"
+      ? "restore"
+      : kindRaw === "reuse"
+        ? "reuse"
+        : kindRaw === "revision"
           ? "revision"
-          : "initial";
+          : kindRaw === "initial"
+            ? "initial"
+            : hasRevisionHandoff
+              ? "revision"
+              : "initial";
 
   // artifact を安全に取り出す（オプション・後方互換）
   const artifactObj = asObject(body.artifact);
@@ -167,7 +171,7 @@ export async function POST(
   }
 
   // 完了状態への遷移
-  const target = kind === "revision" ? "demo_revised" : "demo_deployed";
+  const target = kind === "initial" ? "demo_deployed" : "demo_revised";
   let pkg;
   try {
     pkg = await transitionStatus(submissionId, target);
@@ -199,31 +203,11 @@ export async function POST(
 
   if (artifact.componentSource && artifact.commitSha && artifact.shortSha) {
     try {
-      // round を解決（body 指定 > revision-handoff.json > 0）
+      // round / parentRound / variantTag を解決（body 指定 > revision-handoff.json > default）
       let round = 0;
-      if (kind === "revision") {
-        if (typeof body.round === "number" && body.round > 0) {
-          round = body.round;
-        } else {
-          const handoffRaw = await readArtifact(
-            submissionId,
-            "revision-handoff.json"
-          );
-          if (handoffRaw) {
-            try {
-              const handoff = JSON.parse(handoffRaw) as { round?: unknown };
-              if (typeof handoff.round === "number" && handoff.round > 0) {
-                round = handoff.round;
-              }
-            } catch {
-              // パース失敗は無視
-            }
-          }
-          round = round > 0 ? round : 1;
-        }
-      }
+      let parentRound: number | null = null;
+      let variantTag: string | null = null;
 
-      // revision-handoff.json と demo-feedback.json を読み取ってコピーを作成
       const revisionHandoffRaw = await readArtifact(
         submissionId,
         "revision-handoff.json"
@@ -231,6 +215,38 @@ export async function POST(
       const revisionHandoffCopy = revisionHandoffRaw
         ? JSON.parse(revisionHandoffRaw)
         : null;
+
+      if (kind !== "initial") {
+        if (typeof body.round === "number" && body.round > 0) {
+          round = body.round;
+        } else if (
+          revisionHandoffCopy &&
+          typeof revisionHandoffCopy === "object" &&
+          revisionHandoffCopy !== null &&
+          typeof revisionHandoffCopy.round === "number" &&
+          revisionHandoffCopy.round > 0
+        ) {
+          round = revisionHandoffCopy.round;
+        }
+        round = round > 0 ? round : 1;
+
+        if (
+          revisionHandoffCopy &&
+          typeof revisionHandoffCopy === "object" &&
+          revisionHandoffCopy !== null &&
+          typeof revisionHandoffCopy.parentRound === "number"
+        ) {
+          parentRound = revisionHandoffCopy.parentRound;
+        }
+        if (
+          revisionHandoffCopy &&
+          typeof revisionHandoffCopy === "object" &&
+          revisionHandoffCopy !== null &&
+          typeof revisionHandoffCopy.variantTag === "string"
+        ) {
+          variantTag = revisionHandoffCopy.variantTag;
+        }
+      }
 
       const demoFeedbackRaw = await readArtifact(
         submissionId,
@@ -281,12 +297,17 @@ export async function POST(
           "revisionPrompt" in revisionHandoffCopy
           ? (revisionHandoffCopy.revisionPrompt as string)
           : null,
+        parentRound,
+        variantTag,
         targetComponent: kind === "initial"
           ? typeof artifactObj.targetComponent === "string"
             ? artifactObj.targetComponent
             : null
           : undefined,
-        componentPath: kind === "initial" ? artifact.componentPath : undefined,
+        componentPath:
+          kind === "initial"
+            ? artifact.componentPath
+            : artifact.componentPath ?? undefined,
       });
 
       // snapshot を保存
@@ -315,7 +336,9 @@ export async function POST(
     // artifact がない場合、lineage にプレースホルダを残す（hasComponentSource:false）
     try {
       let round = 0;
-      if (kind === "revision") {
+      let parentRound: number | null = null;
+      let variantTag: string | null = null;
+      if (kind !== "initial") {
         if (typeof body.round === "number" && body.round > 0) {
           round = body.round;
         } else {
@@ -325,9 +348,19 @@ export async function POST(
           );
           if (handoffRaw) {
             try {
-              const handoff = JSON.parse(handoffRaw) as { round?: unknown };
+              const handoff = JSON.parse(handoffRaw) as {
+                round?: unknown;
+                parentRound?: unknown;
+                variantTag?: unknown;
+              };
               if (typeof handoff.round === "number" && handoff.round > 0) {
                 round = handoff.round;
+              }
+              if (typeof handoff.parentRound === "number") {
+                parentRound = handoff.parentRound;
+              }
+              if (typeof handoff.variantTag === "string") {
+                variantTag = handoff.variantTag;
               }
             } catch {
               // パース失敗は無視
@@ -340,6 +373,9 @@ export async function POST(
       await appendRound(submissionId, {
         round,
         kind,
+        parentRound,
+        variantTag,
+        componentPath: artifact.componentPath ?? undefined,
         hasComponentSource: false,
         status: pkg.status,
         customerFacingStatus: pkg.customerFacingStatus,
@@ -368,7 +404,7 @@ export async function POST(
 
   if (customerEmail.length > 0) {
     const demoUrl = `${absoluteBaseUrl(request)}/demo/${submissionId}`;
-    if (kind === "revision") {
+    if (kind !== "initial") {
       // round は body 指定 > revision-handoff.json > 1
       let round =
         typeof body.round === "number" && body.round > 0
