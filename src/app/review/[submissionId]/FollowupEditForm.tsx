@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import type { IntakeSupplementRequest } from "@/lib/approval-package";
 
 /* ------------------------------------------------------------------ */
 /*  顧客向け追加情報入力フォーム（needs_followup 時に表示）              */
@@ -60,6 +61,12 @@ interface FollowupEditFormProps {
   initialScore: number;
   requestedItems: string[];
   followupQuestions: string[];
+  /**
+   * 代表者からの項目別差戻し／補足要求（reject / supplement で保存された構造化データ）。
+   * 各項目の guidance（具体的なご指示）と currentValue（差戻し時点の入力）を、
+   * 顧客向けの追加情報セクションに表示する。
+   */
+  supplementRequests: IntakeSupplementRequest[];
 }
 
 export function FollowupEditForm({
@@ -68,6 +75,7 @@ export function FollowupEditForm({
   initialScore,
   requestedItems,
   followupQuestions,
+  supplementRequests,
 }: FollowupEditFormProps) {
   // 各戦略項目の初期値を取り出す
   const getStrVal = (key: string): string =>
@@ -228,6 +236,49 @@ export function FollowupEditForm({
             <p className="mt-3 text-xs leading-relaxed text-emerald-800">
               依頼された項目は一通り入力済みです。「情報を更新する」で送信してください。
             </p>
+          )}
+
+          {/* 担当者からの項目別ご指示（reject / supplement で保存された guidance） */}
+          {supplementRequests.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-bold text-amber-800">
+                担当者からの具体的なご指示:
+              </p>
+              <ul className="mt-1 space-y-2">
+                {supplementRequests.map((req) => (
+                  <li
+                    key={req.key}
+                    className="rounded-xl border border-amber-200 bg-white/70 p-3"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-bold text-amber-900">
+                        {req.label}
+                      </span>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                          req.severity === "reject"
+                            ? "border-rose-200 bg-rose-100 text-rose-700"
+                            : "border-amber-200 bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {req.severity === "reject" ? "要修正" : "補足依頼"}
+                      </span>
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-amber-900">
+                      {req.guidance}
+                    </p>
+                    {req.currentValue && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        現在の入力:{" "}
+                        <span className="break-words text-foreground/80">
+                          {req.currentValue}
+                        </span>
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           {requestedItems.length > 0 && (

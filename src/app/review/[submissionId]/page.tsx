@@ -2724,6 +2724,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                 initialScore={pkg.intakeQuality.score}
                 requestedItems={pkg.intakeQuality.requestedItems}
                 followupQuestions={pkg.intakeQuality.followupQuestions}
+                supplementRequests={pkg.supplementRequests}
               />
             </Section>
           )}
