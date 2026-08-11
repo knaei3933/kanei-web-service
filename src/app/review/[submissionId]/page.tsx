@@ -2296,22 +2296,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
         </div>
 
         <section className={`mb-6 rounded-3xl border p-5 shadow-sm ${routeGuidance.toneClass}`}>
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide opacity-80">現在どこを見ればよいか</p>
-              <h2 className="mt-1 text-lg font-bold">{routeGuidance.title}</h2>
-            </div>
-            <Link
-              href={adminUrl}
-              className="inline-flex items-center justify-center rounded-lg border border-current/20 bg-white/70 px-3 py-1.5 text-xs font-semibold transition hover:bg-white whitespace-nowrap"
-            >
-              管理画面 →
-            </Link>
-          </div>
+          <p className="text-xs font-bold uppercase tracking-wide opacity-80">現在どこを見ればよいか</p>
+          <h2 className="mt-1 text-lg font-bold">{routeGuidance.title}</h2>
+          <p className="mt-3 text-sm leading-relaxed opacity-90">{routeGuidance.body}</p>
 
-          <p className="text-sm leading-relaxed opacity-90 mb-3">{routeGuidance.body}</p>
-
-          <div className="grid gap-2 text-xs">
+          <div className="mt-4 grid gap-2 text-xs">
             <div className="grid grid-cols-[100px_1fr] items-center gap-2 rounded-lg border border-current/10 bg-white/50 px-3 py-2">
               <span className="font-bold opacity-70">レビュー画面</span>
               <span className="font-mono opacity-80">/review/{pkg.submissionId}</span>

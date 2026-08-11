@@ -1118,6 +1118,8 @@ function StatusRow({
 
 export default function ConsultPage() {
   const [data, setData] = useState<FormData>(INITIAL_DATA);
+  // Step 1: 選択中の事業カテゴリ（デフォルトは「製造・工業系」を開く）
+  const [selectedBusinessCategory, setSelectedBusinessCategory] = useState<string>("製造・工業系");
   // Step 2 チェックボックス選択（送信時にテキストと結合）
   const [targetCheckboxes, setTargetCheckboxes] = useState<string[]>([]);
   const [strengthCheckboxes, setStrengthCheckboxes] = useState<string[]>([]);
@@ -1732,25 +1734,43 @@ export default function ConsultPage() {
                 className={inputClass}
               />
               <p className="mt-3 text-sm text-muted-foreground">
-                以下から選ぶか、ご自由に入力ください
+                カテゴリを選ぶか、ご自由に入力ください
               </p>
-              <div className="mt-3 space-y-4">
+
+              {/* カテゴリボタン（第一階層） */}
+              <div className="mt-3 flex flex-wrap gap-2">
                 {BUSINESS_SUGGESTIONS.map((group) => (
-                  <div key={group.category}>
-                    <p className="mb-2 text-xs font-semibold text-muted-foreground">
-                      {group.category}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {group.items.map((item) => (
-                        <SuggestTag
-                          key={item}
-                          label={item}
-                          onClick={() => update("businessType", item)}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <button
+                    key={group.category}
+                    type="button"
+                    onClick={() => setSelectedBusinessCategory(group.category)}
+                    className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      selectedBusinessCategory === group.category
+                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                        : "border-border bg-white text-muted-foreground hover:border-primary/40 hover:bg-accent"
+                    }`}
+                  >
+                    {group.category}
+                  </button>
                 ))}
+              </div>
+
+              {/* 選択中のカテゴリの詳細チップ（第二階層） */}
+              <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <p className="mb-2 text-xs font-semibold text-primary">
+                  {selectedBusinessCategory}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {BUSINESS_SUGGESTIONS.find(
+                    (g) => g.category === selectedBusinessCategory
+                  )?.items.map((item) => (
+                    <SuggestTag
+                      key={item}
+                      label={item}
+                      onClick={() => update("businessType", item)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 

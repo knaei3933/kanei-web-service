@@ -9,6 +9,7 @@ import {
   Link2,
   PencilLine,
   ChevronDown,
+  AlertCircle,
 } from "lucide-react";
 import { DEMO_SECTION_OPTIONS } from "@/lib/demo-sections";
 
@@ -53,6 +54,17 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
     feedback.selectedSectionIds.includes(section.id)
   );
   const selectedCount = selectedSections.length;
+
+  // 修正依頼送信可否判定: いずれか1つ以上の入力があることを要求
+  const hasRevisionInput = (() => {
+    const commentFilled = feedback.comment.trim().length > 0;
+    const hasSelectedSection = selectedCount > 0;
+    const hasSectionMemo = Object.values(feedback.sectionFeedback).some(
+      (v) => v.trim().length > 0
+    );
+    const hasReferenceImage = feedback.referenceImageUrls.trim().length > 0;
+    return commentFilled || hasSelectedSection || hasSectionMemo || hasReferenceImage;
+  })();
 
   // 送信前確認サマリ用の集計値
   const commentLength = feedback.comment.trim().length;
@@ -412,8 +424,14 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       </div>
 
       {formState.status === "error" && (
-        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-          {formState.message}
+        <div className="mb-4 rounded-lg border-2 border-red-300 bg-red-50 p-4 text-sm font-semibold text-red-700 shadow-sm">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+            <div>
+              <p className="font-bold">入力エラー</p>
+              <p className="mt-1 font-normal">{formState.message}</p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -455,6 +473,19 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         </div>
       )}
 
+      {/* 修正依頼に必要な入力を案内するコンパクトメッセージ */}
+      {feedback.rating > 0 && revisionMode && !hasRevisionInput && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="flex items-center gap-2 font-semibold">
+            <PencilLine className="h-4 w-4 shrink-0 text-amber-600" />
+            修正依頼には追加の入力が必要です
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-amber-800">
+            いずれか1つ以上を入力してください：全体コメント、修正箇所の選択、箇所ごとのメモ、参考画像URL
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
           type="button"
@@ -475,7 +506,11 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
             }
             handleSubmit("revision");
           }}
-          disabled={isSubmitting || feedback.rating === 0}
+          disabled={
+            isSubmitting ||
+            feedback.rating === 0 ||
+            (revisionMode && !hasRevisionInput)
+          }
           className="flex flex-1 items-center justify-center gap-2 rounded-full border border-amber-400 bg-white px-6 py-3 font-medium text-amber-900 transition-all hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <MessageSquare className="h-4 w-4" />
