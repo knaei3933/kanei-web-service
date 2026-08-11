@@ -929,10 +929,10 @@ export default function Hero() {
             className="flex flex-wrap gap-3"
           >
             {[
-              { icon: Users, label: "信頼感のある会社案内" },
-              { icon: PhoneCall, label: "問い合わせ導線の最適化" },
+              { icon: Users, label: "信頼感のある会社" },
+              { icon: PhoneCall, label: "問い合わせ導線" },
               { icon: Smartphone, label: "スマホ対応" },
-              { icon: SearchCheck, label: "検索対策を意識した構成" },
+              { icon: SearchCheck, label: "検索対策" },
             ].map((tech) => (
               <div key={tech.label} className="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm text-muted-foreground shadow-sm">
                 <tech.icon className="h-4 w-4 text-blue-600" />
@@ -965,9 +965,9 @@ export default function Hero() {
             className="grid gap-4 sm:grid-cols-3"
           >
             {[
-              ["初期費用0円", "導入時の負担を抑えて始めやすい料金"],
-              ["ソースコード納品", "将来の移行や社内管理にも備えやすい"],
-              ["解約・移行しやすい", "長期縛りに頼らず、続けやすさで選ばれる設計"],
+              ["初期費用0円", "導入負担を抑えて始めやすい"],
+              ["ソースコード納品", "将来の移行・管理に備えやすい"],
+              ["解約・移行しやすい", "長期縛らず、続けやすさで選ばれる"],
             ].map(([title, text]) => (
               <div key={title} className="rounded-2xl border bg-card p-4 shadow-sm">
                 <div className="flex items-center gap-2 font-semibold">

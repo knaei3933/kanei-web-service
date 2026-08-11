@@ -476,6 +476,31 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
       {isSubmitting && (
         <p className="mt-3 text-center text-sm text-amber-700">送信中...</p>
       )}
+
+      {/* 修正依頼後の流れ（3ステップ） */}
+      <div className="mt-6 rounded-2xl border border-amber-200 bg-white/60 p-4 text-xs text-amber-900">
+        <p className="mb-2 font-semibold text-amber-800">修正依頼後の流れ</p>
+        <ol className="space-y-1.5">
+          <li className="flex items-start gap-2">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-700">
+              1
+            </span>
+            <span>修正要望を確認し、該当箇所を修正します</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-700">
+              2
+            </span>
+            <span>修正版デモを再公開し、メールでご案内します</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-700">
+              3
+            </span>
+            <span>再度ご確認いただき、問題なければ本制作へ進みます</span>
+          </li>
+        </ol>
+      </div>
     </div>
   );
 }

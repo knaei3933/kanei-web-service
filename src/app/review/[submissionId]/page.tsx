@@ -371,30 +371,25 @@ function nextActionMeta(
  */
 function NextActionCard({ meta }: { meta: NextActionMeta }) {
   return (
-    <section className={`mb-6 rounded-3xl border p-6 shadow-sm ${meta.toneClass}`}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="max-w-3xl">
-          <p className="text-xs font-bold uppercase tracking-wide opacity-70">
-            Next Action
-          </p>
-          <div className="mt-3">
-            <p className="text-xs font-bold opacity-70">① 現在の段階</p>
-            <p className="mt-0.5 text-base font-bold">{meta.stage}</p>
-          </div>
-          <div className="mt-3">
-            <p className="text-xs font-bold opacity-70">② 次にやること</p>
-            <p className="mt-0.5 text-sm leading-relaxed">{meta.nextAction}</p>
-          </div>
+    <section className={`mb-6 rounded-3xl border p-5 shadow-sm ${meta.toneClass}`}>
+      <p className="text-xs font-bold uppercase tracking-wide opacity-70 mb-3">
+        Next Action
+      </p>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="flex items-baseline gap-3">
+          <span className="text-xs font-bold opacity-70">段階:</span>
+          <span className="text-sm font-bold">{meta.stage}</span>
         </div>
-        <div className="shrink-0 lg:max-w-xs">
-          <p className="text-xs font-bold opacity-70">③ 開くべきページ / 操作先</p>
-          <Link
-            href={meta.href}
-            className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-current/20 bg-white/70 px-4 py-2 text-sm font-bold transition hover:bg-white"
-          >
-            {meta.targetLabel} →
-          </Link>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold opacity-70">次:</span>
+          <span className="text-sm">{meta.nextAction}</span>
         </div>
+        <Link
+          href={meta.href}
+          className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-current/20 bg-white/70 px-3 py-1.5 text-xs font-bold transition hover:bg-white whitespace-nowrap"
+        >
+          {meta.targetLabel} →
+        </Link>
       </div>
     </section>
   );
