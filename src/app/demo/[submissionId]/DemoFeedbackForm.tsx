@@ -343,6 +343,24 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
 
         {revisionMode && (
           <div id="revision-details" className="mt-3 space-y-4">
+            {/* セクション別メモの案内（選択中のセクションがある時だけ表示） */}
+            {selectedCount > 0 && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
+                <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+                  <PencilLine className="h-4 w-4 shrink-0" />
+                  各選択箇所に短いメモを残すと、修正がスムーズになります
+                </p>
+                <p className="mt-1 text-xs text-amber-800">
+                  選択した箇所のメモ入力欄に、直したい内容を簡潔にご記入ください（すべて任意）。
+                  {selectedSections.filter((s) => !(feedback.sectionFeedback[s.id] ?? "").trim()).length > 0 && (
+                    <span className="ml-2 font-medium">
+                      まだメモがない箇所: {selectedSections.filter((s) => !(feedback.sectionFeedback[s.id] ?? "").trim()).map((s) => s.name).join("、")}
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+
             <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
               <p className="mb-1 text-sm font-semibold text-amber-900">
                 修正したい箇所を選択

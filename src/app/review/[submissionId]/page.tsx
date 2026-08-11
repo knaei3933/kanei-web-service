@@ -150,26 +150,26 @@ function reviewRouteGuidance(status: ApprovalStatus): {
 } {
   if (isDemoVisibleStatus(status)) {
     return {
-      title: "実際のデモホームページを開けます",
+      title: "まず /demo を開いてください",
       body:
-        "この案件は実デモが生成済みです。お客様確認用は /demo/[submissionId] を開き、内部確認用は /execution/[submissionId] を使ってください。",
+        "実デモ生成済み。お客様確認は /demo、内部確認は /execution で。",
       toneClass: "border-emerald-200 bg-emerald-50 text-emerald-900",
     };
   }
 
   if (isExecutionVisibleStatus(status)) {
     return {
-      title: "まだ実デモは未生成です",
+      title: "まず /execution を開いてください",
       body:
-        "この段階では /demo/[submissionId] はまだ開けません。まず確認すべきページは内部プレビュー /execution/[submissionId] です。",
+        "実デモ未生成。/demo はまだ開けません。内部プレビューを確認してください。",
       toneClass: "border-violet-200 bg-violet-50 text-violet-900",
     };
   }
 
   return {
-    title: "まだデモ制作前の段階です",
+    title: "まずこの review 画面で承認を進めてください",
     body:
-      "この案件はレビュー・承認段階のため、実デモも内部プレビューもまだ主対象ではありません。まずこの review 画面と admin 画面で承認を進めてください。",
+      "実デモ・内部プレビューは制作段階のため未対象。承認後に生成されます。",
     toneClass: "border-amber-200 bg-amber-50 text-amber-900",
   };
 }
