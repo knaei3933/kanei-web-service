@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { spawn } from "node:child_process";
 import { readApprovalPackage, writeApprovalPackage, buildExecutionHandoff, buildPlanningArtifact } from "@/lib/approval-package";
-import { artifactExists } from "@/server/submission-storage";
+import { artifactExists, readArtifact } from "@/server/submission-storage";
 
 /* ------------------------------------------------------------------ */
 /*  /api/admin/submissions/[id]/execute-demo （デモ生成エンドポイント）    */
@@ -66,7 +66,7 @@ type ArtifactName = "revision-handoff.json" | "execution-handoff.json" | "omc-pl
 async function prepareHandoff(
   submissionId: string,
   currentStatus: string
-): Promise<{ ok: true; handoffType: "execution" | "revision" } | { ok: false; error: string; status: number }> {
+): Promise<{ ok: true; handoffType: "execution" | "revision" | "restore" | "reuse" } | { ok: false; error: string; status: number }> {
   // ステータスチェック
   if (!ALLOWED_STATUSES.includes(currentStatus as AllowedStatus)) {
     return {
@@ -86,7 +86,21 @@ async function prepareHandoff(
         status: 400,
       };
     }
-    return { ok: true, handoffType: "revision" };
+
+    let handoffType: "revision" | "restore" | "reuse" = "revision";
+    const revisionHandoffRaw = await readArtifact(submissionId, "revision-handoff.json" as ArtifactName);
+    if (revisionHandoffRaw) {
+      try {
+        const revisionHandoff = JSON.parse(revisionHandoffRaw) as { kind?: unknown };
+        if (revisionHandoff.kind === "restore" || revisionHandoff.kind === "reuse" || revisionHandoff.kind === "revision") {
+          handoffType = revisionHandoff.kind;
+        }
+      } catch {
+        // 파싱 실패 시 revision 기본값 유지
+      }
+    }
+
+    return { ok: true, handoffType };
   }
 
   // approved_for_execution の場合は execution-handoff.json を使用
@@ -255,7 +269,7 @@ export async function POST(
     status: "demo_generating",
     submissionId,
     handoffType: handoffResult.handoffType,
-    // 起動方法の透明化（UI で案内分岐に使える）
+    // 起動方法と handoff kind の透明化（UI で案内分岐に使える）
     delegated: true,
     spawnAttempted,
     serverless: isServerless,
