@@ -12,7 +12,6 @@ import {
   ChevronUp,
   Send,
   Award,
-  Users,
   TrendingUp,
   Wrench,
   Globe,
@@ -52,27 +51,32 @@ const EQUIPMENT_CATEGORIES = [
   },
 ];
 
-// 導入支援範囲（必須掲載 - 強み）
-const SUPPORT_RANGE = [
+// 導入支援フロー（必須掲載 - 強み）3ステップで構造化
+// ヒアリング → メーカー調整・手配 → 据付サポート の流れを明示
+const SUPPORT_STEPS = [
   {
+    step: "01",
     icon: <MessageCircle className="h-6 w-6" />,
     title: "導入前ヒアリング",
-    description: "お客様の要件に合わせて、最適な設備選定から導入計画までサポート。",
+    summary: "要件整理と最適な機種選定",
+    description:
+      "お客様の予算・ライン仕様・課題を日本語でヒアリング。15社の取扱メーカーから最適な機種を選定し、導入計画と概算見積りをご提示します。",
   },
   {
+    step: "02",
     icon: <Globe className="h-6 w-6" />,
-    title: "韓国メーカー直結",
-    description: "現地メーカーとの直接契約で、中間マージンをカットしコスト削減。",
+    title: "韓国メーカー調整・手配",
+    summary: "直接契約で中間マージンを削減",
+    description:
+      "現地メーカーと直接契約。仕様書のすり合わせ・商談・納期調整まで、すべて日本語で一次対応し、コストと手間を抑えます。",
   },
   {
-    icon: <Users className="h-6 w-6" />,
-    title: "日本語一次対応",
-    description: "言壁のないコミュニケーションで、スムーズな導入を実現。",
-  },
-  {
+    step: "03",
     icon: <Settings className="h-6 w-6" />,
-    title: "据付調整まで伴走",
-    description: "納品後の設置・試運転・トレーニングまで、一貫してサポート。",
+    title: "据付・導入サポート",
+    summary: "設置から稼働後まで一貫伴走",
+    description:
+      "納品後の設置・試運転・操作トレーニングまで一貫してサポート。24時間対応の現地サポート体制で、稼働後のご不安にもお応えします。",
   },
 ];
 
@@ -232,27 +236,31 @@ export default function KoreanManufacturingShowcase() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="mb-4 inline-flex items-center rounded-full bg-blue-500/20 px-4 py-1.5 text-sm font-medium text-blue-200">
-              <Globe className="mr-2 h-4 w-4" />
-              韓国メーカー直結
+            <div className="mb-4 inline-flex items-center rounded-full bg-blue-500/20 px-4 py-1.5 text-sm font-medium text-blue-200 ring-1 ring-inset ring-blue-400/30">
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              B2B専業・100件超の導入実績
             </div>
             <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              韓国製設備の導入を
+              韓国メーカー直接調達で、
               <br />
-              日本語でサポートします
+              設備投資のコストとリスクを最適化
             </h1>
-            <p className="mb-8 max-w-2xl text-lg text-blue-100 sm:text-xl">
-              韓国メーカー直結・日本語一次対応で、
+            <p className="mb-6 max-w-2xl text-lg text-blue-100 sm:text-xl">
+              15社の韓国メーカーと直接契約し、中間マージンを省いてコストを抑えます。
               <br className="hidden sm:block" />
-              導入前ヒアリングから据付調整まで伴走します。
+              導入前のヒアリングから据付・試運転まで、日本語で一貫して伴走します。
             </p>
-            <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700" asChild>
-                <a href="#contact">
-                  <Send className="mr-2 h-5 w-5" />
-                  お問い合わせ
-                </a>
-              </Button>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <motion.a
+                href="#contact"
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.98 }}
+                className="group inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-8 py-4 text-lg font-bold text-slate-900 shadow-xl shadow-orange-500/30 ring-2 ring-amber-300/50 transition-shadow hover:shadow-2xl hover:shadow-orange-500/50"
+              >
+                <Send className="mr-2 h-5 w-5" />
+                お見積り・ご相談はこちら（無料）
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </motion.a>
               <Button
                 size="lg"
                 variant="outline"
@@ -262,6 +270,20 @@ export default function KoreanManufacturingShowcase() {
                 <a href="#equipment">設備カテゴリを見る</a>
               </Button>
             </div>
+            <ul className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-blue-100">
+              <li className="inline-flex items-center">
+                <CheckCircle2 className="mr-1.5 h-4 w-4 text-amber-300" />
+                お見積り無料
+              </li>
+              <li className="inline-flex items-center">
+                <CheckCircle2 className="mr-1.5 h-4 w-4 text-amber-300" />
+                原則2営業日以内にご返信
+              </li>
+              <li className="inline-flex items-center">
+                <CheckCircle2 className="mr-1.5 h-4 w-4 text-amber-300" />
+                日本語で完結
+              </li>
+            </ul>
           </motion.div>
         </div>
       </section>
@@ -341,35 +363,51 @@ export default function KoreanManufacturingShowcase() {
             viewport={{ once: true }}
             className="mb-12 text-center"
           >
+            <span className="mb-3 inline-block rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+              導入までの3ステップ
+            </span>
             <h2 className="mb-4 text-3xl font-bold text-slate-900">
-              導入支援範囲
+              導入支援フロー
             </h2>
             <p className="mx-auto max-w-2xl text-slate-600">
-              韓国メーカー直結と日本語一次対応で、スムーズな導入を実現します。
+              ヒアリングから据付まで、流れを明確にして日本語で一貫サポートします。
             </p>
           </motion.div>
-          <div className="grid gap-8 md:grid-cols-2">
-            {SUPPORT_RANGE.map((item, index) => (
+          <div className="relative grid gap-8 md:grid-cols-3">
+            {/* ステップ間の接続線（デスクトップ表示） */}
+            <div className="absolute left-0 right-0 top-10 hidden h-0.5 bg-gradient-to-r from-blue-200 via-blue-300 to-blue-200 md:block" />
+            {SUPPORT_STEPS.map((item, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="flex rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+                className="relative flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
               >
-                <div className="mr-4 shrink-0 text-blue-600">
-                  {item.icon}
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white shadow-md">
+                    {item.step}
+                  </div>
+                  <div className="text-blue-600">{item.icon}</div>
                 </div>
-                <div>
-                  <h3 className="mb-2 font-semibold text-slate-900">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm text-slate-600">{item.description}</p>
-                </div>
+                <h3 className="mb-1 text-lg font-bold text-slate-900">
+                  {item.title}
+                </h3>
+                <p className="mb-3 text-sm font-semibold text-blue-600">
+                  {item.summary}
+                </p>
+                <p className="text-sm leading-relaxed text-slate-600">
+                  {item.description}
+                </p>
               </motion.div>
             ))}
           </div>
+          <p className="mt-8 text-center text-sm text-slate-500">
+            全ステップで
+            <span className="font-semibold text-slate-700">日本語による一次対応</span>
+            を実施。言語の壁による手戻りやリスクを防ぎます。
+          </p>
         </div>
       </section>
 
