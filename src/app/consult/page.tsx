@@ -107,31 +107,60 @@ const CURRENT_ISSUES = [
   "検索で出てこない",
 ];
 
-/** 4-1. サイトの主な目的 */
-const SITE_PURPOSES = [
-  "会社の信頼性をアピールしたい",
-  "サービス・商品を知ってもらいたい",
-  "問い合わせ・予約を増やしたい",
-  "実績・施工事例を見せたい",
-  "採用情報を掲載したい",
-  "ブランドイメージを向上させたい",
-  "SNSと連携したい",
+/**
+ * 4-1. サイトの主な目的 — カテゴリ別（プログレッシブ開示用）
+ * すべての選択肢を維持しつつ、カテゴリボタンで1カテゴリ分だけ表示する。
+ * 「その他」はカテゴリボタンの一つとして扱い、自由入力とセットで出す。
+ */
+const SITE_PURPOSE_GROUPS: { key: string; items: string[] }[] = [
+  {
+    key: "信頼・ブランド",
+    items: ["会社の信頼性をアピールしたい", "ブランドイメージを向上させたい"],
+  },
+  {
+    key: "集客・反響",
+    items: ["サービス・商品を知ってもらいたい", "問い合わせ・予約を増やしたい"],
+  },
+  {
+    key: "実績・採用",
+    items: ["実績・施工事例を見せたい", "採用情報を掲載したい"],
+  },
+  {
+    key: "SNS・連携",
+    items: ["SNSと連携したい"],
+  },
 ];
 
-/** 4-2. 必要なページ・機能 */
-const FEATURE_OPTIONS = [
-  "会社案内（代表挨拶・沿革・アクセス）",
-  "サービス・メニュー・料金表",
-  "実績・施工事例・ギャラリー",
-  "お問い合わせフォーム",
-  "電話番号・アクセスの目立つ表示",
-  "料金表・コース一覧",
-  "スタッフ紹介",
-  "ブログ・お知らせ",
-  "よくある質問（FAQ）",
-  "予約・お申し込み導線（外部サービスへのリンク）",
-  "Googleマップ埋め込み",
-  "SNS連携（Instagram・LINE・X）",
+/**
+ * 4-2. 必要なページ・機能 — カテゴリ別（プログレッシブ開示用）
+ * すべての選択肢を維持しつつ、カテゴリボタンで1カテゴリ分だけ表示する。
+ * 「その他」はカテゴリボタンの一つとして扱い、自由入力とセットで出す。
+ */
+const FEATURE_GROUPS: { key: string; items: string[] }[] = [
+  {
+    key: "会社情報",
+    items: ["会社案内（代表挨拶・沿革・アクセス）", "スタッフ紹介"],
+  },
+  {
+    key: "サービス・料金",
+    items: ["サービス・メニュー・料金表", "料金表・コース一覧"],
+  },
+  {
+    key: "実績・発信",
+    items: ["実績・施工事例・ギャラリー", "ブログ・お知らせ", "よくある質問（FAQ）"],
+  },
+  {
+    key: "反響・導線",
+    items: [
+      "お問い合わせフォーム",
+      "電話番号・アクセスの目立つ表示",
+      "予約・お申し込み導線（外部サービスへのリンク）",
+    ],
+  },
+  {
+    key: "連携・地図",
+    items: ["Googleマップ埋め込み", "SNS連携（Instagram・LINE・X）"],
+  },
 ];
 
 /** 4-3. 公開希望時期 */
@@ -1129,6 +1158,9 @@ export default function ConsultPage() {
   const [selectedTargetCategory, setSelectedTargetCategory] = useState<string>("年齢");
   const [selectedStrengthCategory, setSelectedStrengthCategory] = useState<string>("技術・品質");
   const [selectedInfoCategory, setSelectedInfoCategory] = useState<string>("基本");
+  // Step 4 カテゴリ選択（プログレッシブ開示用）
+  const [selectedPurposeCategory, setSelectedPurposeCategory] = useState<string>("信頼・ブランド");
+  const [selectedFeatureCategory, setSelectedFeatureCategory] = useState<string>("会社情報");
   const [submitted, setSubmitted] = useState(false);
 
   /* ウィザードの現在ステップ（1..7）。1画面に1ステップだけ表示する。 */
@@ -2450,66 +2482,178 @@ export default function ConsultPage() {
           <SectionCard>
             <StepHeader step={4} title="サイトの目的と機能" />
 
-            {/* 4-1. サイトの主な目的 */}
+            {/* 4-1. サイトの主な目的（カテゴリ優先の段階開示） */}
             <div className="mb-10">
               <FieldLabel required>サイトの主な目的（複数選択可）</FieldLabel>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {SITE_PURPOSES.map((purpose) => (
-                  <CheckCard
-                    key={purpose}
-                    checked={data.sitePurpose.includes(purpose)}
-                    onClick={() => toggleArrayItem("sitePurpose", purpose)}
+              <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+                まず近いカテゴリを選んで、当てはまるものを選択してください。
+              </p>
+
+              <div className="rounded-2xl bg-accent/30 p-4 sm:p-5">
+                {/* カテゴリボタン（第一階層） */}
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {SITE_PURPOSE_GROUPS.map((cat) => (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => setSelectedPurposeCategory(cat.key)}
+                      className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                        selectedPurposeCategory === cat.key
+                          ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                          : "border-border bg-white text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
+                      {cat.key}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPurposeCategory("その他")}
+                    className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      selectedPurposeCategory === "その他"
+                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                        : "border-border bg-white text-muted-foreground hover:border-primary/40"
+                    }`}
                   >
-                    {purpose}
-                  </CheckCard>
-                ))}
-                <CheckCard
-                  checked={data.sitePurpose.includes("その他")}
-                  onClick={() => toggleArrayItem("sitePurpose", "その他")}
-                >
-                  その他
-                </CheckCard>
+                    その他
+                  </button>
+                </div>
+
+                {/* 選択カテゴリの詳細カード（第二階層・1カテゴリ分だけ表示） */}
+                {selectedPurposeCategory === "その他" ? (
+                  <div>
+                    <p className="mb-2 text-xs font-semibold text-primary">その他</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <CheckCard
+                        checked={data.sitePurpose.includes("その他")}
+                        onClick={() => toggleArrayItem("sitePurpose", "その他")}
+                      >
+                        その他
+                      </CheckCard>
+                    </div>
+                    {data.sitePurpose.includes("その他") && (
+                      <input
+                        type="text"
+                        value={data.sitePurposeOther}
+                        onChange={(e) => update("sitePurposeOther", e.target.value)}
+                        placeholder="自由に入力してください"
+                        className={`${inputClass} mt-3`}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  (() => {
+                    const group = SITE_PURPOSE_GROUPS.find(
+                      (g) => g.key === selectedPurposeCategory
+                    );
+                    return (
+                      <div>
+                        <p className="mb-2 text-xs font-semibold text-primary">
+                          {group?.key}
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {(group?.items ?? []).map((purpose) => (
+                            <CheckCard
+                              key={purpose}
+                              checked={data.sitePurpose.includes(purpose)}
+                              onClick={() => toggleArrayItem("sitePurpose", purpose)}
+                            >
+                              {purpose}
+                            </CheckCard>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
               </div>
-              {data.sitePurpose.includes("その他") && (
-                <input
-                  type="text"
-                  value={data.sitePurposeOther}
-                  onChange={(e) => update("sitePurposeOther", e.target.value)}
-                  placeholder="自由に入力してください"
-                  className={`${inputClass} mt-3`}
-                />
-              )}
             </div>
 
-            {/* 4-2. 必要なページ・機能 */}
+            {/* 4-2. 必要なページ・機能（カテゴリ優先の段階開示） */}
             <div className="mb-10">
               <FieldLabel required>必要なページ・機能（複数選択可）</FieldLabel>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {FEATURE_OPTIONS.map((feature) => (
-                  <CheckCard
-                    key={feature}
-                    checked={data.features.includes(feature)}
-                    onClick={() => toggleArrayItem("features", feature)}
+              <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+                まず近いカテゴリを選んで、当てはまるものを選択してください。
+              </p>
+
+              <div className="rounded-2xl bg-accent/30 p-4 sm:p-5">
+                {/* カテゴリボタン（第一階層） */}
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {FEATURE_GROUPS.map((cat) => (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => setSelectedFeatureCategory(cat.key)}
+                      className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                        selectedFeatureCategory === cat.key
+                          ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                          : "border-border bg-white text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
+                      {cat.key}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFeatureCategory("その他")}
+                    className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      selectedFeatureCategory === "その他"
+                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                        : "border-border bg-white text-muted-foreground hover:border-primary/40"
+                    }`}
                   >
-                    {feature}
-                  </CheckCard>
-                ))}
-                <CheckCard
-                  checked={data.features.includes("その他")}
-                  onClick={() => toggleArrayItem("features", "その他")}
-                >
-                  その他
-                </CheckCard>
+                    その他
+                  </button>
+                </div>
+
+                {/* 選択カテゴリの詳細カード（第二階層・1カテゴリ分だけ表示） */}
+                {selectedFeatureCategory === "その他" ? (
+                  <div>
+                    <p className="mb-2 text-xs font-semibold text-primary">その他</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <CheckCard
+                        checked={data.features.includes("その他")}
+                        onClick={() => toggleArrayItem("features", "その他")}
+                      >
+                        その他
+                      </CheckCard>
+                    </div>
+                    {data.features.includes("その他") && (
+                      <input
+                        type="text"
+                        value={data.featuresOther}
+                        onChange={(e) => update("featuresOther", e.target.value)}
+                        placeholder="その他必要な機能があればご記入ください"
+                        className={`${inputClass} mt-3`}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  (() => {
+                    const group = FEATURE_GROUPS.find(
+                      (g) => g.key === selectedFeatureCategory
+                    );
+                    return (
+                      <div>
+                        <p className="mb-2 text-xs font-semibold text-primary">
+                          {group?.key}
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {(group?.items ?? []).map((feature) => (
+                            <CheckCard
+                              key={feature}
+                              checked={data.features.includes(feature)}
+                              onClick={() => toggleArrayItem("features", feature)}
+                            >
+                              {feature}
+                            </CheckCard>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
               </div>
-              {data.features.includes("その他") && (
-                <input
-                  type="text"
-                  value={data.featuresOther}
-                  onChange={(e) => update("featuresOther", e.target.value)}
-                  placeholder="その他必要な機能があればご記入ください"
-                  className={`${inputClass} mt-3`}
-                />
-              )}
             </div>
 
             {/* 4-3. 公開希望時期 */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import {
   Star,
   ThumbsUp,
@@ -48,6 +48,9 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
   // 詳細な修正入力（箇所選択・箇所別メモ・参考画像）は初期表示では隠し、
   // 必要な顧客だけ展開する。第一印象を軽くし、承認だけで進む導線を妨げない。
   const [revisionMode, setRevisionMode] = useState(false);
+  // 箇所別メモの textarea を sectionId ごとに保持。
+  // チェックを入れた瞬間に対応するメモ欄へフォーカスを当て、入力を促す。
+  const sectionMemoRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   // 選択中の修正対象セクション（ライブサマリ表示用）
   const selectedSections = DEMO_SECTION_OPTIONS.filter((section) =>
@@ -95,6 +98,8 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
   };
 
   const toggleSection = (sectionId: string) => {
+    // クロージャの現状から ON/OFF を判定（副作用を updater の外で行う）
+    const turningOn = !feedback.selectedSectionIds.includes(sectionId);
     setFeedback((prev) => {
       const selected = prev.selectedSectionIds.includes(sectionId)
         ? prev.selectedSectionIds.filter((id) => id !== sectionId)
@@ -104,6 +109,13 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         selectedSectionIds: selected,
       };
     });
+    // チェックを入れた直後は textarea がまだ無効化状態のため、
+    // 再描画後にフォーカスを当てる（チェックを外すときは何もしない）。
+    if (turningOn) {
+      setTimeout(() => {
+        sectionMemoRefs.current[sectionId]?.focus();
+      }, 0);
+    }
   };
 
   const handleSectionFeedbackChange = (sectionId: string, value: string) => {
@@ -397,6 +409,9 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
                           </div>
                           <div className="mt-2">
                             <textarea
+                              ref={(el) => {
+                                sectionMemoRefs.current[section.id] = el;
+                              }}
                               value={feedback.sectionFeedback[section.id] ?? ""}
                               onChange={(e) =>
                                 handleSectionFeedbackChange(section.id, e.target.value)
@@ -407,6 +422,12 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
                               className="w-full rounded-lg border-amber-200 bg-white px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
                               placeholder={`${section.name}の修正したい点をご記入ください`}
                             />
+                            {checked &&
+                              !(feedback.sectionFeedback[section.id] ?? "").trim() && (
+                                <p className="mt-1 text-[11px] leading-snug text-amber-700/80">
+                                  一言メモがあると修正がより早く進みます（任意）
+                                </p>
+                              )}
                           </div>
                         </div>
                       </label>

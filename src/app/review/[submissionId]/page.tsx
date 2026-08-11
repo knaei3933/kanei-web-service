@@ -196,6 +196,8 @@ type NextActionMeta = {
   href: string;
   /** カードの配色 */
   toneClass: string;
+  /** sticky bar 用のコンパクトな行動文（動詞起こし・ヘッダーの状態ラベルと重複させない） */
+  actionShort: string;
 };
 
 /**
@@ -216,6 +218,7 @@ function nextActionMeta(
         targetLabel: "追加情報入力フォーム（この画面）",
         href: ctx.reviewUrl,
         toneClass: "border-amber-200 bg-amber-50 text-amber-900",
+        actionShort: "追加情報を入力待つ",
       };
     case "awaiting_representative_approval":
       return {
@@ -225,6 +228,7 @@ function nextActionMeta(
         targetLabel: "承認アクション（この画面の下部）",
         href: ctx.reviewUrl,
         toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+        actionShort: "代表が承認を判断",
       };
     case "awaiting_plan_approval":
       return {
@@ -234,6 +238,7 @@ function nextActionMeta(
         targetLabel: "計画アーティファクトと承認アクション（この画面）",
         href: ctx.reviewUrl,
         toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+        actionShort: "計画を承認判断",
       };
     case "approved_for_execution":
       return {
@@ -243,6 +248,7 @@ function nextActionMeta(
         targetLabel: "実行ハンドオフ / 内部プレビュー",
         href: ctx.executionUrl,
         toneClass: "border-violet-200 bg-violet-50 text-violet-900",
+        actionShort: "デモを生成",
       };
     case "demo_generating":
       return {
@@ -252,6 +258,7 @@ function nextActionMeta(
         targetLabel: "内部プレビュー（生成状況確認）",
         href: ctx.executionUrl,
         toneClass: "border-violet-200 bg-violet-50 text-violet-900",
+        actionShort: "生成完了を待つ",
       };
     case "demo_deployed":
       return {
@@ -261,6 +268,7 @@ function nextActionMeta(
         targetLabel: "デモページを開く",
         href: ctx.demoUrl,
         toneClass: "border-blue-200 bg-blue-50 text-blue-900",
+        actionShort: "顧客確認を待つ",
       };
     case "demo_revision_ready":
       return {
@@ -270,6 +278,7 @@ function nextActionMeta(
         targetLabel: "デモフィードバック / デモページ",
         href: ctx.demoUrl,
         toneClass: "border-rose-200 bg-rose-50 text-rose-900",
+        actionShort: "修正・再公開",
       };
     case "demo_revised":
       return {
@@ -279,6 +288,7 @@ function nextActionMeta(
         targetLabel: "デモページを開く",
         href: ctx.demoUrl,
         toneClass: "border-blue-200 bg-blue-50 text-blue-900",
+        actionShort: "顧客再確認を待つ",
       };
     case "customer_approved":
       return {
@@ -288,6 +298,7 @@ function nextActionMeta(
         targetLabel: "管理画面を開く",
         href: ctx.adminUrl,
         toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+        actionShort: "ヒアリングを起票",
       };
     case "pre_production_interview":
       return {
@@ -297,6 +308,7 @@ function nextActionMeta(
         targetLabel: "管理画面を開く",
         href: ctx.adminUrl,
         toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+        actionShort: "回答・素材を評価",
       };
     case "pre_production_review":
       return {
@@ -306,6 +318,7 @@ function nextActionMeta(
         targetLabel: "管理画面を開く",
         href: ctx.adminUrl,
         toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
+        actionShort: "最終承認を判断",
       };
     case "production_ready":
       return {
@@ -315,6 +328,7 @@ function nextActionMeta(
         targetLabel: "管理画面を開く",
         href: ctx.adminUrl,
         toneClass: "border-emerald-200 bg-emerald-50 text-emerald-900",
+        actionShort: "本制作を実行",
       };
     case "delivered":
       return {
@@ -324,6 +338,7 @@ function nextActionMeta(
         targetLabel: "デモページ（最終確認）",
         href: ctx.demoUrl,
         toneClass: "border-emerald-200 bg-emerald-50 text-emerald-900",
+        actionShort: "完了",
       };
     case "received":
       return {
@@ -333,6 +348,7 @@ function nextActionMeta(
         targetLabel: "この review 画面で経過確認",
         href: ctx.reviewUrl,
         toneClass: "border-blue-200 bg-blue-50 text-blue-900",
+        actionShort: "品質判定を待つ",
       };
     case "rejected":
       return {
@@ -342,6 +358,7 @@ function nextActionMeta(
         targetLabel: "承認アクション（この画面）",
         href: ctx.reviewUrl,
         toneClass: "border-rose-200 bg-rose-50 text-rose-900",
+        actionShort: "却下済み",
       };
     case "approved_for_planning":
       return {
@@ -351,6 +368,7 @@ function nextActionMeta(
         targetLabel: "管理画面を開く",
         href: ctx.adminUrl,
         toneClass: "border-slate-200 bg-slate-50 text-slate-700",
+        actionShort: "レガシー状態対応",
       };
     default:
       return {
@@ -360,6 +378,7 @@ function nextActionMeta(
         targetLabel: "管理画面を開く",
         href: ctx.adminUrl,
         toneClass: "border-slate-200 bg-slate-50 text-slate-700",
+        actionShort: "管理画面で確認",
       };
   }
 }
@@ -2280,7 +2299,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             <div className="min-w-0">
               <p className="text-xs font-bold text-muted-foreground">次のアクション</p>
               <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
-                {nextAction.stage}
+                {nextAction.actionShort}
               </p>
             </div>
             <Link
