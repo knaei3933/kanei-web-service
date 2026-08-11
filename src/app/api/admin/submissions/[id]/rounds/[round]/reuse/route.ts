@@ -1,5 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
-import { transitionStatus } from "@/lib/approval-package";
+import {
+  readApprovalPackage,
+  transitionStatus,
+  writeApprovalPackage,
+} from "@/lib/approval-package";
 import {
   readArtifact,
   writeArtifact,
@@ -208,10 +212,17 @@ export async function POST(
     }
 
     // lineage に再利用ラウンドを追加（hasComponentSource=true は snapshot にあるため）
-    const approvalPkg = await readArtifact(submissionId, "approval-package.json");
-    const pkg = approvalPkg ? JSON.parse(approvalPkg) : null;
+    const pkg = await readApprovalPackage(submissionId);
     const status = pkg?.status ?? "unknown";
     const customerFacingStatus = pkg?.customerFacingStatus ?? null;
+    const queuedStatus =
+      status === "demo_generating" || status === "demo_revision_ready"
+        ? "demo_revision_ready"
+        : status;
+    const queuedCustomerFacingStatus =
+      status === "demo_generating" || status === "demo_revision_ready"
+        ? "under_internal_review"
+        : customerFacingStatus;
 
     await appendRound(submissionId, {
       round: nextRound,
@@ -219,13 +230,17 @@ export async function POST(
       parentRound: round,
       variantTag,
       hasComponentSource: true,
-      status,
-      customerFacingStatus,
+      status: queuedStatus,
+      customerFacingStatus: queuedCustomerFacingStatus,
       notes: `ラウンド ${round} からバリアント "${variantTag}" を生成`,
     });
 
-    // demo_revision_ready に遷移（既に同状態ならそのまま継続）
-    if (status !== "demo_revision_ready") {
+    // demo_generating 中なら pending handoff を新しい reuse に置き換える意味で直接巻き戻す
+    if (pkg?.status === "demo_generating") {
+      pkg.status = "demo_revision_ready";
+      pkg.customerFacingStatus = "under_internal_review";
+      await writeApprovalPackage(pkg);
+    } else if (status !== "demo_revision_ready") {
       await transitionStatus(submissionId, "demo_revision_ready");
     }
 
