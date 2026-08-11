@@ -739,7 +739,7 @@ function SuggestTag({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary"
+      className="inline-flex items-center rounded-full border border-border bg-white px-2.5 py-0.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary"
     >
       {label}
     </button>
@@ -1772,13 +1772,13 @@ export default function ConsultPage() {
               </p>
 
               {/* カテゴリボタン（第一階層） */}
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
                 {BUSINESS_SUGGESTIONS.map((group) => (
                   <button
                     key={group.category}
                     type="button"
                     onClick={() => setSelectedBusinessCategory(group.category)}
-                    className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                    className={`rounded-xl border-2 px-3 py-1.5 text-sm font-medium transition-all sm:px-4 sm:py-2 ${
                       selectedBusinessCategory === group.category
                         ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
                         : "border-border bg-white text-muted-foreground hover:border-primary/40 hover:bg-accent"
@@ -1790,7 +1790,7 @@ export default function ConsultPage() {
               </div>
 
               {/* 選択中のカテゴリの詳細チップ（第二階層） */}
-              <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+              <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-3 sm:p-4">
                 <p className="mb-2 text-xs font-semibold text-primary">
                   {selectedBusinessCategory}
                 </p>

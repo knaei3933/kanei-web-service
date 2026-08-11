@@ -2475,18 +2475,18 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
           )}
 
           <Section title="参考URL / 素材分析">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {/* 左列：素材（オペレータ優先） */}
               <div>
-                <p className="mb-2 text-sm font-bold text-foreground">不足素材</p>
+                <p className="mb-1.5 text-sm font-bold text-foreground">不足素材</p>
                 <BulletList items={pkg.materialsAnalysis.missingAssets} />
-                <p className="mb-2 mt-5 text-sm font-bold text-foreground">利用可能素材</p>
+                <p className="mb-1.5 mt-4 text-sm font-bold text-foreground">利用可能素材</p>
                 <BulletList items={pkg.materialsAnalysis.usableAssets} />
-                <p className="mb-2 mt-5 text-sm font-bold text-foreground">添付ファイル</p>
+                <p className="mb-1.5 mt-4 text-sm font-bold text-foreground">添付ファイル</p>
                 {sortedAttachments.length === 0 ? (
                   <p className="text-sm text-muted-foreground">添付なし</p>
                 ) : (
-                  <ul className="space-y-4 text-foreground">
+                  <ul className="space-y-3 text-foreground">
                     {sortedAttachments.map((file) => (
                       <AttachmentPreviewCard
                         key={`${file.savedName}-${file.sizeBytes}`}
@@ -2499,11 +2499,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               </div>
               {/* 右列：参考情報 */}
               <div>
-                <p className="mb-2 text-sm font-bold text-foreground">参考URL</p>
+                <p className="mb-1.5 text-sm font-bold text-foreground">参考URL</p>
                 <BulletList items={pkg.referenceAnalysis.referenceUrls} />
-                <p className="mb-2 mt-5 text-sm font-bold text-foreground">抽出対象URL</p>
+                <p className="mb-1.5 mt-4 text-sm font-bold text-foreground">抽出対象URL</p>
                 <BulletList items={pkg.referenceAnalysis.urlsEligibleForExtraction} />
-                <p className="mb-2 mt-5 text-sm font-bold text-foreground">抽出したい部位</p>
+                <p className="mb-1.5 mt-4 text-sm font-bold text-foreground">抽出したい部位</p>
                 <BulletList items={pkg.referenceAnalysis.sectionTargets} />
               </div>
             </div>
