@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assessConsultIntake } from "@/lib/consult-quality";
 import {
+  buildReviewSummary,
   readApprovalPackage,
   writeApprovalPackage,
 } from "@/lib/approval-package";
@@ -245,14 +246,12 @@ export async function PATCH(
       newStatus = existingPkg.status;
     }
 
-    // reviewSummary の主要フィールドを更新（マージ済みペイロードから再抽出）
-    const targetCustomer =
-      typeof mergedPayload.targetCustomer === "string"
-        ? mergedPayload.targetCustomer.trim()
-        : "";
-    if (targetCustomer) {
-      existingPkg.reviewSummary.targetUserSummary = targetCustomer;
-    }
+    // reviewSummary を最新のペイロード + 品質評価から再構築する。
+    // riskyAssumptions は intakeQuality.reasons に依存するため、品質が
+    // ready に更新されても再計算しないと、後続の Gate 1 計画アーティファクトの
+    // blockers に古い前提（未入力項目の理由など）が残り続ける。
+    // buildReviewSummary は初回作成と同じ導出経路を使い、ドリフトを防ぐ。
+    existingPkg.reviewSummary = buildReviewSummary(mergedPayload, newQuality);
 
     try {
       await writeApprovalPackage(existingPkg);

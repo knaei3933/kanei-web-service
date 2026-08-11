@@ -1482,6 +1482,64 @@ export interface BuildApprovalPackageOptions {
 }
 
 /**
+ * 相談ペイロード + 品質評価から、レビュー要約（reviewSummary）を構築する。
+ * 純粋関数・決定論的（同じ入力 → 同じ出力）。
+ *
+ * 初回作成（buildApprovalPackage）とフォローアップ再提出（PATCH）の
+ * 両方から呼び出すことで、派生フィールドのドリフトを防ぐ。
+ *
+ * 特に riskyAssumptions は intakeQuality.reasons に依存する。品質が
+ * needs_followup → ready に更新されても、ここを経由して再計算しないと
+ * 後続の Gate 1 計画アーティファクトの blockers に、作成時点の古い前提
+ * （未入力項目の理由など）が残り続ける（stale planning-artifact blockers）。
+ */
+export function buildReviewSummary(
+  payload: Record<string, unknown>,
+  intakeQuality: ConsultIntakeQuality
+): ApprovalReviewSummary {
+  const businessType = asString(payload.businessType);
+  const companyName =
+    asString(payload.companyName) || asString(payload.enterpriseName);
+  const targetCustomer = asString(payload.targetCustomer);
+  const sellingPoints = splitToItems(asString(payload.sellingPoints));
+  const mustInclude = splitToItems(asString(payload.mustIncludeInfo));
+  const desiredImage = asString(payload.desiredImage);
+  const currentWebsite = asString(payload.currentWebsite);
+  const noWebsite = payload.noWebsite === true;
+
+  const summaryParts: string[] = [];
+  if (businessType) summaryParts.push(`事業種=${businessType}`);
+  if (companyName) summaryParts.push(`事業体=${companyName}`);
+  summaryParts.push(
+    !noWebsite && currentWebsite
+      ? `既存HPリニューアル（${currentWebsite}）`
+      : "新規ホームページ制作"
+  );
+  if (desiredImage) summaryParts.push(`イメージ=${desiredImage}`);
+
+  const riskyAssumptions: string[] = [];
+  // 品質評価の理由はそのままリスク前提として共有する価値がある。
+  // intakeQuality が更新されれば理由も新しくなるため、ここが常に最新状態を反映する。
+  for (const r of intakeQuality.reasons) {
+    if (r) riskyAssumptions.push(r);
+  }
+  if (!targetCustomer) {
+    riskyAssumptions.push("ターゲット層の記述がなく、ペルソナが確定していない。");
+  }
+  if (sellingPoints.length === 0) {
+    riskyAssumptions.push("強み・差別化の記述がなく、訴求軸が不明。");
+  }
+
+  return {
+    businessSummary: summaryParts.join(" / "),
+    targetUserSummary: targetCustomer || "（ターゲット記述なし）",
+    strengthsSummary: sellingPoints,
+    mustIncludeSummary: mustInclude,
+    riskyAssumptions,
+  };
+}
+
+/**
  * 相談ペイロード + 保存ファイル + 品質評価から、承認パッケージを構築する。
  * 純粋関数・決定論的（同じ入力 → 同じ出力）。外部依存なし。
  *
@@ -1499,41 +1557,13 @@ export function buildApprovalPackage(
   const payload = asObject(payloadRaw);
   const receivedAt = new Date().toISOString();
 
-  const businessType = asString(payload.businessType);
-  const companyName = asString(payload.companyName) || asString(payload.enterpriseName);
-  const targetCustomer = asString(payload.targetCustomer);
-  const sellingPoints = splitToItems(asString(payload.sellingPoints));
-  const mustInclude = splitToItems(asString(payload.mustIncludeInfo));
+  // reviewSummary（要約・リスク前提）は buildReviewSummary に集約する。
+  // PATCH の再構築と同じ導出経路を使うことで、初回作成と再提出の間の
+  // ドリフト（古い riskyAssumptions が残る等）を防ぐ。
+  const reviewSummary = buildReviewSummary(payload, intakeQuality);
+  // フォールバック評価で後続利用する派生値は reviewSummary から取り出す
+  const mustInclude = reviewSummary.mustIncludeSummary;
   const desiredImage = asString(payload.desiredImage);
-  const currentWebsite = asString(payload.currentWebsite);
-  const noWebsite = payload.noWebsite === true;
-
-  /* ---- reviewSummary ---- */
-  const summaryParts: string[] = [];
-  if (businessType) summaryParts.push(`事業種=${businessType}`);
-  if (companyName) summaryParts.push(`事業体=${companyName}`);
-  summaryParts.push(
-    !noWebsite && currentWebsite
-      ? `既存HPリニューアル（${currentWebsite}）`
-      : "新規ホームページ制作"
-  );
-  if (desiredImage) summaryParts.push(`イメージ=${desiredImage}`);
-
-  const riskyAssumptions: string[] = [];
-  // 品質評価の理由はそのままリスク前提として共有する価値がある
-  for (const r of intakeQuality.reasons) {
-    if (r) riskyAssumptions.push(r);
-  }
-  if (!targetCustomer) riskyAssumptions.push("ターゲット層の記述がなく、ペルソナが確定していない。");
-  if (sellingPoints.length === 0) riskyAssumptions.push("強み・差別化の記述がなく、訴求軸が不明。");
-
-  const reviewSummary: ApprovalReviewSummary = {
-    businessSummary: summaryParts.join(" / "),
-    targetUserSummary: targetCustomer || "（ターゲット記述なし）",
-    strengthsSummary: sellingPoints,
-    mustIncludeSummary: mustInclude,
-    riskyAssumptions,
-  };
 
   /* ---- referenceAnalysis ---- */
   const rawReferenceSites = Array.isArray(payload.referenceSites)
