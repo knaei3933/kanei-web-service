@@ -52,7 +52,7 @@ export default function NewsBoard() {
             運用に役立つ構成メモ
           </h2>
           <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            構成例、更新のコツ、月額プランの範囲など、相談の前後に確認しやすい情報をまとめています。
+            構成例や更新の範囲など、相談の前後に役立つ情報をまとめています。
           </p>
         </div>
 

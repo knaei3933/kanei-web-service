@@ -24,7 +24,7 @@ const tiers = [
   {
     name: "ビジネス",
     price: "20,000",
-    description: "実績・採用・ブログまで育てたい方",
+    description: "実績・採用・ブログを育てたい方",
     badge: "おすすめ",
     features: [
       "最大20ページ制作",
@@ -41,7 +41,7 @@ const tiers = [
   {
     name: "プレミアム",
     price: "35,000",
-    description: "多言語・高度機能・継続運用まで重視する方",
+    description: "多言語・高度機能・継続運用を重視する方",
     features: [
       "ページ数無制限",
       "ブログ + 高度機能相談",
