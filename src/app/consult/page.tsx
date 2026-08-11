@@ -2489,13 +2489,13 @@ export default function ConsultPage() {
 
               <div className="rounded-2xl bg-accent/30 p-4 sm:p-5">
                 {/* カテゴリボタン（第一階層） */}
-                <div className="mb-4 flex flex-wrap gap-2">
+                <div className="mb-3 flex flex-wrap gap-1.5">
                   {SITE_PURPOSE_GROUPS.map((cat) => (
                     <button
                       key={cat.key}
                       type="button"
                       onClick={() => setSelectedPurposeCategory(cat.key)}
-                      className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-all sm:px-3.5 sm:py-1.5 ${
                         selectedPurposeCategory === cat.key
                           ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
                           : "border-border bg-white text-muted-foreground hover:border-primary/40"
@@ -2507,7 +2507,7 @@ export default function ConsultPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedPurposeCategory("その他")}
-                    className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-all sm:px-3.5 sm:py-1.5 ${
                       selectedPurposeCategory === "その他"
                         ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
                         : "border-border bg-white text-muted-foreground hover:border-primary/40"
@@ -2520,8 +2520,8 @@ export default function ConsultPage() {
                 {/* 選択カテゴリの詳細カード（第二階層・1カテゴリ分だけ表示） */}
                 {selectedPurposeCategory === "その他" ? (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">その他</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">その他</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
                       <CheckCard
                         checked={data.sitePurpose.includes("その他")}
                         onClick={() => toggleArrayItem("sitePurpose", "その他")}
@@ -2535,7 +2535,7 @@ export default function ConsultPage() {
                         value={data.sitePurposeOther}
                         onChange={(e) => update("sitePurposeOther", e.target.value)}
                         placeholder="自由に入力してください"
-                        className={`${inputClass} mt-3`}
+                        className={`${inputClass} mt-2`}
                       />
                     )}
                   </div>
@@ -2546,10 +2546,10 @@ export default function ConsultPage() {
                     );
                     return (
                       <div>
-                        <p className="mb-2 text-xs font-semibold text-primary">
+                        <p className="mb-1.5 text-xs font-semibold text-primary">
                           {group?.key}
                         </p>
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-2 sm:grid-cols-2">
                           {(group?.items ?? []).map((purpose) => (
                             <CheckCard
                               key={purpose}
@@ -2576,13 +2576,13 @@ export default function ConsultPage() {
 
               <div className="rounded-2xl bg-accent/30 p-4 sm:p-5">
                 {/* カテゴリボタン（第一階層） */}
-                <div className="mb-4 flex flex-wrap gap-2">
+                <div className="mb-3 flex flex-wrap gap-1.5">
                   {FEATURE_GROUPS.map((cat) => (
                     <button
                       key={cat.key}
                       type="button"
                       onClick={() => setSelectedFeatureCategory(cat.key)}
-                      className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                      className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-all sm:px-3.5 sm:py-1.5 ${
                         selectedFeatureCategory === cat.key
                           ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
                           : "border-border bg-white text-muted-foreground hover:border-primary/40"
@@ -2594,7 +2594,7 @@ export default function ConsultPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedFeatureCategory("その他")}
-                    className={`rounded-xl border-2 px-4 py-2 text-sm font-medium transition-all ${
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-all sm:px-3.5 sm:py-1.5 ${
                       selectedFeatureCategory === "その他"
                         ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
                         : "border-border bg-white text-muted-foreground hover:border-primary/40"
@@ -2607,8 +2607,8 @@ export default function ConsultPage() {
                 {/* 選択カテゴリの詳細カード（第二階層・1カテゴリ分だけ表示） */}
                 {selectedFeatureCategory === "その他" ? (
                   <div>
-                    <p className="mb-2 text-xs font-semibold text-primary">その他</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <p className="mb-1.5 text-xs font-semibold text-primary">その他</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
                       <CheckCard
                         checked={data.features.includes("その他")}
                         onClick={() => toggleArrayItem("features", "その他")}
@@ -2622,7 +2622,7 @@ export default function ConsultPage() {
                         value={data.featuresOther}
                         onChange={(e) => update("featuresOther", e.target.value)}
                         placeholder="その他必要な機能があればご記入ください"
-                        className={`${inputClass} mt-3`}
+                        className={`${inputClass} mt-2`}
                       />
                     )}
                   </div>
@@ -2633,10 +2633,10 @@ export default function ConsultPage() {
                     );
                     return (
                       <div>
-                        <p className="mb-2 text-xs font-semibold text-primary">
+                        <p className="mb-1.5 text-xs font-semibold text-primary">
                           {group?.key}
                         </p>
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-2 sm:grid-cols-2">
                           {(group?.items ?? []).map((feature) => (
                             <CheckCard
                               key={feature}
@@ -2685,7 +2685,7 @@ export default function ConsultPage() {
               <p className="-mt-2 mb-4 text-sm text-muted-foreground">
                 一番近いものをひとつお選びください。ぴったりの金額がなくても、近い範囲で構いません。
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2.5 sm:grid-cols-2">
                 {BUDGET_OPTIONS.map((opt) => (
                   <RadioCard
                     key={opt.value}
@@ -2693,8 +2693,8 @@ export default function ConsultPage() {
                     onClick={() => update("budget", opt.value)}
                   >
                     <span>
-                      <span className="block font-bold">{opt.label}</span>
-                      <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                      <span className="block font-bold text-sm">{opt.label}</span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
                         {opt.desc}
                       </span>
                     </span>

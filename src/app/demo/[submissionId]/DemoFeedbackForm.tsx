@@ -324,13 +324,13 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
 
         {/* 選択中の修正箇所をコンパクトに表示（チップ形式） */}
         {selectedCount > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5 px-1">
+          <div className="mt-2 flex flex-wrap gap-1 px-1">
             {selectedSections.map((section) => (
               <span
                 key={section.id}
-                className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800"
+                className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800"
               >
-                <PencilLine className="h-3 w-3" />
+                <PencilLine className="h-2.5 w-2.5" />
                 {section.name}
               </span>
             ))}
@@ -460,24 +460,24 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
 
       {/* 送信前確認サマリ：コンパクト化 */}
       {feedback.rating > 0 && (
-        <div className="mb-2 rounded-xl border border-amber-200 bg-white/80 p-2.5 text-xs text-amber-900">
-          <p className="mb-1.5 flex items-center gap-1.5 font-semibold">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+        <div className="mb-2 rounded-lg border border-amber-200 bg-white/80 p-2 text-xs text-amber-900">
+          <p className="mb-1 flex items-center gap-1 font-semibold">
+            <CheckCircle2 className="h-3 w-3 text-emerald-600" />
             確認
           </p>
-          <dl className="flex flex-wrap gap-x-3 gap-y-1 sm:grid sm:grid-cols-2">
+          <dl className="flex flex-wrap gap-x-2 gap-y-0.5 sm:grid sm:grid-cols-2">
             {summaryRows.map((row) => (
               <div
                 key={row.label}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1"
               >
-                <dt className="text-[11px] text-amber-700">{row.label}:</dt>
-                <dd className="text-[11px] font-semibold">{row.value}</dd>
+                <dt className="text-[10px] text-amber-700">{row.label}:</dt>
+                <dd className="text-[10px] font-semibold">{row.value}</dd>
               </div>
             ))}
           </dl>
           {selectedCount > 0 && (
-            <p className="mt-1.5 text-[11px] leading-snug text-amber-700">
+            <p className="mt-1 text-[10px] leading-snug text-amber-700">
               修正: {selectedSections.map((s) => s.name).join("、")}
             </p>
           )}

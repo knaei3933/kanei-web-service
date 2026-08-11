@@ -930,29 +930,29 @@ function ExecutionHandoffSection({
         </span>
       }
     >
-      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm leading-relaxed text-rose-900">
-        <p className="font-bold">このセクションは内部専用です。顧客向け画面・メールには一切出しません。</p>
-        <p className="mt-2">
+      <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm leading-relaxed text-rose-900">
+        <p className="font-semibold">このセクションは内部専用です。顧客向け画面・メールには一切出しません。</p>
+        <p className="mt-1.5 text-xs">
           本番（Vercel/serverless）のリクエストハンドラからは Claude Code を実行しません。
           ローカル環境のオペレータが、生成されたプロンプト・メタデータ・コマンドを使って
           Claude Code を実行することを想定しています。生成日時: {handoff.generatedAt || "不明"}
         </p>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <p className="mb-2 text-sm font-bold text-foreground">ハンドオフ方式</p>
-          <p className="rounded-2xl bg-accent p-4 text-sm text-foreground">
+          <p className="mb-1.5 text-xs font-semibold text-foreground">ハンドオフ方式</p>
+          <p className="rounded-xl bg-accent p-3 text-sm text-foreground">
             {handoff.handoffMode}（ローカルオペレータへ引き渡し）
           </p>
-          <p className="mb-2 mt-4 text-sm font-bold text-foreground">作業ディレクトリ</p>
-          <p className="rounded-2xl bg-accent p-4 font-mono text-sm text-foreground">
+          <p className="mb-1.5 mt-3 text-xs font-semibold text-foreground">作業ディレクトリ</p>
+          <p className="rounded-xl bg-accent p-3 font-mono text-sm text-foreground">
             {handoff.workingDirectory}
           </p>
         </div>
         <div>
-          <p className="mb-2 text-sm font-bold text-foreground">成果物ファイル</p>
-          <ul className="space-y-1 rounded-2xl bg-accent p-4 text-sm">
+          <p className="mb-1.5 text-xs font-semibold text-foreground">成果物ファイル</p>
+          <ul className="space-y-1 rounded-xl bg-accent p-3 text-sm">
             <li className="break-all">
               <span className="text-muted-foreground">プロンプト: </span>
               <span className="font-mono text-foreground">{handoff.promptFilePath}</span>
@@ -981,45 +981,45 @@ function ExecutionHandoffSection({
         </div>
       </div>
 
-      <div className="mt-5">
-        <p className="mb-2 text-sm font-bold text-foreground">Claude Code コマンド（コピー実行用・内部専用）</p>
-        <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-2xl border border-border bg-slate-900 p-4 font-mono text-sm text-slate-100">
+      <div className="mt-4">
+        <p className="mb-1.5 text-xs font-semibold text-foreground">Claude Code コマンド（コピー実行用・内部専用）</p>
+        <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-xl border border-border bg-slate-900 p-3 font-mono text-xs text-slate-100">
 {handoff.claudeCommand}
         </pre>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <p className="mb-2 text-sm font-bold text-foreground">実行前の前提</p>
+          <p className="mb-1.5 text-xs font-semibold text-foreground">実行前の前提</p>
           <BulletList items={handoff.prerequisites} />
         </div>
         <div>
-          <p className="mb-2 text-sm font-bold text-foreground">重要事項</p>
+          <p className="mb-1.5 text-xs font-semibold text-foreground">重要事項</p>
           <BulletList items={handoff.notices} />
         </div>
       </div>
 
       {promptMarkdown && (
-        <div className="mt-5">
-          <p className="mb-2 text-sm font-bold text-foreground">
+        <div className="mt-4">
+          <p className="mb-1.5 text-xs font-semibold text-foreground">
             実行プロンプト本文（execution-prompt.md・内部専用）
           </p>
-          <pre className="max-h-[480px] overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-border bg-slate-50 p-4 text-xs leading-relaxed text-foreground">
+          <pre className="max-h-[440px] overflow-auto whitespace-pre-wrap break-words rounded-xl border border-border bg-slate-50 p-3 text-[11px] leading-relaxed text-foreground">
 {promptMarkdown}
           </pre>
         </div>
       )}
 
       {sectionPromptsMarkdown && (
-        <div className="mt-5">
-          <p className="mb-2 text-sm font-bold text-foreground">
+        <div className="mt-4">
+          <p className="mb-1.5 text-xs font-semibold text-foreground">
             セクション別実行プロンプト（execution-section-prompts.md・Phase P・内部専用）
           </p>
-          <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
+          <p className="mb-1.5 text-xs leading-relaxed text-muted-foreground">
             execution-prompt.md を HEADER / HERO / SERVICES … のセクション単位に事前分割した作業ブロック。
             オペレータは該当セクションを取り出して Claude Code に渡せます。
           </p>
-          <pre className="max-h-[480px] overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-border bg-slate-50 p-4 text-xs leading-relaxed text-foreground">
+          <pre className="max-h-[440px] overflow-auto whitespace-pre-wrap break-words rounded-xl border border-border bg-slate-50 p-3 text-[11px] leading-relaxed text-foreground">
 {sectionPromptsMarkdown}
           </pre>
         </div>
