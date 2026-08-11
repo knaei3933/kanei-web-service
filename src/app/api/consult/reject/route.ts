@@ -4,6 +4,9 @@ import {
   requestSupplements,
   type IntakeSupplementInput,
 } from "@/lib/approval-package";
+import { readArtifact } from "@/server/submission-storage";
+import { sendCustomerFollowupEmail } from "@/server/mail";
+import type { MailResult } from "@/server/mail/types";
 
 // ファイルシステム（node:fs）で承認パッケージを書き換えるため Node ランタイムを明示
 export const runtime = "nodejs";
@@ -93,6 +96,44 @@ async function parseBody(request: NextRequest): Promise<{
   };
 }
 
+/** unknown を安全に文字列として取り出す（前後空白を除去） */
+function asString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/** unknown を安全にオブジェクトとして取り出す */
+function asObject(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+/**
+ * submission.json から顧客の連絡先（メール・ご担当者名・事業体名）を取り出す。
+ * 保存データが無い・形式不正のときは空文字を返す（メール送信をスキップさせる）。
+ */
+async function readCustomerContact(submissionId: string): Promise<{
+  email: string;
+  name: string;
+  companyName: string;
+}> {
+  const empty = { email: "", name: "", companyName: "" };
+  try {
+    const raw = await readArtifact(submissionId, "submission.json");
+    if (raw === null) return empty;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const payload = asObject(parsed.payload);
+    return {
+      email: asString(payload.email) || asString(payload.contactEmail),
+      name: asString(payload.name),
+      companyName:
+        asString(payload.companyName) || asString(payload.enterpriseName),
+    };
+  } catch {
+    return empty;
+  }
+}
+
 export async function POST(request: NextRequest) {
   const { submissionId, memo, approvedBy, redirectTo, items } =
     await parseBody(request);
@@ -125,12 +166,37 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // items あり（構造化差戻し）のときは、顧客へフォローアップメールを送る。
+  // メール送信は best-effort: 失敗しても差戻し処理（パッケージ更新）は巻き戻さない。
+  // 顧客メールアドレスが取れなければ送信をスキップし、結果は null にする。
+  const hasSupplements = items.length > 0;
+  let mailResult: MailResult | null = null;
+  if (hasSupplements) {
+    const contact = await readCustomerContact(submissionId);
+    if (contact.email) {
+      try {
+        mailResult = await sendCustomerFollowupEmail({
+          to: contact.email,
+          customerName: contact.name || undefined,
+          companyName: contact.companyName || undefined,
+          submissionId,
+          requestedItems: [],
+          followupQuestions: [],
+          // 構造化差戻しの内容を項目別ブロックとして本文へ展開
+          supplementRequests: updated.supplementRequests,
+        });
+      } catch {
+        // 送信エラーでも差戻し処理は成功扱い。結果は null のまま返す。
+        mailResult = null;
+      }
+    }
+  }
+
   if (redirectTo && redirectTo.startsWith("/")) {
     return NextResponse.redirect(new URL(redirectTo, request.url), 303);
   }
 
   // items あり（差戻し）のときは、顧客が次に何をすべきかを明示して返す
-  const hasSupplements = items.length > 0;
   return NextResponse.json({
     ok: true,
     submissionId: updated.submissionId,
@@ -138,6 +204,8 @@ export async function POST(request: NextRequest) {
     customerFacingStatus: updated.customerFacingStatus,
     approval: updated.approval,
     supplementRequests: updated.supplementRequests,
+    // フォローアップメールの配送結果（送信しなかった場合は null）
+    mailResult,
     nextRecommendedAction: hasSupplements
       ? "Customer should revise the flagged intake items"
       : "Send hold/revision instructions internally",

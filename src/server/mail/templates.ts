@@ -341,6 +341,26 @@ export function buildCustomerFollowupMail(
 
   const questions = (input.followupQuestions ?? []).filter((q) => q.trim().length > 0);
   const items = (input.requestedItems ?? []).filter((i) => i.trim().length > 0);
+  // 項目別の構造化補足要求（代表者差戻し／補足依頼）。
+  // label・guidance が揃っているものだけ残し、currentValue は空なら null に正規化する。
+  // データ形状は approval-package の IntakeSupplementRequest をそのまま受け取る。
+  const supplements = (input.supplementRequests ?? [])
+    .filter(
+      (s) =>
+        s &&
+        typeof s.label === "string" &&
+        s.label.trim().length > 0 &&
+        typeof s.guidance === "string" &&
+        s.guidance.trim().length > 0
+    )
+    .map((s) => ({
+      label: s.label.trim(),
+      guidance: s.guidance.trim(),
+      currentValue:
+        typeof s.currentValue === "string" && s.currentValue.trim().length > 0
+          ? s.currentValue.trim()
+          : null,
+    }));
 
   const lines: string[] = [];
   lines.push(`${displayName} 様`);
@@ -356,7 +376,18 @@ export function buildCustomerFollowupMail(
     "以下の点について、このメールにそのままご返信いただくか、箇条書きで教えていただけますでしょうか。"
   );
   lines.push("");
-  if (questions.length > 0) {
+  if (supplements.length > 0) {
+    // 構造化補足要求があるときは項目別ブロックを優先（label・guidance・現在値を明示）
+    lines.push("【ご確認・ご補足いただきたい項目】");
+    supplements.forEach((s, i) => {
+      lines.push(`${i + 1}. ${s.label}`);
+      lines.push(`   ご案内: ${s.guidance}`);
+      if (s.currentValue) {
+        lines.push(`   現在のご入力: ${s.currentValue}`);
+      }
+    });
+    lines.push("");
+  } else if (questions.length > 0) {
     lines.push("【お伺いしたいこと】");
     questions.forEach((q, i) => lines.push(`${i + 1}. ${q}`));
     lines.push("");
@@ -378,6 +409,7 @@ export function buildCustomerFollowupMail(
     .filter((line, i, arr) => !(line === "" && arr[i - 1] === "" && i > 1))
     .join("\n");
 
+  // 従来の質問/項目リスト（構造化補足要求がないときのフォールバック）
   const questionsHtml =
     questions.length > 0
       ? questions
@@ -395,6 +427,32 @@ export function buildCustomerFollowupMail(
           )
           .join("");
 
+  // 構造化補足要求の HTML ブロック（項目別カード: label / guidance / 現在値）
+  const supplementsHtml = supplements.length > 0
+    ? supplements
+        .map((s, i) => {
+          const currentValueLine = s.currentValue
+            ? `<p style="margin:6px 0 0;font-size:13px;line-height:1.6;color:#6b7280;">現在のご入力: ${escapeHtml(s.currentValue)}</p>`
+            : "";
+          return `<div style="padding:10px 12px;border:1px solid #fde68a;border-radius:8px;background:#ffffff;">
+      <p style="margin:0 0 4px;font-size:14px;font-weight:bold;color:#92400e;">${i + 1}. ${escapeHtml(s.label)}</p>
+      <p style="margin:0;font-size:14px;line-height:1.7;color:#111827;">${escapeHtml(s.guidance)}</p>${currentValueLine}
+    </div>`;
+        })
+        .join("")
+    : "";
+
+  // 構造化補足要求があれば項目別カードを優先、なければ従来の質問リスト
+  const contentBlockHtml = supplements.length > 0
+    ? `<div style="margin:20px 0;padding:16px;border:1px solid #fcd34d;border-radius:12px;background:#fffbeb;">
+    <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#92400e;">ご確認・ご補足いただきたい項目</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">${supplementsHtml}</div>
+  </div>`
+    : `<div style="margin:20px 0;padding:16px;border:1px solid #fcd34d;border-radius:12px;background:#fffbeb;">
+    <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#92400e;">お伺いしたいこと</p>
+    <ol style="margin:0;padding-left:20px;font-size:14px;color:#111827;">${questionsHtml}</ol>
+  </div>`;
+
   const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Meiryo,sans-serif;color:#111827;max-width:600px;">
   <p style="font-size:15px;">${escapeHtml(displayName)} 様</p>
   <p style="font-size:14px;line-height:1.8;">
@@ -405,10 +463,7 @@ export function buildCustomerFollowupMail(
     お客様に最適なご提案を用意するため、もう少しだけ詳しくお伺いしたいことがございます。<br/>
     以下の点について、このメールにそのままご返信いただくか、箇条書きで教えていただけますでしょうか。
   </p>
-  <div style="margin:20px 0;padding:16px;border:1px solid #fcd34d;border-radius:12px;background:#fffbeb;">
-    <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#92400e;">お伺いしたいこと</p>
-    <ol style="margin:0;padding-left:20px;font-size:14px;color:#111827;">${questionsHtml}</ol>
-  </div>
+  ${contentBlockHtml}
   <p style="font-size:14px;line-height:1.8;">
     ご返答をいただき次第、お客様別の構成提案・お見積りをあらためてお届けいたします。<br/>
     お手数をおかけして恐縮ですが、よろしくお願いいたします。

@@ -6,6 +6,8 @@
 /*  呼び出し側（API Route 等）は配送結果を統一的に扱える。              */
 /* ------------------------------------------------------------------ */
 
+import type { IntakeSupplementRequest } from "@/lib/approval-package";
+
 /**
  * プロバイダ種別。
  * - smtp: MAIL_PROVIDER=smtp で SMTP_* が揃っているときの本番実配送
@@ -138,6 +140,15 @@ export interface CustomerFollowupEmailInput {
   requestedItems: string[];
   /** お客様への具体的な質問（日本語） */
   followupQuestions: string[];
+  /**
+   * 項目別の構造化補足要求（代表者差戻し／補足依頼）。
+   * データ形状は approval-package の IntakeSupplementRequest をそのまま再利用し、
+   * 各項目の label・guidance・currentValue をテキスト・HTML 両方に
+   * 項目別ブロックとして展開する。
+   * 指定時は requestedItems / followupQuestions より優先して表示し、
+   * 未指定時は従来の質問リスト表示へ戻る。
+   */
+  supplementRequests?: IntakeSupplementRequest[];
 }
 
 /**

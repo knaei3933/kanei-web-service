@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { readArtifact, writeArtifact } from "@/server/submission-storage";
 import { sendCustomerFollowupEmail } from "@/server/mail";
 import type { MailResult } from "@/server/mail/types";
+import type { IntakeSupplementRequest } from "@/lib/approval-package";
 
 /* ------------------------------------------------------------------ */
 /*  /api/admin/submissions/[id]/followup （フォローアップメール送信）    */
@@ -59,6 +60,40 @@ function asObject(value: unknown): Record<string, unknown> {
     : {};
 }
 
+/**
+ * リクエスト body の items（構造化補足要求）を IntakeSupplementRequest に組み立てる。
+ * key・guidance が揃っているものだけ残す（形式不正は空配列へ落ちる）。
+ * メール本文では label・guidance・currentValue を項目別ブロックとして展開する。
+ */
+function coerceSupplementItems(
+  raw: unknown,
+  requestedAt: string
+): IntakeSupplementRequest[] {
+  if (!Array.isArray(raw)) return [];
+  const out: IntakeSupplementRequest[] = [];
+  for (const item of raw) {
+    const o = asObject(item);
+    const key = asString(o.key);
+    const guidance = asString(o.guidance);
+    if (key.length === 0 || guidance.length === 0) continue;
+    const severity: "reject" | "supplement" =
+      o.severity === "reject" || o.severity === "supplement"
+        ? (o.severity as "reject" | "supplement")
+        : "supplement";
+    const currentValueRaw = asString(o.currentValue);
+    out.push({
+      key,
+      label: asString(o.label) || key,
+      severity,
+      guidance,
+      currentValue: currentValueRaw.length > 0 ? currentValueRaw : null,
+      requestedAt,
+      requestedBy: null,
+    });
+  }
+  return out;
+}
+
 /** 戦略項目の定義（consult-quality.ts の label → question マッピング） */
 const STRATEGY_FIELD_MAP: ReadonlyArray<{
   label: string;
@@ -92,6 +127,8 @@ interface FollowupHistoryEntry {
   type: "followup";
   selectedItems: string[];
   customMessage: string;
+  /** 構造化補足要求（項目別 label/guidance/currentValue）。未指定時は空配列。 */
+  supplementRequests: IntakeSupplementRequest[];
   mailResult: MailResult | null;
 }
 
@@ -111,7 +148,12 @@ export async function POST(
   }
 
   // リクエストボディをパース
-  let body: { selectedItems?: unknown; customMessage?: unknown; sendMail?: unknown };
+  let body: {
+    selectedItems?: unknown;
+    customMessage?: unknown;
+    sendMail?: unknown;
+    items?: unknown;
+  };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -121,12 +163,17 @@ export async function POST(
     );
   }
 
+  // 処理時刻。構造化補足要求の requestedAt と履歴 timestamp で共通に使う。
+  const now = new Date().toISOString();
+
   const selectedItemsRaw = Array.isArray(body.selectedItems) ? body.selectedItems : [];
   const selectedItems: string[] = selectedItemsRaw
     .map((item) => asString(item))
     .filter((s) => s.length > 0);
   const customMessage = asString(body.customMessage);
   const sendMail = body.sendMail === true;
+  // 構造化補足要求（項目別の label/guidance/currentValue）。指定時はメール本文で優先表示。
+  const supplementRequests = coerceSupplementItems(body.items, now);
 
   // submission.json を読み込み
   const submissionRaw = await readArtifact(id, "submission.json");
@@ -177,6 +224,9 @@ export async function POST(
       submissionId: id,
       requestedItems: selectedItems,
       followupQuestions,
+      // 構造化補足要求があれば本文で項目別ブロックとして優先表示
+      supplementRequests:
+        supplementRequests.length > 0 ? supplementRequests : undefined,
     });
   }
 
@@ -196,10 +246,11 @@ export async function POST(
 
   // followupHistory に追記
   const historyEntry: FollowupHistoryEntry = {
-    timestamp: new Date().toISOString(),
+    timestamp: now,
     type: "followup",
     selectedItems,
     customMessage,
+    supplementRequests,
     mailResult,
   };
   const existingHistory = Array.isArray(approvalPackage.followupHistory)
