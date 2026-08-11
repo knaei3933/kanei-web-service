@@ -902,8 +902,8 @@ function UploadSpecGuide() {
           （対応形式・推奨サイズ・あると助かるもの・取り扱い）
         </span>
       </summary>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl bg-white p-4 ring-1 ring-amber-100">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl bg-white p-3 ring-1 ring-amber-100">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
             <ImageIcon className="h-3.5 w-3.5 text-amber-600" />
             写真・画像
@@ -914,7 +914,7 @@ function UploadSpecGuide() {
             <li>明るく・ピントの合った写真を推奨します</li>
           </ul>
         </div>
-        <div className="rounded-xl bg-white p-4 ring-1 ring-amber-100">
+        <div className="rounded-xl bg-white p-3 ring-1 ring-amber-100">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
             <Palette className="h-3.5 w-3.5 text-amber-600" />
             ロゴ・マーク
@@ -925,7 +925,7 @@ function UploadSpecGuide() {
             <li>白黒・カラーの両方があると助かります</li>
           </ul>
         </div>
-        <div className="rounded-xl bg-white p-4 ring-1 ring-amber-100">
+        <div className="rounded-xl bg-white p-3 ring-1 ring-amber-100">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
             <FileText className="h-3.5 w-3.5 text-amber-600" />
             文書・資料
@@ -936,7 +936,7 @@ function UploadSpecGuide() {
             <li>会社案内・パンフレット・料金表があると非常に参考になります</li>
           </ul>
         </div>
-        <div className="rounded-xl bg-white p-4 ring-1 ring-amber-100">
+        <div className="rounded-xl bg-white p-3 ring-1 ring-amber-100">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
             <Sparkles className="h-3.5 w-3.5 text-amber-600" />
             あると助かる素材
@@ -970,9 +970,9 @@ function AttachmentCard({
 }) {
   const kind = getFileKindLabel(attachment.type, attachment.name);
   return (
-    <div className="rounded-2xl border-2 border-border bg-accent/30 p-5 sm:p-6">
+    <div className="rounded-2xl border-2 border-border bg-accent/30 p-4 sm:p-5">
       {/* ヘッダー：番号＋ファイル情報＋削除 */}
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
             {index}
@@ -1000,7 +1000,7 @@ function AttachmentCard({
       </div>
 
       {/* 役割（用途） */}
-      <div className="mb-3">
+      <div className="mb-2.5">
         <span className="mb-1 block text-xs font-medium text-muted-foreground">
           この素材の役割（用途）
         </span>
@@ -1019,7 +1019,7 @@ function AttachmentCard({
       </div>
 
       {/* 使い方（3段階） */}
-      <div className="mb-3">
+      <div className="mb-2.5">
         <span className="mb-2 block text-xs font-medium text-muted-foreground">
           この素材の使い方
         </span>
@@ -2734,7 +2734,7 @@ export default function ConsultPage() {
             {/* 6-1. ご用意できる素材・資料（ざっくり選択） */}
             <div className="mb-10">
               <FieldLabel hint="（任意）">ご用意できる素材・資料（複数選択可）</FieldLabel>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2.5 sm:grid-cols-2">
                 {ASSET_OPTIONS.map((opt) => (
                   <CheckCard
                     key={opt.value}
@@ -2776,7 +2776,7 @@ export default function ConsultPage() {
                   setIsDragging(false);
                   handleFileList(e.dataTransfer.files);
                 }}
-                className={`mt-4 rounded-2xl border-2 border-dashed p-8 text-center transition-all ${
+                className={`mt-4 rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
                   isDragging
                     ? "border-primary bg-primary/5 ring-4 ring-primary/10"
                     : "border-border bg-accent/30 hover:border-primary/40"
@@ -2810,7 +2810,7 @@ export default function ConsultPage() {
 
               {/* アップロード済み素材の一覧 */}
               {data.attachments.length > 0 ? (
-                <div className="mt-5 space-y-4">
+                <div className="mt-4 space-y-3">
                   <p className="text-sm font-semibold text-foreground">
                     アップロード済みの素材（{data.attachments.length}件）
                   </p>
@@ -2836,7 +2836,7 @@ export default function ConsultPage() {
             {/* 6-3. 足りない写真・文章の補充について */}
             <div className="mb-10">
               <FieldLabel hint="（任意）">足りない写真・文章の補充について</FieldLabel>
-              <div className="grid gap-3">
+              <div className="grid gap-2.5">
                 {SUPPLEMENT_OPTIONS.map((opt) => (
                   <RadioCard
                     key={opt.value}
@@ -2852,7 +2852,7 @@ export default function ConsultPage() {
             {/* 6-3b. お送りいただく素材の編集・加工について */}
             <div className="mb-10">
               <FieldLabel hint="（任意）">お送りいただく素材の編集・加工について</FieldLabel>
-              <div className="grid gap-3">
+              <div className="grid gap-2.5">
                 {ALLOW_EDIT_OPTIONS.map((opt) => (
                   <RadioCard
                     key={opt.value}
@@ -2887,7 +2887,7 @@ export default function ConsultPage() {
             <StepHeader step={7} title="お客様情報" />
 
             {/* お名前 */}
-            <div className="mb-6">
+            <div className="mb-5">
               <FieldLabel required>お名前</FieldLabel>
               <input
                 type="text"
@@ -2899,7 +2899,7 @@ export default function ConsultPage() {
             </div>
 
             {/* メールアドレス */}
-            <div className="mb-6">
+            <div className="mb-5">
               <FieldLabel required>メールアドレス</FieldLabel>
               <input
                 type="email"
@@ -2911,7 +2911,7 @@ export default function ConsultPage() {
             </div>
 
             {/* 電話番号 */}
-            <div className="mb-6">
+            <div className="mb-5">
               <FieldLabel required>電話番号</FieldLabel>
               <input
                 type="tel"

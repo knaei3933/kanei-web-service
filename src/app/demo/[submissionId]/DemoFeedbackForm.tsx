@@ -338,7 +338,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
         )}
 
         {revisionMode && (
-          <div id="revision-details" className="mt-3 space-y-3">
+          <div id="revision-details" className="mt-2.5 space-y-2.5">
             {/* セクション別メモの案内（選択中のセクションがある時だけ表示） */}
             {selectedCount > 0 && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-2.5 sm:p-3">
@@ -361,10 +361,10 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
               <p className="mb-1 text-sm font-semibold text-amber-900">
                 修正したい箇所を選択
               </p>
-              <p className="mb-3 text-xs text-amber-700">
+              <p className="mb-2.5 text-xs text-amber-700">
                 ヘッダー・メインビジュアル・フッターなど、気になる部分だけを選んで、箇所ごとにメモを残せます。
               </p>
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {DEMO_SECTION_OPTIONS.map((section) => {
                   const checked = feedback.selectedSectionIds.includes(section.id);
                   return (
@@ -391,7 +391,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
                               </span>
                             )}
                           </div>
-                          <div className="mt-2">
+                          <div className="mt-1.5">
                             <textarea
                               ref={(el) => {
                                 sectionMemoRefs.current[section.id] = el;
@@ -424,7 +424,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
             <div>
               <label
                 htmlFor="referenceImageUrls"
-                className="mb-2 flex items-center gap-2 text-sm font-medium text-amber-900"
+                className="mb-1.5 flex items-center gap-2 text-sm font-medium text-amber-900"
               >
                 <Link2 className="h-4 w-4" />
                 参考画像 / スクリーンショット URL
@@ -499,7 +499,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           type="button"
           onClick={() => handleSubmit("approve")}
           disabled={isSubmitting || feedback.rating === 0}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-2.5"
         >
           <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           {feedback.rating === 0 ? "評価を選択" : <span className="hidden sm:inline">このまま進める</span>}
@@ -519,7 +519,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
             feedback.rating === 0 ||
             (revisionMode && !hasRevisionInput)
           }
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-amber-400 bg-white px-4 py-2.5 text-sm font-medium text-amber-900 transition-all hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-amber-400 bg-white px-4 py-2.5 text-sm font-medium text-amber-900 transition-all hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-2.5"
         >
           <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           {feedback.rating === 0 ? (

@@ -2427,18 +2427,24 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                 </p>
               </div>
             </div>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <div>
-                <p className="mb-2 text-sm font-bold text-foreground">理由</p>
-                <BulletList items={pkg.intakeQuality.reasons} />
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-accent p-3 sm:p-4">
+                <p className="text-xs font-bold text-muted-foreground">理由</p>
+                <div className="mt-1">
+                  <BulletList items={pkg.intakeQuality.reasons} />
+                </div>
               </div>
-              <div>
-                <p className="mb-2 text-sm font-bold text-foreground">不足項目</p>
-                <BulletList items={pkg.intakeQuality.requestedItems} />
+              <div className="rounded-2xl bg-accent p-3 sm:p-4">
+                <p className="text-xs font-bold text-muted-foreground">不足項目</p>
+                <div className="mt-1">
+                  <BulletList items={pkg.intakeQuality.requestedItems} />
+                </div>
               </div>
-              <div>
-                <p className="mb-2 text-sm font-bold text-foreground">追加入力質問</p>
-                <BulletList items={pkg.intakeQuality.followupQuestions} />
+              <div className="rounded-2xl bg-accent p-3 sm:p-4">
+                <p className="text-xs font-bold text-muted-foreground">追加入力質問</p>
+                <div className="mt-1">
+                  <BulletList items={pkg.intakeQuality.followupQuestions} />
+                </div>
               </div>
             </div>
           </Section>
@@ -2475,36 +2481,58 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
           )}
 
           <Section title="参考URL / 素材分析">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {/* 左列：素材（オペレータ優先） */}
-              <div>
-                <p className="mb-1.5 text-sm font-bold text-foreground">不足素材</p>
-                <BulletList items={pkg.materialsAnalysis.missingAssets} />
-                <p className="mb-1.5 mt-4 text-sm font-bold text-foreground">利用可能素材</p>
-                <BulletList items={pkg.materialsAnalysis.usableAssets} />
-                <p className="mb-1.5 mt-4 text-sm font-bold text-foreground">添付ファイル</p>
-                {sortedAttachments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">添付なし</p>
-                ) : (
-                  <ul className="space-y-3 text-foreground">
-                    {sortedAttachments.map((file) => (
-                      <AttachmentPreviewCard
-                        key={`${file.savedName}-${file.sizeBytes}`}
-                        submissionId={pkg.submissionId}
-                        file={file}
-                      />
-                    ))}
-                  </ul>
-                )}
+              <div className="space-y-3">
+                <div className="rounded-2xl bg-accent p-3 sm:p-4">
+                  <p className="text-xs font-bold text-muted-foreground">不足素材</p>
+                  <div className="mt-1">
+                    <BulletList items={pkg.materialsAnalysis.missingAssets} />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-accent p-3 sm:p-4">
+                  <p className="text-xs font-bold text-muted-foreground">利用可能素材</p>
+                  <div className="mt-1">
+                    <BulletList items={pkg.materialsAnalysis.usableAssets} />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-accent p-3 sm:p-4">
+                  <p className="text-xs font-bold text-muted-foreground">添付ファイル</p>
+                  {sortedAttachments.length === 0 ? (
+                    <p className="mt-1 text-sm text-muted-foreground">添付なし</p>
+                  ) : (
+                    <ul className="mt-2 space-y-3 text-foreground">
+                      {sortedAttachments.map((file) => (
+                        <AttachmentPreviewCard
+                          key={`${file.savedName}-${file.sizeBytes}`}
+                          submissionId={pkg.submissionId}
+                          file={file}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
               {/* 右列：参考情報 */}
-              <div>
-                <p className="mb-1.5 text-sm font-bold text-foreground">参考URL</p>
-                <BulletList items={pkg.referenceAnalysis.referenceUrls} />
-                <p className="mb-1.5 mt-4 text-sm font-bold text-foreground">抽出対象URL</p>
-                <BulletList items={pkg.referenceAnalysis.urlsEligibleForExtraction} />
-                <p className="mb-1.5 mt-4 text-sm font-bold text-foreground">抽出したい部位</p>
-                <BulletList items={pkg.referenceAnalysis.sectionTargets} />
+              <div className="space-y-3">
+                <div className="rounded-2xl bg-accent p-3 sm:p-4">
+                  <p className="text-xs font-bold text-muted-foreground">参考URL</p>
+                  <div className="mt-1">
+                    <BulletList items={pkg.referenceAnalysis.referenceUrls} />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-accent p-3 sm:p-4">
+                  <p className="text-xs font-bold text-muted-foreground">抽出対象URL</p>
+                  <div className="mt-1">
+                    <BulletList items={pkg.referenceAnalysis.urlsEligibleForExtraction} />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-accent p-3 sm:p-4">
+                  <p className="text-xs font-bold text-muted-foreground">抽出したい部位</p>
+                  <div className="mt-1">
+                    <BulletList items={pkg.referenceAnalysis.sectionTargets} />
+                  </div>
+                </div>
               </div>
             </div>
           </Section>
@@ -2642,8 +2670,8 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
             {/* 第1ゲート: awaiting_representative_approval のときだけ表示 */}
             {isGate1 && (
-              <div className="grid gap-6 sm:grid-cols-2">
-                <form action="/api/consult/approve" method="post" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <form action="/api/consult/approve" method="post" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                   <input type="hidden" name="submissionId" value={pkg.submissionId} />
                   <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
                   <input type="hidden" name="approvedBy" value="代表" />
@@ -2653,19 +2681,19 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                   <textarea
                     name="memo"
                     rows={4}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-foreground outline-none ring-0"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
                     placeholder="インテイクを承認し、計画アーティファクトを生成する際の指示メモ"
                   />
                   <p className="mt-2 text-xs leading-relaxed text-emerald-800/80">
                     承認すると、OMC 計画アーティファクト（omc-plan.json）を自動生成し、
                     第2ゲート（計画承認待ち）へ進みます。
                   </p>
-                  <button className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-700">
+                  <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
                     インテイクを承認する（計画を生成）
                   </button>
                 </form>
 
-                <form action="/api/consult/reject" method="post" className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+                <form action="/api/consult/reject" method="post" className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
                   <input type="hidden" name="submissionId" value={pkg.submissionId} />
                   <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
                   <input type="hidden" name="approvedBy" value="代表" />
@@ -2673,13 +2701,13 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                   <textarea
                     name="memo"
                     rows={4}
-                    className="mt-2 w-full rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm text-foreground outline-none ring-0"
+                    className="mt-2 w-full rounded-2xl border border-rose-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
                     placeholder="差し戻し理由や保留メモ"
                   />
                   <p className="mt-2 text-xs leading-relaxed text-rose-800/80">
                     却下すると、status を rejected にします。
                   </p>
-                  <button className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-rose-600 px-5 py-3 text-sm font-bold text-white hover:bg-rose-700">
+                  <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700">
                     却下する
                   </button>
                 </form>
@@ -2688,8 +2716,8 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
             {/* 第2ゲート: awaiting_plan_approval のときだけ表示 */}
             {isGate2 && (
-              <div className="grid gap-6 sm:grid-cols-2">
-                <form action="/api/consult/plan/approve" method="post" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <form action="/api/consult/plan/approve" method="post" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                   <input type="hidden" name="submissionId" value={pkg.submissionId} />
                   <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
                   <input type="hidden" name="approvedBy" value="代表" />
@@ -2699,7 +2727,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                   <textarea
                     name="memo"
                     rows={4}
-                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm text-foreground outline-none ring-0"
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
                     placeholder="計画を承認し、実行ハンドオフを生成する際のメモ"
                   />
                   <p className="mt-2 text-xs leading-relaxed text-emerald-800/80">
@@ -2707,12 +2735,12 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                     execution-handoff.json）を生成し、実行準備完了へ進みます。
                     Claude Code の実行は行わず、ローカルオペレータへの引き渡し成果物だけを生成します。
                   </p>
-                  <button className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-700">
+                  <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
                     計画を承認する（実行ハンドオフを生成）
                   </button>
                 </form>
 
-                <form action="/api/consult/plan/reject" method="post" className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+                <form action="/api/consult/plan/reject" method="post" className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
                   <input type="hidden" name="submissionId" value={pkg.submissionId} />
                   <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
                   <input type="hidden" name="approvedBy" value="代表" />
@@ -2720,14 +2748,14 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                   <textarea
                     name="memo"
                     rows={4}
-                    className="mt-2 w-full rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm text-foreground outline-none ring-0"
+                    className="mt-2 w-full rounded-2xl border border-rose-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
                     placeholder="計画を差し戻す理由・修正指示"
                   />
                   <p className="mt-2 text-xs leading-relaxed text-rose-800/80">
                     差し戻すと、計画を取り下げて第1ゲート（代表確認待ち）に戻ります。
                     再承認すれば新しい計画が再生成されます。
                   </p>
-                  <button className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-rose-600 px-5 py-3 text-sm font-bold text-white hover:bg-rose-700">
+                  <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700">
                     計画を差し戻す
                   </button>
                 </form>
