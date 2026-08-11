@@ -53,10 +53,10 @@ const FAQ_ITEMS = [
 
 // 実績数値データ
 const STATS = [
-  { value: "15年", label: "韓国設備輸入実績" },
+  { value: "15年", label: "輸入実績" },
   { value: "50件+", label: "導入実績" },
-  { value: "100%", label: "日本語対応" },
-  { value: "24時間", label: "サポート対応" },
+  { value: "100%", label: "日本語サポート" },
+  { value: "24時間", label: "対応保証" },
 ];
 
 // 技術・設備データ
@@ -64,22 +64,22 @@ const FEATURES = [
   {
     icon: <Settings className="h-8 w-8" />,
     title: "充填機・乳化機",
-    description: "化粧品製造の核心工程。高精度な計量と安定した乳化技術を提供。",
+    description: "高精度な計量と安定した乳化技術を提供。",
   },
   {
     icon: <Truck className="h-8 w-8" />,
     title: "包装機・ラベラー",
-    description: "容器の種類やサイズに合わせた柔軟な包装システムをご提案。",
+    description: "容器に合わせた柔軟な包装システム。",
   },
   {
     icon: <Globe className="h-8 w-8" />,
     title: "海外設備輸入",
-    description: "韓国メーカーとの強固なネットワークでコストパフォーマンスに優れた設備を提供。",
+    description: "韓国メーカー直結でコストパフォーマンス優秀。",
   },
   {
     icon: <Users className="h-8 w-8" />,
     title: "導入後サポート",
-    description: "操作研修・保守・トラブル対応まで、日本語で安心のサポート体制。",
+    description: "操作研修・保守対応まで日本語で安心。",
   },
 ];
 
@@ -207,10 +207,10 @@ export default function SubmissionShowcase() {
               化粧品メーカーの設備投資を成功に導きます。
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="bg-amber-500 hover:bg-amber-600" asChild>
+              <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-lg" asChild>
                 <a href="#contact">
                   <Send className="mr-2 h-5 w-5" />
-                  無料相談する
+                  今すぐ無料相談する
                 </a>
               </Button>
               <Button
@@ -649,10 +649,10 @@ export default function SubmissionShowcase() {
               <Button
                 type="submit"
                 size="lg"
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-md"
               >
                 <Send className="mr-2 h-5 w-5" />
-                無料相談を申し込む
+                今すぐ無料相談を申し込む
               </Button>
             </div>
           </form>
