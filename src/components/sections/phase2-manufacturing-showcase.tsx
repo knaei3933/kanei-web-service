@@ -192,7 +192,7 @@ export default function SubmissionShowcase() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="mb-4 inline-flex items-center rounded-full bg-amber-500/20 border border-amber-400/30 px-4 py-1.5 text-sm font-bold text-amber-300">
+            <div className="mb-4 inline-flex items-center rounded-full bg-red-500 border-2 border-red-400 px-4 py-1.5 text-sm font-bold text-white shadow-lg shadow-red-500/40 animate-pulse">
               <Award className="mr-2 h-4 w-4" />
               導入実績50件以上・15年の信頼
             </div>
@@ -207,7 +207,7 @@ export default function SubmissionShowcase() {
               化粧品メーカーの設備投資を成功に導きます。
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-xl shadow-amber-500/30 transform hover:scale-105 transition-all" asChild>
+              <Button size="lg" className="bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold shadow-2xl shadow-red-500/50 transform hover:scale-105 transition-all border-2 border-yellow-300" asChild>
                 <a href="#contact">
                   <Send className="mr-2 h-5 w-5" />
                   今すぐ無料相談して最短1日で回答
@@ -652,7 +652,7 @@ export default function SubmissionShowcase() {
               <Button
                 type="submit"
                 size="lg"
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold shadow-xl shadow-amber-500/30 transform hover:scale-105 transition-all px-12 py-6 text-lg"
+                className="bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold shadow-2xl shadow-red-500/50 transform hover:scale-105 transition-all border-2 border-yellow-300 px-12 py-6 text-lg"
               >
                 <Send className="mr-2 h-5 w-5" />
                 今すぐ無料相談して最短1日で回答
