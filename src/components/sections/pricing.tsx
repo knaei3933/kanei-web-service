@@ -65,9 +65,9 @@ export default function Pricing({ className }: { className?: string }) {
             事業規模に合わせて選べる、分かりやすい料金体系
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            初期費用は<strong>0円</strong>。ドメイン取得費（年間約1,500円前後）のみお客様負担です。
+            初期費用は<strong>0円</strong>。ドメイン取得費（年間約1,500円）のみご負担です。
             <br />
-            追加費用を見えにくくせず、月額で管理しやすい形に整えています。
+            追加費用は明示し、月額で管理しやすい料金設計にしています。
           </p>
         </div>
         <div className="grid gap-8 md:grid-cols-3">

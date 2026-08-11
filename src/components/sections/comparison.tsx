@@ -174,8 +174,8 @@ export default function Comparison() {
             費用だけでなく、公開後の使いやすさまで比較してください
           </h2>
           <p className="mx-auto max-w-3xl text-lg leading-relaxed text-muted-foreground">
-            初期費用、月額費用、所有権、更新のしやすさ、移行の自由度まで含めて見ると、
-            長く使いやすいかどうかが見えてきます。
+            費用だけでなく、所有権・更新のしやすさ・移行の自由度まで比べれば、
+            長く使えるかどうかが見えてきます。
           </p>
         </div>
 

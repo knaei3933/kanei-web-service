@@ -11,9 +11,7 @@ export default function Footer() {
               金井貿易株式会社
             </h3>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              韓国の製造設備輸入貿易を核に、
-              <br />
-              ITサービスの新展開も開始しました。
+              韓国の製造設備輸入貿易を核に、ITサービスの展開も始めました。
             </p>
           </div>
 
