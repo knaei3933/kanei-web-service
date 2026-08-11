@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown, ListChecks, Undo2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import {
   buildExecutionSectionPromptsMarkdown,
@@ -273,9 +273,9 @@ function nextActionMeta(
       return {
         stage: "第1ゲート（インテイク承認）待ち",
         nextAction:
-          "代表がインテイクを承認 or 差し戻し。承認すると OMC 計画アーティファクトを自動生成し、第2ゲートへ進む。",
-        targetLabel: "承認アクション（この画面の下部）",
-        href: ctx.reviewUrl,
+          "代表がインテイクを承認 or 差し戻し。各セクション末尾の行動支援から直接フォームへ進める。承認すると OMC 計画アーティファクトを自動生成し、第2ゲートへ進む。",
+        targetLabel: "承認アクションを開く",
+        href: `${ctx.reviewUrl}#approval-actions`,
         toneClass: "border-indigo-200 bg-indigo-50 text-indigo-900",
         actionShort: "代表が承認を判断",
       };
@@ -470,10 +470,14 @@ function NextActionCard({ meta }: { meta: NextActionMeta }) {
 function Section({
   title,
   badge,
+  id,
   children,
 }: {
   title: string;
   badge?: React.ReactNode;
+  /** アンカー遷移先（#xxx）用の id。ルート要素に付与し、
+   *  スティッキーバーに隠れないように scroll-mt を確保する。 */
+  id?: string;
   children: React.ReactNode;
 }) {
   // 内部専用 / 代表専用 のセクションは、オペレータの高速スキャンを妨げないよう
@@ -485,7 +489,7 @@ function Section({
 
   if (defaultCollapsed) {
     return (
-      <details className="group rounded-3xl border border-dashed border-border bg-muted/40">
+      <details id={id} className="group scroll-mt-32 rounded-3xl border border-dashed border-border bg-muted/40">
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 p-6 sm:p-8 [&::-webkit-details-marker]:hidden">
           <ChevronDown
             className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
@@ -502,13 +506,88 @@ function Section({
   }
 
   return (
-    <section className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8">
+    <section id={id} className="scroll-mt-32 rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-bold text-foreground sm:text-xl">{title}</h2>
         {badge}
       </div>
       <div className="mt-4">{children}</div>
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  第1ゲート セクション別インライン行動支援（代表確認待ち専用）         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 第1ゲート（代表確認待ち / awaiting_representative_approval）のとき、
+ * 主要な判断セクションのすぐそばに置くインライン行動支援カード。
+ *
+ * ねらい: 従来はページ最下部の「承認アクション」にしか操作系がなく、
+ * セクションを読み終えたあとの移動コストが高かった。このカードを各セクションの
+ * 末尾に置くことで、確認 → 承認／差し戽し の導線を隣接させる。
+ *
+ * - このカード自体はフォームを持たない。下部の「承認アクション」が真の SoT であり、
+ *   各ボタンはアンカー（#gate1-*）で該当フォームへ直接スクロールする。
+ * - active=false（第1ゲート以外）のときは何も描画しない。
+ * - hint で「このセクションで確認すべきこと」を1行添えられる。
+ */
+function Gate1InlineActionCard({
+  active,
+  hint,
+}: {
+  active: boolean;
+  hint?: string;
+}) {
+  if (!active) return null;
+
+  return (
+    <aside
+      aria-label="第1ゲート 行動支援"
+      className="mt-5 rounded-2xl border border-indigo-300 bg-indigo-50/70 p-4 text-indigo-900"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center rounded-full border border-indigo-300 bg-white px-2.5 py-0.5 text-[11px] font-bold text-indigo-800">
+          代表確認待ち（第1ゲート）
+        </span>
+        <span className="text-xs font-bold text-indigo-900">
+          このセクションを確認したら、承認か差し戻しへ
+        </span>
+      </div>
+
+      {hint && (
+        <p className="mt-2 text-sm leading-relaxed text-indigo-900/90">{hint}</p>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <a
+          href="#gate1-approve"
+          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
+        >
+          <Check className="h-3.5 w-3.5" aria-hidden="true" />
+          この内容で承認（確認）
+        </a>
+        <a
+          href="#gate1-supplement"
+          className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-white px-3.5 py-2 text-xs font-bold text-amber-700 transition hover:bg-amber-50"
+        >
+          <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
+          項目別に差戻し
+        </a>
+        <a
+          href="#gate1-reject"
+          className="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-white px-3.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-50"
+        >
+          <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
+          差し戻し・却下
+        </a>
+      </div>
+
+      <p className="mt-2.5 text-[11px] leading-relaxed text-indigo-700/80">
+        最終的な送信はページ下部の「承認アクション」で行います。各ボタンは該当フォームへ直接移動します。
+      </p>
+    </aside>
   );
 }
 
@@ -2597,6 +2676,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                 ))}
               </ul>
             </div>
+
+            <Gate1InlineActionCard
+              active={isGate1}
+              hint="必須項目が十分に揃っているか確認してください。「十分」ならそのまま承認へ進めます。"
+            />
           </Section>
 
           {/* 顧客入力フィールド全項目表示 */}
@@ -2695,6 +2779,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                 </div>
               ))}
             </div>
+
+            <Gate1InlineActionCard
+              active={isGate1}
+              hint="未入力項目（赤枠）がないか確認してください。不足があれば差し戻しを検討してください。"
+            />
           </Section>
 
           {/* needs_followup 時の追加情報入力フォーム（顧客向け） */}
@@ -2784,6 +2873,11 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                 </div>
               </div>
             </div>
+
+            <Gate1InlineActionCard
+              active={isGate1}
+              hint="参考URLと素材が制作に足るか確認してください。不足があれば項目別差戻しで補足を依頼できます。"
+            />
           </Section>
 
           {/* AI画像フォールバック方針（内部専用・Phase D 評価の可視化） */}
@@ -2880,8 +2974,9 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             <PreProductionSection pkg={pkg} />
           )}
 
-          {/* 承認アクション：ステータス別に切り替え */}
+          {/* 承認アクション：ステータス別に切り替え（インライン行動支援のアンカー先） */}
           <Section
+            id="approval-actions"
             title="承認アクション"
             badge={
               <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusTone(pkg.status)}`}>
@@ -2921,19 +3016,22 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             {isGate1 && (
               <div className="space-y-4">
                 {/* 項目別差戻し／補足要求（状態管理はクライアントコンポーネント） */}
-                <SupplementRequestForm
-                  submissionId={pkg.submissionId}
-                  targets={SUPPLEMENT_TARGETS.map((t) => ({
-                    key: t.key,
-                    label: t.label,
-                    required: t.required,
-                    currentValue: supplementCurrentValues[t.key],
-                  }))}
-                />
+                {/* インライン行動支援の「項目別に差戻し」アンカー先 */}
+                <div id="gate1-supplement" className="scroll-mt-32">
+                  <SupplementRequestForm
+                    submissionId={pkg.submissionId}
+                    targets={SUPPLEMENT_TARGETS.map((t) => ({
+                      key: t.key,
+                      label: t.label,
+                      required: t.required,
+                      currentValue: supplementCurrentValues[t.key],
+                    }))}
+                  />
+                </div>
 
                 {/* 従来の承認／却下フォーム */}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <form action="/api/consult/approve" method="post" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                  <form action="/api/consult/approve" method="post" id="gate1-approve" className="scroll-mt-32 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                     <input type="hidden" name="submissionId" value={pkg.submissionId} />
                     <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
                     <input type="hidden" name="approvedBy" value="代表" />
@@ -2955,7 +3053,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
                     </button>
                   </form>
 
-                  <form action="/api/consult/reject" method="post" className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                  <form action="/api/consult/reject" method="post" id="gate1-reject" className="scroll-mt-32 rounded-2xl border border-rose-200 bg-rose-50 p-4">
                     <input type="hidden" name="submissionId" value={pkg.submissionId} />
                     <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
                     <input type="hidden" name="approvedBy" value="代表" />
