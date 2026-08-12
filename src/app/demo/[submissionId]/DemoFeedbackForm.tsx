@@ -502,8 +502,7 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-2.5"
         >
           <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          {feedback.rating === 0 ? "評価を選択" : <span className="hidden sm:inline">このまま進める</span>}
-          {feedback.rating === 0 ? "" : <span className="sm:hidden">承認</span>}
+          {feedback.rating === 0 ? "評価を選択" : "このまま進める"}
         </button>
         <button
           type="button"

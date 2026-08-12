@@ -71,7 +71,7 @@ export default function SectionCompletionToggle({ sectionId, submissionId, activ
         } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       >
         <Check className={`w-3.5 h-3.5 ${completed ? "text-emerald-600" : "text-gray-400"}`} />
-        {completed ? "확인완료" : saving ? "저장 중..." : "미확인"}
+        {completed ? "確認済み" : saving ? "保存中..." : "未確認"}
       </button>
     </div>
   );
