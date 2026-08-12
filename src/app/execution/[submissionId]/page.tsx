@@ -34,6 +34,7 @@ import {
 } from "@/lib/demo-feedback-loop";
 import { CopyButton } from "./CopyButton";
 import { FallbackAssetTracker } from "./FallbackAssetTracker";
+import ExecutionSectionToggle from "./ExecutionSectionToggle";
 import { SHOWCASE_MAP } from "@/lib/showcase-map";
 
 interface ExecutionPageProps {
@@ -731,6 +732,16 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
         />
       )}
 
+      {/* Image fallback completion toggle */}
+      {showFallbackPanel && (
+        <div className="border-t bg-white">
+          <div className="mx-auto flex max-w-container items-center justify-between px-4 py-2">
+            <span className="text-xs text-muted-foreground">AI画像フォールバック作業</span>
+            <ExecutionSectionToggle sectionId="exec-image-fallback" submissionId={submissionId} />
+          </div>
+        </div>
+      )}
+
       {/* ============================================================ */}
       {/*  Monetコンポーネントマッピング サマリ（内部専用）               */}
       {/* ============================================================ */}
@@ -784,6 +795,19 @@ export default async function ExecutionPage({ params }: ExecutionPageProps) {
           sectionPromptsMarkdown={sectionPromptsMarkdown}
         />
       )}
+
+      {/* Section completion progress bar */}
+      <div className="border-t bg-white">
+        <div className="mx-auto flex max-w-container items-center gap-4 px-4 py-2">
+          <span className="text-xs text-muted-foreground">作業進捗</span>
+          <div className="flex flex-wrap gap-2">
+            <ExecutionSectionToggle sectionId="exec-image-fallback" submissionId={submissionId} />
+            <ExecutionSectionToggle sectionId="exec-monet-mapping" submissionId={submissionId} />
+            <ExecutionSectionToggle sectionId="exec-revision-handoff" submissionId={submissionId} />
+            <ExecutionSectionToggle sectionId="exec-section-prompts" submissionId={submissionId} />
+          </div>
+        </div>
+      </div>
 
       {/* ============================================================ */}
       {/*  フッターコメント                                               */}
