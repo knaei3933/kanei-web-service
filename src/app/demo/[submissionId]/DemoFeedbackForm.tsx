@@ -10,11 +10,14 @@ import {
   PencilLine,
   ChevronDown,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import { DEMO_SECTION_OPTIONS } from "@/lib/demo-sections";
 
 interface DemoFeedbackFormProps {
   submissionId: string;
+  /** デモ生成前の場合、フォーム全体を無効化して「デモ生成待ち」メッセージを表示 */
+  disabled?: boolean;
 }
 
 interface FeedbackState {
@@ -31,7 +34,7 @@ interface FormState {
   message: string;
 }
 
-export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
+export function DemoFeedbackForm({ submissionId, disabled = false }: DemoFeedbackFormProps) {
   const [feedback, setFeedback] = useState<FeedbackState>({
     rating: 0,
     comment: "",
@@ -235,6 +238,23 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
 
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 sm:p-5">
+      {/* デモ生成前はフォームを無効化してメッセージを表示 */}
+      {disabled ? (
+        <div className="flex flex-col items-center gap-3 py-6">
+          <div className="rounded-full bg-amber-100 p-3">
+            <Sparkles className="h-6 w-6 text-amber-600" />
+          </div>
+          <h3 className="text-center text-lg font-semibold text-amber-900">
+            デモ生成中です
+          </h3>
+          <p className="max-w-sm text-center text-sm text-amber-800">
+            現在、ご相談内容をもとにAIがデモを生成しています。<br />
+            デモの準備ができ次第、こちらに表示されますので、<br className="hidden sm:inline" />
+            しばらくお待ちください。
+          </p>
+        </div>
+      ) : (
+      <>
       <h3 className="mb-1.5 text-center text-lg font-semibold text-amber-900">
         デモをご確認いただき、ありがとうございます。
       </h3>
@@ -556,6 +576,8 @@ export function DemoFeedbackForm({ submissionId }: DemoFeedbackFormProps) {
           修正確認 → 修正版再公開 → 再確認後、本制作へ進みます
         </p>
       </div>
+      </>
+      )}
     </div>
   );
 }

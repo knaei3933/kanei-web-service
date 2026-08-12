@@ -176,8 +176,12 @@ export async function POST(
     });
   } catch (error) {
     console.error(`[Demo Feedback] Error processing feedback:`, error);
+    // 状態遷移エラーの可能性が高い場合、より親切なメッセージを返す
+    const msg = error instanceof Error && (error.message.includes("Invalid transition") || error.message.includes("無効なステータス遷移"))
+      ? "デモがまだ生成されていないか、すでに処理が完了しています。しばらくお待ちいただくか、担当者にご連絡ください。"
+      : "Internal server error";
     return NextResponse.json(
-      { ok: false, error: "Internal server error" },
+      { ok: false, error: msg },
       { status: 500 }
     );
   }

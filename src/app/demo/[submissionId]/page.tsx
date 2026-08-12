@@ -77,6 +77,9 @@ export default async function DemoPage({ params }: DemoPageProps) {
     showcaseEntry?.businessType ||
     "業種";
 
+  // デモ生成前（approved_for_execution）かどうかを判断
+  const isAwaitingDemo = approvalPackage.status === "approved_for_execution";
+
   return (
     <div className="bg-slate-50">
       {/* ============================================================ */}
@@ -148,7 +151,7 @@ export default async function DemoPage({ params }: DemoPageProps) {
         className="scroll-mt-24 border-t border-amber-200 bg-slate-50"
       >
         <div className="mx-auto max-w-container px-4 py-8">
-          <DemoFeedbackForm submissionId={submissionId} />
+          <DemoFeedbackForm submissionId={submissionId} disabled={isAwaitingDemo} />
         </div>
       </div>
 
