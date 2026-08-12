@@ -6,6 +6,7 @@ import Comparison, { CTA } from "@/components/sections/comparison";
 import Pricing from "@/components/sections/pricing";
 import NewsBoard from "@/components/sections/news-board";
 import FAQ from "@/components/sections/faq";
+import FloatingCTA from "@/components/sections/floating-cta";
 
 export default function Home() {
   return (
@@ -19,6 +20,7 @@ export default function Home() {
       <FAQ />
       <NewsBoard />
       <CTA />
+      <FloatingCTA />
     </>
   );
 }
