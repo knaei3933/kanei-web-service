@@ -91,7 +91,7 @@ export default function NewsBoard() {
 
         <div className="mt-8 text-center">
           <a
-            href="mailto:info@kanei-trade.co.jp?subject=%E3%83%9B%E3%83%BC%E3%83%A0%E3%83%9A%E3%83%BC%E3%82%B8%E5%88%B6%E4%BD%9C%E3%81%AE%E3%81%94%E7%9B%B8%E8%AB%87"
+            href="/consult"
             className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
           >
             このような構成で相談する
