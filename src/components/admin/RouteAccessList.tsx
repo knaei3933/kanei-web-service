@@ -88,6 +88,8 @@ function RouteRow({ link }: { link: AdminRouteLink }) {
       href={link.available ? link.href : "#"}
       aria-disabled={!link.available}
       aria-label={`${link.label}（${status.label}）`}
+      target={link.available ? "_blank" : undefined}
+      rel={link.available ? "noopener noreferrer" : undefined}
       className={`group flex items-center gap-2 rounded-md border-l-2 px-2.5 py-1.5 text-xs transition ${
         link.available ? "hover:bg-slate-100" : "cursor-not-allowed opacity-60"
       } ${link.primary ? PRIMARY_ROW_TONES[link.tone] : "border-l-transparent"}`}
