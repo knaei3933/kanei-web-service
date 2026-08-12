@@ -52,6 +52,7 @@ export default async function DemoPage({ params }: DemoPageProps) {
     "pre_production_review",
     "production_ready",
     "delivered",
+    "approved_for_execution",
   ]);
   const isDemoVisible =
     !!approvalPackage && DEMO_VISIBLE_STATUSES.has(approvalPackage.status);
