@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, ChevronDown, ListChecks, Undo2 } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { notFound } from "next/navigation";
 import {
   buildExecutionSectionPromptsMarkdown,
@@ -50,6 +50,7 @@ import {
 } from "@/lib/consult-fields";
 import { buildIntakeEvidence } from "@/lib/intake-checklist";
 import { SupplementRequestForm } from "./SupplementRequestForm";
+import Gate1InlineActionCard from "./Gate1InlineActionCard";
 
 interface ReviewPageProps {
   params: Promise<{ submissionId: string }> | { submissionId: string };
@@ -517,79 +518,9 @@ function Section({
 }
 
 /* ------------------------------------------------------------------ */
-/*  第1ゲート セクション別インライン行動支援（代表確認待ち専用）         */
 /* ------------------------------------------------------------------ */
 
-/**
- * 第1ゲート（代表確認待ち / awaiting_representative_approval）のとき、
- * 主要な判断セクションのすぐそばに置くインライン行動支援カード。
- *
- * ねらい: 従来はページ最下部の「承認アクション」にしか操作系がなく、
- * セクションを読み終えたあとの移動コストが高かった。このカードを各セクションの
- * 末尾に置くことで、確認 → 承認／差し戽し の導線を隣接させる。
- *
- * - このカード自体はフォームを持たない。下部の「承認アクション」が真の SoT であり、
- *   各ボタンはアンカー（#gate1-*）で該当フォームへ直接スクロールする。
- * - active=false（第1ゲート以外）のときは何も描画しない。
- * - hint で「このセクションで確認すべきこと」を1行添えられる。
- */
-function Gate1InlineActionCard({
-  active,
-  hint,
-}: {
-  active: boolean;
-  hint?: string;
-}) {
-  if (!active) return null;
 
-  return (
-    <aside
-      aria-label="第1ゲート 行動支援"
-      className="mt-5 rounded-2xl border border-indigo-300 bg-indigo-50/70 p-4 text-indigo-900"
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center rounded-full border border-indigo-300 bg-white px-2.5 py-0.5 text-[11px] font-bold text-indigo-800">
-          代表確認待ち（第1ゲート）
-        </span>
-        <span className="text-xs font-bold text-indigo-900">
-          このセクションを確認したら、承認か差し戻しへ
-        </span>
-      </div>
-
-      {hint && (
-        <p className="mt-2 text-sm leading-relaxed text-indigo-900/90">{hint}</p>
-      )}
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <a
-          href="#gate1-approve"
-          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
-        >
-          <Check className="h-3.5 w-3.5" aria-hidden="true" />
-          この内容で承認（確認）
-        </a>
-        <a
-          href="#gate1-supplement"
-          className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-white px-3.5 py-2 text-xs font-bold text-amber-700 transition hover:bg-amber-50"
-        >
-          <ListChecks className="h-3.5 w-3.5" aria-hidden="true" />
-          項目別に差戻し
-        </a>
-        <a
-          href="#gate1-reject"
-          className="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-white px-3.5 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-50"
-        >
-          <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
-          差し戻し・却下
-        </a>
-      </div>
-
-      <p className="mt-2.5 text-[11px] leading-relaxed text-indigo-700/80">
-        最終的な送信はページ下部の「承認アクション」で行います。各ボタンは該当フォームへ直接移動します。
-      </p>
-    </aside>
-  );
-}
 
 function BulletList({ items }: { items: string[] }) {
   if (items.length === 0) {
@@ -2679,7 +2610,8 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
             <Gate1InlineActionCard
               active={isGate1}
-              hint="必須項目が十分に揃っているか確認してください。「十分」ならそのまま承認へ進めます。"
+              guidance="必須項目が十分に揃っているか確認してください。「十分」ならそのまま承認へ進めます。"
+              submissionId={pkg.submissionId}
             />
           </Section>
 
@@ -2782,7 +2714,8 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
             <Gate1InlineActionCard
               active={isGate1}
-              hint="未入力項目（赤枠）がないか確認してください。不足があれば差し戻しを検討してください。"
+              guidance="未入力項目（赤枠）がないか確認してください。不足があれば差し戻しを検討してください。"
+              submissionId={pkg.submissionId}
             />
           </Section>
 
@@ -2876,7 +2809,8 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
             <Gate1InlineActionCard
               active={isGate1}
-              hint="参考URLと素材が制作に足るか確認してください。不足があれば項目別差戻しで補足を依頼できます。"
+              guidance="参考URLと素材が制作に足るか確認してください。不足があれば項目別差戻しで補足を依頼できます。"
+              submissionId={pkg.submissionId}
             />
           </Section>
 
