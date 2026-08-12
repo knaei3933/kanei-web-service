@@ -9,10 +9,6 @@ interface Props {
   active: boolean;
 }
 
-interface SectionStatusResponse {
-  completed: boolean;
-}
-
 export default function SectionCompletionToggle({ sectionId, submissionId, active }: Props) {
   const [completed, setCompleted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -21,15 +17,13 @@ export default function SectionCompletionToggle({ sectionId, submissionId, activ
   useEffect(() => {
     if (!active) return;
 
-    fetch(`/api/admin/submissions/${submissionId}/section-status`)
+    fetch(`/api/submissions/${submissionId}/section-status`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load section status");
         return res.json();
       })
-      .then((data: SectionStatusResponse) => {
-        // 전체 상태에서 해당 섹션만 추출
-        const sectionCompleted = data.completed ?? false;
-        setCompleted(sectionCompleted);
+      .then((data: Record<string, boolean>) => {
+        setCompleted(!!data[sectionId]);
       })
       .catch(() => {
         console.warn(`Failed to load section status for ${sectionId}`);
@@ -42,7 +36,7 @@ export default function SectionCompletionToggle({ sectionId, submissionId, activ
 
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/submissions/${submissionId}/section-status`, {
+      const res = await fetch(`/api/submissions/${submissionId}/section-status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sectionId, completed: !completed }),
@@ -50,8 +44,8 @@ export default function SectionCompletionToggle({ sectionId, submissionId, activ
 
       if (!res.ok) throw new Error("Failed to update section status");
 
-      const data: SectionStatusResponse = await res.json();
-      setCompleted(data.completed);
+      const data = await res.json();
+      setCompleted(!!data.completed);
     } catch (err) {
       console.error("Failed to toggle section completion:", err);
       alert("체크 상태 저장에 실패했습니다. 다시 시도해주세요.");

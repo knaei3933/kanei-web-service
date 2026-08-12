@@ -10,8 +10,7 @@ interface Props {
 
 /**
  * Lightweight section completion toggle for the execution page.
- * Reuses the same /api/admin/submissions/[id]/section-status endpoint
- * as the review page toggle, but with execution-page styling.
+ * Reuses /api/submissions/[id]/section-status (public, no auth needed).
  */
 export default function ExecutionSectionToggle({
   sectionId,
@@ -23,7 +22,7 @@ export default function ExecutionSectionToggle({
 
   useEffect(() => {
     fetch(
-      `/api/admin/submissions/${submissionId}/section-status`,
+      `/api/submissions/${submissionId}/section-status`,
     )
       .then((r) => r.json())
       .then((data: Record<string, boolean>) => {
