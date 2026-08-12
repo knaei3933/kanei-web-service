@@ -43,6 +43,7 @@ import {
 } from "@/lib/revision-lineage";
 import { Gate3ChecklistCard } from "@/components/gate3/Gate3ChecklistCard";
 import { FollowupEditForm } from "./FollowupEditForm";
+import Gate2InlineActionCard from "./Gate2InlineActionCard";
 import {
   formatPayloadForReview,
   SUPPLEMENT_TARGETS,
@@ -833,7 +834,15 @@ function DecisionLine({
 /*  計画アーティファクト表示                                              */
 /* ------------------------------------------------------------------ */
 
-function PlanningArtifactSection({ plan }: { plan: PlanningArtifact }) {
+function PlanningArtifactSection({
+  plan,
+  submissionId,
+  isGate2,
+}: {
+  plan: PlanningArtifact;
+  submissionId: string;
+  isGate2: boolean;
+}) {
   return (
     <Section
       title="OMC 計画アーティファクト"
@@ -922,6 +931,12 @@ function PlanningArtifactSection({ plan }: { plan: PlanningArtifact }) {
           ))}
         </div>
       </div>
+      <Gate2InlineActionCard
+        active={isGate2}
+        submissionId={submissionId}
+        sectionId="planning-artifact"
+        guidance="計画の段階・前提条件・実行ステップを確認してください。問題なければ承認、修正が必要なら差し戻しで第1ゲートに戻ります。"
+      />
     </Section>
   );
 }
@@ -2891,7 +2906,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
           {/* 計画アーティファクト（第1ゲート承認後に生成） */}
           {pkg.planningArtifact && (
-            <PlanningArtifactSection plan={pkg.planningArtifact} />
+            <PlanningArtifactSection plan={pkg.planningArtifact} submissionId={pkg.submissionId} isGate2={isGate2} />
           )}
 
           {/* 実行ハンドオフ（第2ゲート承認後に生成・内部専用） */}
