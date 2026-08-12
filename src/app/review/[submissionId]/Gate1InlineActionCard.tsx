@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, ListChecks, Undo2 } from "lucide-react";
+import { Check, ListChecks, Undo2 } from "lucide-react";
+import SectionCompletionToggle from "./SectionCompletionToggle";
 
 interface Props {
   active: boolean;
   guidance?: string;
   submissionId: string;
+  sectionId: string;
 }
 
-export default function Gate1InlineActionCard({ active, guidance, submissionId }: Props) {
+export default function Gate1InlineActionCard({ active, guidance, submissionId, sectionId }: Props) {
   const [memo, setMemo] = useState("");
 
   const submitHandler = async (endpoint: string, body: Record<string, unknown>) => {
@@ -56,10 +58,17 @@ export default function Gate1InlineActionCard({ active, guidance, submissionId }
       className="mt-6 border-l-4 border-purple-600 bg-purple-50/30 p-4"
       aria-label="第1ゲート 行動支援"
     >
-      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-purple-800">
-        <span className="inline-flex items-center rounded-full bg-purple-600 px-2.5 py-0.5 text-xs font-medium text-white">
-          代表確認待ち（第1ゲート）
-        </span>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-sm font-semibold text-purple-800">
+          <span className="inline-flex items-center rounded-full bg-purple-600 px-2.5 py-0.5 text-xs font-medium text-white">
+            代表確認待ち（第1ゲート）
+          </span>
+          <SectionCompletionToggle
+            sectionId={sectionId}
+            submissionId={submissionId}
+            active={active}
+          />
+        </div>
       </div>
       <p className="mb-3 text-sm text-gray-700">このセクションを確認したら、承認か差し戻しへ</p>
       <p className="mb-4 text-xs text-gray-600">{guidance}</p>

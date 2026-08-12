@@ -51,6 +51,7 @@ import {
 import { buildIntakeEvidence } from "@/lib/intake-checklist";
 import { SupplementRequestForm } from "./SupplementRequestForm";
 import Gate1InlineActionCard from "./Gate1InlineActionCard";
+import SectionCompletionToggle from "./SectionCompletionToggle";
 
 interface ReviewPageProps {
   params: Promise<{ submissionId: string }> | { submissionId: string };
@@ -2612,6 +2613,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               active={isGate1}
               guidance="必須項目が十分に揃っているか確認してください。「十分」ならそのまま承認へ進めます。"
               submissionId={pkg.submissionId}
+              sectionId="intake-sufficiency"
             />
           </Section>
 
@@ -2716,6 +2718,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               active={isGate1}
               guidance="未入力項目（赤枠）がないか確認してください。不足があれば差し戻しを検討してください。"
               submissionId={pkg.submissionId}
+              sectionId="customer-input-fields"
             />
           </Section>
 
@@ -2811,6 +2814,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               active={isGate1}
               guidance="参考URLと素材が制作に足るか確認してください。不足があれば項目別差戻しで補足を依頼できます。"
               submissionId={pkg.submissionId}
+              sectionId="reference-materials"
             />
           </Section>
 
