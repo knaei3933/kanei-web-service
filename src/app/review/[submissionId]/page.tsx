@@ -44,6 +44,7 @@ import {
 import { Gate3ChecklistCard } from "@/components/gate3/Gate3ChecklistCard";
 import { FollowupEditForm } from "./FollowupEditForm";
 import Gate2InlineActionCard from "./Gate2InlineActionCard";
+import Gate3InlineActionCard from "./Gate3InlineActionCard";
 import {
   formatPayloadForReview,
   SUPPLEMENT_TARGETS,
@@ -1216,16 +1217,12 @@ function PreProductionSection({ pkg }: { pkg: ApprovalPackage }) {
             </div>
           )}
 
-          {/* アクションへの案内（認証が必要なため管理画面へ誘導） */}
-          <div className="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm leading-relaxed text-indigo-900">
-            第3ゲートの承認・差し戻しは管理画面から行います（ADMIN_SECRET が必要）。
-            <Link
-              href={`/admin/${pkg.submissionId}`}
-              className="ml-1 font-bold underline"
-            >
-              管理画面を開く →
-            </Link>
-          </div>
+          {/* Gate3 inline action — admin redirect */}
+          <Gate3InlineActionCard
+            active={pkg.status === "pre_production_review"}
+            submissionId={pkg.submissionId}
+            sectionId="pre-production-gate3"
+          />
         </>
       )}
     </Section>
