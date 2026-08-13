@@ -52,6 +52,7 @@ import {
 } from "@/lib/consult-fields";
 import { buildIntakeEvidence } from "@/lib/intake-checklist";
 import { SupplementRequestForm } from "./SupplementRequestForm";
+import { RejectWithConfirm } from "./RejectWithConfirm";
 import Gate1InlineActionCard from "./Gate1InlineActionCard";
 import SectionCompletionToggle from "./SectionCompletionToggle";
 
@@ -2981,47 +2982,43 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
                 {/* 従来の承認／却下フォーム */}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <form action="/api/consult/approve" method="post" id="gate1-approve" className="scroll-mt-32 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                    <input type="hidden" name="submissionId" value={pkg.submissionId} />
-                    <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
-                    <input type="hidden" name="approvedBy" value="代表" />
-                    <label className="block text-sm font-bold text-emerald-900">
-                      第1ゲート承認メモ（インテイク承認）
-                    </label>
-                    <textarea
-                      name="memo"
-                      rows={4}
-                      className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
-                      placeholder="インテイクを承認し、計画アーティファクトを生成する際の指示メモ"
-                    />
-                    <p className="mt-2 text-xs leading-relaxed text-emerald-800/80">
-                      承認すると、OMC 計画アーティファクト（omc-plan.json）を自動生成し、
-                      第2ゲート（計画承認待ち）へ進みます。
-                    </p>
-                    <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
-                      インテイクを承認する（計画を生成）
-                    </button>
-                  </form>
+                <form action="/api/consult/approve" method="post" id="gate1-approve" className="scroll-mt-32 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                  <input type="hidden" name="submissionId" value={pkg.submissionId} />
+                  <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
+                  <input type="hidden" name="approvedBy" value="代表" />
+                  <label className="block text-sm font-bold text-emerald-900">
+                    第1ゲート承認メモ（インテイク承認）
+                  </label>
+                  <textarea
+                    name="memo"
+                    rows={4}
+                    className="mt-2 w-full rounded-2xl border border-emerald-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
+                    placeholder="インテイクを承認し、計画アーティファクトを生成する際の指示メモ"
+                  />
+                  <p className="mt-2 text-xs leading-relaxed text-emerald-800/80">
+                    承認すると、OMC 計画アーティファクト（omc-plan.json）を自動生成し、
+                    第2ゲート（計画承認待ち）へ進みます。
+                  </p>
+                  <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
+                    インテイクを承認する（計画を生成）
+                  </button>
+                </form>
 
-                  <form action="/api/consult/reject" method="post" id="gate1-reject" className="scroll-mt-32 rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                    <input type="hidden" name="submissionId" value={pkg.submissionId} />
-                    <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
-                    <input type="hidden" name="approvedBy" value="代表" />
-                    <label className="block text-sm font-bold text-rose-900">却下 / 保留メモ（単一）</label>
-                    <textarea
-                      name="memo"
-                      rows={4}
-                      className="mt-2 w-full rounded-2xl border border-rose-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none ring-0"
-                      placeholder="差し戻し理由や保留メモ"
-                    />
-                    <p className="mt-2 text-xs leading-relaxed text-rose-800/80">
-                      却下すると、status を rejected にします。
-                      項目別の差戻しは上の「項目別差戻し／補足要求」をご利用ください。
-                    </p>
-                    <button className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700">
-                      却下する（単一メモ）
-                    </button>
-                  </form>
+                <div id="gate1-reject" className="scroll-mt-32 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                  <p className="text-sm font-bold text-rose-900">⚠️ 単一メモ却下（注意）</p>
+                  <p className="mt-2 text-xs leading-relaxed text-rose-800/90">
+                    <strong>このフォームは「受付を完全に却下（rejected）」します。</strong>
+                    項目別に追加情報を依頼する場合は、
+                    <a href="#gate1-supplement" className="font-semibold underline decoration-rose-400 underline-offset-2 hover:decoration-rose-600">
+                      上の「項目別差戻し／補足要求」
+                    </a>
+                    をご利用ください。
+                  </p>
+                  <RejectWithConfirm
+                    submissionId={pkg.submissionId}
+                    redirectTo={`/review/${pkg.submissionId}`}
+                  />
+                </div>
                 </div>
               </div>
             )}
