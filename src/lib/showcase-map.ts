@@ -92,6 +92,16 @@ export const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
     businessType: "製造業",
     componentPath: "src/components/sections/test-manufacturing-showcase.tsx",
   },
+  "20260808-123400-3c9a9f70": {
+    // ファイル名は識別子ベースの安定名（toyoda-manufacturing-showcase）にしておく。
+    // 数字始まりの submissionId をファイル名にすると、Turbopack の動的 import で
+    // モジュール解決が環境によって不安定になるため、意味的な名前に一本化。
+    loader: () =>
+      import("@/components/sections/toyoda-manufacturing-showcase").then((m) => ({ default: m.default })),
+    enterpriseName: "豊田製作所",
+    businessType: "製造業",
+    componentPath: "src/components/sections/toyoda-manufacturing-showcase.tsx",
+  },
 };
 
 /**
