@@ -72,6 +72,16 @@ export const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
     businessType: "製造業",
     componentPath: "src/components/sections/korean-manufacturing-showcase.tsx",
   },
+  "20260808-064916-01296544": {
+    // ファイル名は識別子ベースの安定名（relay-equipment-showcase）にしておく。
+    // 数字始まりの submissionId をファイル名にすると、Turbopack の動的 import で
+    // モジュール解決が環境によって不安定になるため、意味的な名前に一本化。
+    loader: () =>
+      import("@/components/sections/relay-equipment-showcase").then((m) => ({ default: m.default })),
+    enterpriseName: "Relay添付Durable検証株式会社",
+    businessType: "製造業",
+    componentPath: "src/components/sections/relay-equipment-showcase.tsx",
+  },
 };
 
 /**
