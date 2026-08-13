@@ -1,6 +1,4 @@
 "use client";
-
-import Link from "next/link";
 import {
   getAdminRouteLinks,
   type AdminQuickLinkKey,
@@ -83,16 +81,37 @@ function getRouteStatus(link: AdminRouteLink): RouteStatus {
  */
 function RouteRow({ link }: { link: AdminRouteLink }) {
   const status = getRouteStatus(link);
+  if (!link.available) {
+    return (
+      <span
+        aria-disabled
+        aria-label={`${link.label}（${status.label}）`}
+        className="group flex items-center gap-2 rounded-md border-l-2 px-2.5 py-1.5 text-xs cursor-not-allowed opacity-60 border-l-transparent"
+      >
+        <span className={`inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold ${ROLE_CHIP_TONES[link.tone]}`}>
+          {ROLE_LABELS[link.key]}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-muted-foreground" title={link.label}>
+          {link.label}
+        </span>
+        <code className="min-w-0 max-w-[40%] shrink truncate font-mono text-[10px] text-slate-400" title={link.shortPath}>
+          {link.shortPath}
+        </code>
+        <span className={`inline-flex shrink-0 items-center gap-0.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${status.cls}`}>
+          {status.label}
+        </span>
+      </span>
+    );
+  }
   return (
-    <Link
-      href={link.available ? link.href : "#"}
-      aria-disabled={!link.available}
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener noreferrer"
       aria-label={`${link.label}（${status.label}）`}
-      target={link.available ? "_blank" : undefined}
-      rel={link.available ? "noopener noreferrer" : undefined}
-      className={`group flex items-center gap-2 rounded-md border-l-2 px-2.5 py-1.5 text-xs transition ${
-        link.available ? "hover:bg-slate-100" : "cursor-not-allowed opacity-60"
-      } ${link.primary ? PRIMARY_ROW_TONES[link.tone] : "border-l-transparent"}`}
+      className={`group flex items-center gap-2 rounded-md border-l-2 px-2.5 py-1.5 text-xs transition hover:bg-slate-100 ${
+        link.primary ? PRIMARY_ROW_TONES[link.tone] : "border-l-transparent"
+      }`}
     >
       <span
         className={`inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold ${ROLE_CHIP_TONES[link.tone]}`}
@@ -119,7 +138,7 @@ function RouteRow({ link }: { link: AdminRouteLink }) {
         {status.label}
         {status.openable ? <span aria-hidden>→</span> : null}
       </span>
-    </Link>
+    </a>
   );
 }
 
