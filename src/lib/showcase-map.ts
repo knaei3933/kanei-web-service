@@ -102,6 +102,16 @@ export const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
     businessType: "製造業",
     componentPath: "src/components/sections/toyoda-manufacturing-showcase.tsx",
   },
+  "20260808-123405-1576b300": {
+    // ファイル名は識別子ベースの安定名（suzuki-construction-showcase）にしておく。
+    // 数字始まりの submissionId をファイル名にすると、Turbopack の動的 import で
+    // モジュール解決が環境によって不安定になるため、意味的な名前に一本化。
+    loader: () =>
+      import("@/components/sections/suzuki-construction-showcase").then((m) => ({ default: m.default })),
+    enterpriseName: "鈴木工務店",
+    businessType: "建設業",
+    componentPath: "src/components/sections/suzuki-construction-showcase.tsx",
+  },
 };
 
 /**
