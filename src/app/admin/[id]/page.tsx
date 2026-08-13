@@ -190,6 +190,7 @@ function badgeColor(status: string): string {
   if (s === "production_ready") return "bg-violet-100 text-violet-800";
   if (s === "delivered") return "bg-green-100 text-green-800";
   if (s === "approved_for_execution") return "bg-violet-100 text-violet-800";
+  if (s === "demo_generation_failed") return "bg-rose-100 text-rose-800";
   // 既存の汎用マッチ
   if (s.includes("followup") || s.includes("needs")) {
     return "bg-amber-100 text-amber-800";
@@ -249,6 +250,7 @@ function statusLabel(status: string): string {
   if (s === "awaiting_plan_approval") return "企画承認待ち";
   if (s === "approved_for_execution") return "デモ実行待ち";
   if (s === "awaiting_representative_approval") return "代表者承認待ち";
+  if (s === "demo_generation_failed") return "デモ生成失敗";
   // 既存の汎用マッチ
   if (s.includes("followup") || s.includes("needs")) return "追加確認中";
   if (s.includes("reject")) return "却下";
@@ -293,6 +295,9 @@ export default function AdminDetailPage() {
   const [showSourceModal, setShowSourceModal] = useState<RoundEntry | null>(null);
   const [sourceLoading, setSourceLoading] = useState(false);
   const [componentSource, setComponentSource] = useState<string | null>(null);
+  // Phase C-2: ヒアリング質問カスタマイズ
+  const [showQuestionEditor, setShowQuestionEditor] = useState(false);
+  const [customQuestions, setCustomQuestions] = useState("");
 
   /* auth + fetch */
   useEffect(() => {
@@ -520,12 +525,23 @@ export default function AdminDetailPage() {
   // 本制作前ヒアリングを開始する（customer_approved → pre_production_interview）。
   // 従来の「本制作を開始（customer_approved → production_ready 直遷移）」は
   // 新しいステートマシンで無効化されたため、本制作へは必ずヒアリング → Gate3 を経由する。
+  // Phase C-2: カスタム質問をサポート（customQuestions が空であればデフォルト使用）
   async function handleStartInterview() {
     const secret = getAdminSecret();
     if (!secret) return;
     setStartingInterview(true);
     setActionMsg(null);
     try {
+      const body: { sendMail: boolean; customQuestions?: string[] } = { sendMail: true };
+      // カスタム質問が入力されている場合は追加
+      const customLines = customQuestions
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      if (customLines.length > 0) {
+        body.customQuestions = customLines;
+      }
+
       const res = await fetch(
         `/api/consult/${encodeURIComponent(id)}/interview`,
         {
@@ -534,8 +550,7 @@ export default function AdminDetailPage() {
             Authorization: `Bearer ${secret}`,
             "Content-Type": "application/json",
           },
-          // デフォルト質問セットで起票し、顧客へ依頼メールを送る
-          body: JSON.stringify({ sendMail: true }),
+          body: JSON.stringify(body),
         },
       );
       if (!res.ok) {
@@ -543,6 +558,8 @@ export default function AdminDetailPage() {
         throw new Error(`ヒアリング開始に失敗しました (${res.status})${txt ? `: ${txt}` : ""}`);
       }
       setActionMsg("本制作前ヒアリングを開始し、顧客へ依頼メールを送信しました。");
+      setShowQuestionEditor(false);
+      setCustomQuestions("");
       router.refresh();
     } catch (e: unknown) {
       setActionMsg(e instanceof Error ? e.message : "ヒアリング開始エラーが発生しました。");
@@ -1458,24 +1475,85 @@ export default function AdminDetailPage() {
 
         {/* customer_approved: 本制作前ヒアリングを開始 */}
         {/*
-          従来の「本制作を開始（customer_approved → production_ready 直遷移）」は
-          新ステートマシンで無効化済み。本制作へは必ずヒアリング → 再検証 → 第3ゲートを経由する。
-          TODO(Phase C): ヒアリング質問をカスタマイズする UI があればここに統合する。
+          Phase C-2: ヒアリング質問カスタマイズ UI を統合。
+          デフォルト質問セットは表示のみ（読み取り専用）、追加のカスタム質問を入力可能。
         */}
         {apStatus === "customer_approved" && (
-          <div className="space-y-3">
-            <button
-              type="button"
-              disabled={startingInterview}
-              onClick={handleStartInterview}
-              className="rounded-xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-            >
-              {startingInterview ? "処理中..." : "📝 本制作前ヒアリングを開始"}
-            </button>
-            <p className="text-sm text-muted-foreground">
-              デフォルトの質問セットでヒアリングを起票し、顧客へ依頼メールを送信します。
-              顧客は <span className="font-mono text-xs">/interview/{id}</span> で回答します。
-            </p>
+          <div className="space-y-4">
+            {/* 質問エディタートグル */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setShowQuestionEditor(!showQuestionEditor)}
+                className="flex items-center gap-2 text-sm font-medium text-slate-700"
+              >
+                <span className="text-slate-500">{showQuestionEditor ? "▼" : "▶"}</span>
+                ヒアリング質問の確認・カスタマイズ
+              </button>
+
+              {showQuestionEditor && (
+                <div className="mt-4 space-y-4">
+                  {/* デフォルト質問（読み取り専用） */}
+                  <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <p className="mb-2 text-xs font-semibold text-slate-600">📋 デフォルト質問（常に送信されます）</p>
+                    <ul className="space-y-2 text-sm text-slate-700">
+                      <li className="flex gap-2">
+                        <span className="text-slate-400">1.</span>
+                        <span>ホームページで一番伝えたい「メッセージ」は何ですか？</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-slate-400">2.</span>
+                        <span>今回の制作で「これだけは絶対に外せない」という要素はありますか？</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-slate-400">3.</span>
+                        <span>競合他社と比べて、御社ならではの強み・差別化ポイントを教えてください。</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-slate-400">4.</span>
+                        <span>公開後に更新予定のある情報はありますか？（任意）</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-slate-400">5.</span>
+                        <span>その他、ご要望やご不安な点があれば自由にお書きください。（任意）</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* カスタム質問入力（追加質問） */}
+                  <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <p className="mb-2 text-xs font-semibold text-slate-600">
+                      ✏️ 追加のカスタム質問（任意・1行につき1質問）
+                    </p>
+                    <textarea
+                      value={customQuestions}
+                      onChange={(e) => setCustomQuestions(e.target.value)}
+                      placeholder="追加の質問を入力してください（例：追加で提供可能な素材はありますか？）&#10;1行につき1つの質問として送信されます"
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm leading-relaxed text-slate-700 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      rows={4}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ヒアリング開始ボタン */}
+            <div className="space-y-3">
+              <button
+                type="button"
+                disabled={startingInterview}
+                onClick={handleStartInterview}
+                className="rounded-xl bg-emerald-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {startingInterview ? "処理中..." : "📝 本制作前ヒアリングを開始"}
+              </button>
+              <p className="text-sm text-muted-foreground">
+                {showQuestionEditor && customQuestions.trim().length > 0
+                  ? "デフォルト質問＋カスタム質問でヒアリングを起票し、顧客へ依頼メールを送信します。"
+                  : "デフォルトの質問セットでヒアリングを起票し、顧客へ依頼メールを送信します。"}
+                顧客は <span className="font-mono text-xs">/interview/{id}</span> で回答します。
+              </p>
+            </div>
           </div>
         )}
 
@@ -1557,6 +1635,28 @@ export default function AdminDetailPage() {
           </div>
         )}
 
+        {/* demo_generation_failed: デモ生成失敗・再生成ボタン */}
+        {apStatus === "demo_generation_failed" && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-rose-50 px-4 py-3">
+              <p className="text-sm font-semibold text-rose-700">
+                ⚠️ デモ生成に失敗しました
+              </p>
+              <p className="mt-1 text-xs text-rose-600">
+                技術的な問題によりデモ生成が完了できませんでした。再生成を試してください。
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={executing}
+              onClick={() => handleExecuteDemo(false)}
+              className="rounded-xl bg-purple-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-purple-700 disabled:opacity-50"
+            >
+              {executing ? "再生成中..." : "🔄 デモを再生成"}
+            </button>
+          </div>
+        )}
+
         {/* その他のステータス */}
         {![
           "awaiting_representative_approval",
@@ -1570,6 +1670,7 @@ export default function AdminDetailPage() {
           "pre_production_review",
           "production_ready",
           "delivered",
+          "demo_generation_failed",
         ].includes(apStatus) && (
           <p className="text-sm text-muted-foreground">
             現在、実行可能なアクションはありません。

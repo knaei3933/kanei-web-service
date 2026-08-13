@@ -687,3 +687,196 @@ export async function appendDemoFeedback(
     JSON.stringify(history, null, 2)
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  (Phase C-4) 納品確認メール                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 納品確認メールを組み立てる。
+ */
+function buildDeliveredMail(
+  toAddress: string,
+  customerName: string | undefined,
+  companyName: string,
+  deliveryInfo: { url?: string | null; deliveredAt: string }
+): SendMailInput {
+  const displayName = customerName || companyName || "ご依頼主様";
+  const subject = `【金井貿易株式会社】ホームページ制作完了のお知らせ`;
+
+  const deliveredDate = deliveryInfo.deliveredAt
+    ? new Date(deliveryInfo.deliveredAt).toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+    : "";
+
+  const text = [
+    `${displayName} 様`,
+    "",
+    `${companyName} 様`,
+    "",
+    "この度は、ホームページ制作のご依頼をいただき、誠にありがとうございます。",
+    "",
+    "無事に本制作が完了し、納品いたしました。",
+    "",
+    deliveryInfo.url
+      ? `【公開サイト】\n${deliveryInfo.url}`
+      : "公開 URL につきましては、別途ご連絡いたします。",
+    "",
+    "サイトを公開いたしましたので、ぜひご確認ください。",
+    "今後も運用・更新のご支援がございましたら、お気軽にお問い合わせください。",
+    "",
+    "引き続き、よろしくお願い申し上げます。",
+    "",
+    "金井ホームページ制作",
+    "Email: info@kanei-trade.co.jp",
+  ]
+    .filter((line, i, arr) => !(line === "" && arr[i - 1] === "" && i > 1))
+    .join("\n");
+
+  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Meiryo,sans-serif;color:#111827;max-width:600px;">
+  <p style="font-size:15px;">${escapeHtml(displayName)} 様</p>
+  <p style="font-size:14px;line-height:1.8;">
+    <b>${escapeHtml(companyName)} 様</b><br/>
+    この度は、ホームページ制作のご依頼をいただき、誠にありがとうございます。
+  </p>
+  <p style="font-size:14px;line-height:1.8;">
+    無事に<span style="font-weight:bold;">本制作が完了し、納品いたしました</span>。
+  </p>
+  ${
+    deliveryInfo.url
+      ? `<div style="margin:20px 0;padding:16px;border:1px solid #10b981;border-radius:12px;background:#f0fdf4;">
+    <p style="margin:0 0 8px;font-size:13px;color:#047857;">公開サイト</p>
+    <p style="margin:0;"><a href="${escapeHtml(
+      deliveryInfo.url
+    )}" style="color:#059669;word-break:break-all;font-weight:bold;">${escapeHtml(
+      deliveryInfo.url
+    )}</a></p>
+  </div>`
+      : `<div style="margin:20px 0;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;">
+    <p style="margin:0;font-size:13px;color:#374151;">公開 URL につきましては、別途ご連絡いたします。</p>
+  </div>`
+  }
+  <p style="font-size:14px;line-height:1.8;">
+    サイトを公開いたしましたので、ぜひご確認ください。<br/>
+    今後も運用・更新のご支援がございましたら、お気軽にお問い合わせください。
+  </p>
+  <p style="font-size:14px;line-height:1.8;">引き続き、よろしくお願い申し上げます。</p>
+  <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb;"/>
+  <p style="font-size:13px;color:#6b7280;line-height:1.7;">
+    金井ホームページ制作<br/>
+    Email: info@kanei-trade.co.jp
+  </p>
+</div>`;
+
+  return {
+    to: [{ address: toAddress, name: customerName || undefined }],
+    subject,
+    text,
+    html,
+    submissionId: "", // 納品時は submissionId が不要だが型のため空文字
+    purpose: "customer-delivered",
+  };
+}
+
+/**
+ * 納品確認メールを送信する。
+ *
+ * @param submissionId - 受領 ID
+ * @param deliveryInfo - 納品情報（delivery-info.json の内容）
+ * @returns MailResult - 送信結果
+ */
+export async function sendDeliveredEmail(
+  submissionId: string,
+  deliveryInfo: Record<string, unknown>
+): Promise<MailResult> {
+  const provider = resolveMailProvider();
+
+  // submission.json から顧客情報を取得
+  try {
+    const submissionRaw = await readArtifact(submissionId, "submission.json");
+    if (!submissionRaw) {
+      return {
+        provider: provider.name,
+        accepted: [],
+        messageId: null,
+        status: "error",
+        error: "submission.json が見つからないため、納品メールを送信できませんでした。",
+      };
+    }
+
+    const submission = JSON.parse(submissionRaw) as Record<string, unknown>;
+    const payload =
+      submission &&
+      typeof submission === "object" &&
+      submission.payload &&
+      typeof submission.payload === "object"
+        ? (submission.payload as Record<string, unknown>)
+        : {};
+
+    const customerName = typeof payload.name === "string" ? payload.name : undefined;
+    const companyName =
+      typeof payload.companyName === "string"
+        ? payload.companyName
+        : typeof payload.enterpriseName === "string"
+          ? payload.enterpriseName
+          : "貴社";
+    const customerEmail =
+      typeof payload.email === "string"
+        ? payload.email
+        : typeof payload.contactEmail === "string"
+          ? payload.contactEmail
+          : "";
+
+    // メールアドレスの簡易バリデーション
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail);
+    if (!isValidEmail) {
+      return {
+        provider: provider.name,
+        accepted: [],
+        messageId: null,
+        status: "error",
+        error: "顧客メールアドレスが不正なため、納品メールを送信できませんでした。",
+      };
+    }
+
+    // deliveryInfo から URL を取得
+    const url =
+      typeof deliveryInfo.url === "string"
+        ? deliveryInfo.url
+        : typeof deliveryInfo.deliveryUrl === "string"
+          ? deliveryInfo.deliveryUrl
+          : null;
+    const deliveredAt =
+      typeof deliveryInfo.deliveredAt === "string"
+        ? deliveryInfo.deliveredAt
+        : new Date().toISOString();
+
+    try {
+      const replyTo = process.env.MAIL_REPLY_TO;
+      const mail = buildDeliveredMail(customerEmail, customerName, companyName, {
+        url,
+        deliveredAt,
+      });
+      return await provider.send({ ...mail, replyTo });
+    } catch (err) {
+      return {
+        provider: provider.name,
+        accepted: [customerEmail],
+        messageId: null,
+        status: "error",
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  } catch (err) {
+    return {
+      provider: provider.name,
+      accepted: [],
+      messageId: null,
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}

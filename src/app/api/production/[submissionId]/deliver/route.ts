@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { readApprovalPackage, transitionStatus } from "@/lib/approval-package";
 import { writeArtifact } from "@/server/submission-storage";
 import { isSafeSubmissionId } from "@/server/submission-storage";
+import { sendDeliveredEmail } from "@/lib/demo-feedback-loop";
 
 /**
  * POST /api/production/[submissionId]/deliver
@@ -107,7 +108,18 @@ export async function POST(
     console.log(`[Production] 納品完了: ${submissionId}`);
     console.log(`[Production] ステータス: ${result.status}`);
     console.log(`[Production] 納品情報:`, deliveryInfo);
-    // TODO: sendDeliveredEmail(submissionId, deliveryInfo);
+
+    // 顧客向け納品確認メール（エラー時でも処理継続）
+    try {
+      await sendDeliveredEmail(submissionId, deliveryInfo);
+      console.log(`[Production] 納品メール送信完了: ${submissionId}`);
+    } catch (mailError) {
+      console.error(
+        `[Production] 納品メール送信エラー (${submissionId}):`,
+        mailError
+      );
+      // メール送信失敗は致命的ではないので処理継続
+    }
 
     return NextResponse.json({
       ok: true,

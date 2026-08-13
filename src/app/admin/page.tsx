@@ -38,6 +38,7 @@ const STATUS_LABELS: Record<string, string> = {
   customer_approved: "顧客承認済み",
   production_ready: "本制作準備完了",
   delivered: "納品済み",
+  demo_generation_failed: "デモ生成失敗",
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -56,6 +57,7 @@ function StatusBadge({ status }: { status: string }) {
     customer_approved: "bg-emerald-100 text-emerald-800 border-emerald-200",
     production_ready: "bg-violet-100 text-violet-800 border-violet-200",
     delivered: "bg-green-100 text-green-800 border-green-200",
+    demo_generation_failed: "bg-rose-100 text-rose-800 border-rose-200",
   };
   const cls = styles[status] ?? "bg-blue-100 text-blue-800 border-blue-200";
   return (
@@ -144,6 +146,60 @@ function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) 
     }
   };
 
+  // Phase C-1: ヒアリング開始（customer_approved）
+  const handleStartInterview = async () => {
+    setLoading(true);
+    try {
+      const secret = getAdminSecret();
+      if (!secret) { alert("認証エラー"); setLoading(false); return; }
+      const res = await fetch(`/api/consult/${submissionId}/interview`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${secret}`,
+        },
+        body: JSON.stringify({ sendMail: true }),
+      });
+      if (res.ok) {
+        onActionSuccess();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "ヒアリング開始に失敗しました");
+      }
+    } catch (err) {
+      alert("エラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Phase C-1: 第3ゲート承認（pre_production_review）
+  const handlePreProductionApprove = async () => {
+    setLoading(true);
+    try {
+      const secret = getAdminSecret();
+      if (!secret) { alert("認証エラー"); setLoading(false); return; }
+      const res = await fetch(`/api/admin/submissions/${submissionId}/pre-production/approve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${secret}`,
+        },
+        body: JSON.stringify({ action: "approve" }),
+      });
+      if (res.ok) {
+        onActionSuccess();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "第3ゲート承認に失敗しました");
+      }
+    } catch (err) {
+      alert("エラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (status === "approved_for_execution") {
     return (
       <button
@@ -167,28 +223,56 @@ function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) 
     );
   }
 
-  // customer_approved / pre_production_interview / pre_production_review:
-  // 本制作前ループのアクション（ヒアリング開始・第3ゲート承認）は ADMIN_SECRET が
-  // 必要なため、詳細ページ（/admin/[id]）へ誘導する。
-  // TODO(Phase C): 一覧から直接ヒアリング開始できるようにするなら、secret を渡して
-  // POST /api/consult/[id]/interview を呼ぶ。
-  if (
-    status === "customer_approved" ||
-    status === "pre_production_interview" ||
-    status === "pre_production_review"
-  ) {
-    const label =
-      status === "customer_approved"
-        ? "ヒアリング開始"
-        : status === "pre_production_review"
-          ? "第3ゲート承認"
-          : "回答待ち";
+  // Phase C-1: customer_approved - ヒアリング開始を直接実行
+  if (status === "customer_approved") {
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleStartInterview}
+          disabled={loading}
+          className="inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
+        >
+          {loading ? "送信中..." : "ヒアリング開始"}
+        </button>
+        <a
+          href={`/admin/${submissionId}`}
+          className="text-xs text-indigo-600 hover:text-indigo-800"
+        >
+          詳細 →
+        </a>
+      </div>
+    );
+  }
+
+  // Phase C-1: pre_production_review - 第3ゲート承認を直接実行
+  if (status === "pre_production_review") {
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handlePreProductionApprove}
+          disabled={loading}
+          className="inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50"
+        >
+          {loading ? "処理中..." : "第3ゲート承認"}
+        </button>
+        <a
+          href={`/admin/${submissionId}`}
+          className="text-xs text-indigo-600 hover:text-indigo-800"
+        >
+          詳細 →
+        </a>
+      </div>
+    );
+  }
+
+  // pre_production_interview - 回答待ち（詳細ページへ誘導）
+  if (status === "pre_production_interview") {
     return (
       <button
         onClick={() => router.push(`/admin/${submissionId}`)}
         className="inline-flex items-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-100"
       >
-        {label} →
+        回答待ち →
       </button>
     );
   }
