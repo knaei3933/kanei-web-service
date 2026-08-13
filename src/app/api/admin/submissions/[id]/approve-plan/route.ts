@@ -98,5 +98,6 @@ export async function POST(
     executionPromptPath: updated.executionHandoff
       ? executionPromptPathFor(updated.submissionId)
       : null,
+    demoGenerationStartedAt: updated.demoGenerationStartedAt,
   });
 }

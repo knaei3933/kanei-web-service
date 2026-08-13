@@ -144,9 +144,9 @@ function approvalStandingSummary(status: ApprovalStatus): string {
     case "awaiting_plan_approval":
       return "第2ゲート（計画）の承認待ちです。計画を確認して承認 or 差し戻し。";
     case "approved_for_execution":
-      return "承認済み・実行準備完了。実行ハンドオフをローカルで実行してください。";
+      return "承認済み・デモ生成を開始します。";
     case "demo_generating":
-      return "デモ生成中です。";
+      return "デモを自動生成中です。生成が完了すると通知されます。";
     case "demo_deployed":
       return "デモ公開済み・顧客の確認待ちです。";
     case "demo_revision_ready":
@@ -296,19 +296,19 @@ function nextActionMeta(
       };
     case "approved_for_execution":
       return {
-        stage: "実行準備完了（実行ハンドオフ生成済み）",
+        stage: "デモ生成開始（自動遷移）",
         nextAction:
-          "ローカルオペレータが実行ハンドオフのプロンプトを使い、Claude Code でデモを生成する。",
-        targetLabel: "実行ハンドオフ / 内部プレビュー",
+          "計画承認済み・デモを自動生成します。生成状況は内部プレビューで確認してください。",
+        targetLabel: "内部プレビュー（生成状況確認）",
         href: ctx.executionUrl,
         toneClass: "border-violet-200 bg-violet-50 text-violet-900",
-        actionShort: "デモを生成",
+        actionShort: "生成状況を確認",
       };
     case "demo_generating":
       return {
         stage: "デモ生成中",
         nextAction:
-          "オペレータの生成作業を待つ。完了するとデモ公開（顧客確認待ち）へ進む。",
+          "デモを自動生成中です。完了するとデモ公開（顧客確認待ち）へ進みます。",
         targetLabel: "内部プレビュー（生成状況確認）",
         href: ctx.executionUrl,
         toneClass: "border-violet-200 bg-violet-50 text-violet-900",

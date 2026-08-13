@@ -784,6 +784,11 @@ export interface ApprovalPackage {
    * 従来の approval.memo（単一テキスト）に代わり、項目ごとに顧客へ指示を伝える。
    */
   supplementRequests: IntakeSupplementRequest[];
+  /**
+   * デモ生成開始日時（ISO8601・未実施時は null）。
+   * 計画承認（第2ゲート）後に自動的に demo_generating へ遷移したときに記録する。
+   */
+  demoGenerationStartedAt: string | null;
 }
 
 /** buildApprovalPackage に渡す、保存済みファイルの軽量メタデータ */
@@ -1750,6 +1755,8 @@ export function buildApprovalPackage(
     lastFollowupScore: null,
     // 項目別差戻し／補足要求は受領時点では未発生
     supplementRequests: [],
+    // デモ生成開始日時は受領時点では未実施
+    demoGenerationStartedAt: null,
   };
 }
 
@@ -2212,6 +2219,7 @@ function normalizeApprovalPackage(
     lastFollowupScore:
       typeof o.lastFollowupScore === "number" ? o.lastFollowupScore : null,
     supplementRequests: normalizeSupplementRequests(o.supplementRequests),
+    demoGenerationStartedAt: typeof o.demoGenerationStartedAt === "string" ? o.demoGenerationStartedAt : null,
   };
 }
 
@@ -2859,7 +2867,9 @@ export async function approvePlan(
     // ファイル書き出し失敗でもパッケージ本体の更新を優先する
   }
 
-  pkg.status = "approved_for_execution";
+  // 計画承認後、自動的に demo_generating へ遷移（approved_for_execution をスキップ）
+  pkg.status = "demo_generating";
+  pkg.demoGenerationStartedAt = new Date().toISOString();
   await writeApprovalPackage(pkg);
   return pkg;
 }
