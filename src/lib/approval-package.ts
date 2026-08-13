@@ -892,11 +892,56 @@ function buildImageFallbackPromptLines(pkg: ApprovalPackage): string[] {
   const fb = pkg.imageFallback;
   const lines: string[] = [];
 
-  if (!fb || fb.status === "not_needed") {
+  if (!fb) {
     lines.push("## AI画像フォールバック方針（内部専用）");
-    lines.push(
-      "- 判定: AI仮画像は不要。顧客提供の写真・ロゴをそのまま使用する。"
+    lines.push("- 判定: 評価未実施");
+    lines.push("");
+    return lines;
+  }
+
+  // 画像系添付ファイルの有無を判定
+  const hasImageAttachments =
+    pkg.materialsAnalysis.availableAttachments.some(
+      (a) => a.kind === "画像" || a.kind === "ベクターロゴ"
     );
+
+  if (fb.status === "not_needed") {
+    lines.push("## AI画像フォールバック方針（内部専用）");
+    if (hasImageAttachments) {
+      // 画像添付がある場合は従来通り
+      lines.push(
+        "- 判定: AI仮画像は不要。顧客提供の写真・ロゴをそのまま使用する。"
+      );
+    } else {
+      // 画像添付がない場合はCSS/SVG/lucideアイコンでビジュアルを構成する指示
+      lines.push("- 判定: 顧客から画像は提供されていません。");
+      lines.push(
+        "- 画像生成API（codex/dall-e）は使用禁止。Unsplash等の外部画像も禁止。"
+      );
+      lines.push(
+        "- 以下の方法でビジュアルを構成すること（外部画像URL・base64埋め込みは一切禁止）:"
+      );
+      lines.push("  1. CSS gradient（linear-gradient, radial-gradient）を背景に使用");
+      lines.push(
+        "  2. lucide-react アイコンを大きく配置（Wrench, Factory, Shield 等）"
+      );
+      lines.push(
+        "  3. SVG パターン（幾何学模様・ドット柄・波線）で装飾"
+      );
+      lines.push(
+        "  4. Tailwind CSS の色・影・グラデーションで視覚的な区切りを作る"
+      );
+      lines.push(
+        "  5. Framer Motion のアニメーションで動的な演出"
+      );
+      lines.push(
+        "- ヒーロー背景は写真ではなくCSS gradient（例: from-slate-900 to-blue-900）にする。"
+      );
+      lines.push(
+        "- 各セクションにlucide-reactアイコンを適切に配置し、テキスト主体でも視覚的にリッチにする。"
+      );
+      lines.push("- 画像プレースホルダーとして<img>タグや外部URLは使用しないこと。");
+    }
     lines.push("");
     return lines;
   }
@@ -1237,6 +1282,12 @@ export function buildExecutionSectionPromptsMarkdown(
   const mustInclude = snap.mustInclude;
   const fb = pkg.imageFallback ?? null;
 
+  // 画像系添付ファイルの有無を判定（画像未提供時のCSS/SVG指示判定用）
+  const hasImageAttachments =
+    pkg.materialsAnalysis.availableAttachments.some(
+      (a) => a.kind === "画像" || a.kind === "ベクターロゴ"
+    );
+
   // OTHER セクション用に「他の9セクションのいずれにも合致しなかった必須事項」を計算する。
   const matchedByOthers = new Set<string>();
   for (const sec of EXECUTION_PROMPT_SECTIONS) {
@@ -1386,6 +1437,18 @@ export function buildExecutionSectionPromptsMarkdown(
 
     // 5) 実装指示
     lines.push(`**実装指示（Claude Code / オペレータ）:** ${sec.implementation}`);
+    // 画像未提供時の注記を追加
+    if (!hasImageAttachments) {
+      if (sec.id === "HERO") {
+        lines.push(
+          "**画像未提供時の補足:** 背景はCSS gradient（業種に応じた色調）で構成。写真は使用しない。"
+        );
+      } else if (sec.likelyNeedsImagery) {
+        lines.push(
+          "**画像未提供時の補足:** lucide-reactアイコンでビジュアルを補う。外部画像は使用しない。"
+        );
+      }
+    }
 
     // 6) 検証チェックリスト
     lines.push("**検証チェックリスト:**");
@@ -2483,6 +2546,33 @@ export function buildExecutionPromptMarkdown(
 
   for (const fbLine of buildImageFallbackPromptLines(pkg)) {
     lines.push(fbLine);
+  }
+
+  // 画像未提供時の視覚設計方針セクションを追加
+  const hasImageAttachments =
+    pkg.materialsAnalysis.availableAttachments.some(
+      (a) => a.kind === "画像" || a.kind === "ベクターロゴ"
+    );
+  if (!hasImageAttachments) {
+    lines.push("## 視覚設計方針（画像未提供時）");
+    lines.push("- すべてのビジュアルはCSS・SVG・lucide-reactアイコンのみで構成する");
+    lines.push("- 外部画像URL、Unsplash、base64埋め込みは一切禁止");
+    lines.push(
+      "- ヒーロー: 大きな見出し＋サブテキスト＋CTAボタンをCSS gradient背景に配置"
+    );
+    lines.push(
+      "- 実績・数値: lucide-reactアイコン（TrendingUp, Users等）＋大きな数字"
+    );
+    lines.push(
+      "- 設備紹介: Wrench, Settings, Shield等のアイコン＋説明テキスト"
+    );
+    lines.push(
+      "- お客様の声: プレースホルダーアバター（CSSによるイニシャル丸＋色）＋引用テキスト"
+    );
+    lines.push(
+      "- 全セクション: Tailwindのcolor/spacing/shadowで視覚的なリズムを作る"
+    );
+    lines.push("");
   }
 
   if (plan.prerequisites.length > 0) {

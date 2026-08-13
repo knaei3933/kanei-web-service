@@ -220,10 +220,16 @@ export function assessImageFallback(
   let status: ImageFallbackStatus;
 
   if (!imagesNeeded) {
-    status = "not_needed";
-    rationale.push("顧客提供の写真・ロゴで画像は概ね足りている。");
-    if (hasImageAttachment) {
-      rationale.push("画像系の添付ファイルが確認できる。");
+    // not_neededだが添付画像が0件の場合、CSS/SVGベースの仮ビジュアルを補う判定に変更
+    if (attachmentCount === 0) {
+      status = "allowed";
+      rationale.push("添付画像がなく、ビジュアルが必要なセクション（hero, gallery等）があるため、CSS/SVGベースの仮ビジュアルで補う。");
+    } else {
+      status = "not_needed";
+      rationale.push("顧客提供の写真・ロゴで画像は概ね足りている。");
+      if (hasImageAttachment) {
+        rationale.push("画像系の添付ファイルが確認できる。");
+      }
     }
   } else {
     // 金井がすべて作成する方針のときは、AI仮画像を積極採用
