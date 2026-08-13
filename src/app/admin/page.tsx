@@ -637,7 +637,7 @@ export default function AdminListPage() {
             ) : (
               <>
                 {/* Desktop table */}
-                <div className="hidden overflow-hidden rounded-3xl border border-border bg-white shadow-sm md:block">
+                <div className="hidden overflow-x-auto rounded-3xl border border-border bg-white shadow-sm md:block">
                   <table className="w-full text-left text-sm">
                     <thead className="border-b border-border bg-gray-50 text-xs uppercase text-muted-foreground">
                       <tr>

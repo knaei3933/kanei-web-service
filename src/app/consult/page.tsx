@@ -596,7 +596,8 @@ function StepProgress({
       </div>
 
       {/* ステップタブ（クリックで直接移動） */}
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/30">
+        <style>{`.scrollbar-thin::-webkit-scrollbar{height:3px}.scrollbar-thin::-webkit-scrollbar-track{background:transparent}.scrollbar-thin::-webkit-scrollbar-thumb{background:rgba(100,116,139,0.3);border-radius:4px}`}</style>
         {STEPS.map((s) => {
           const isActive = s.id === currentStep;
           const missing = missingByStep[s.id - 1] ?? 0;

@@ -2407,14 +2407,70 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5 text-xs">
-              <span className="hidden text-muted-foreground/80 sm:inline">開く:</span>
-              <Link
-                href={nextAction.href}
-                className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition hover:opacity-90"
-              >
-                {nextAction.targetLabel}
-                <span aria-hidden="true" className="ml-1">→</span>
-              </Link>
+              {/* Gate 1: 承認/却下をスティッキーから直接 */}
+              {isGate1 && (
+                <>
+                  <form action="/api/consult/approve" method="post" className="inline-flex">
+                    <input type="hidden" name="submissionId" value={pkg.submissionId} />
+                    <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
+                    <input type="hidden" name="approvedBy" value="代表" />
+                    <input type="hidden" name="memo" value="sticky-approve" />
+                    <button
+                      type="submit"
+                      className="inline-flex shrink-0 items-center justify-center rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700"
+                    >
+                      ✓ 承認する
+                    </button>
+                  </form>
+                  <Link
+                    href="#approval-actions"
+                    className="inline-flex shrink-0 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+                  >
+                    詳細
+                  </Link>
+                </>
+              )}
+              {/* Gate 2: 計画承認/差し戻しをスティッキーから直接 */}
+              {isGate2 && (
+                <>
+                  <form action="/api/consult/plan/approve" method="post" className="inline-flex">
+                    <input type="hidden" name="submissionId" value={pkg.submissionId} />
+                    <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
+                    <input type="hidden" name="approvedBy" value="代表" />
+                    <input type="hidden" name="memo" value="sticky-plan-approve" />
+                    <button
+                      type="submit"
+                      className="inline-flex shrink-0 items-center justify-center rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700"
+                    >
+                      ✓ 計画を承認
+                    </button>
+                  </form>
+                  <form action="/api/consult/plan/reject" method="post" className="inline-flex">
+                    <input type="hidden" name="submissionId" value={pkg.submissionId} />
+                    <input type="hidden" name="redirectTo" value={`/review/${pkg.submissionId}`} />
+                    <input type="hidden" name="approvedBy" value="代表" />
+                    <input type="hidden" name="memo" value="sticky-plan-reject" />
+                    <button
+                      type="submit"
+                      className="inline-flex shrink-0 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+                    >
+                      差し戻す
+                    </button>
+                  </form>
+                </>
+              )}
+              {!isGate1 && !isGate2 && (
+                <>
+                  <span className="hidden text-muted-foreground/80 sm:inline">開く:</span>
+                  <Link
+                    href={nextAction.href}
+                    className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition hover:opacity-90"
+                  >
+                    {nextAction.targetLabel}
+                    <span aria-hidden="true" className="ml-1">→</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
