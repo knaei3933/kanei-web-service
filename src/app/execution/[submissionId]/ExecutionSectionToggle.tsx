@@ -36,7 +36,7 @@ export default function ExecutionSectionToggle({
     setSaving(true);
     try {
       const res = await fetch(
-        `/api/admin/submissions/${submissionId}/section-status`,
+        `/api/submissions/${submissionId}/section-status`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
