@@ -105,7 +105,11 @@ function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) 
   const handleDeliver = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/production/${submissionId}/deliver`, { method: "POST" });
+      const res = await fetch(`/api/production/${submissionId}/deliver`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deliver" }),
+      });
       if (res.ok) {
         onActionSuccess();
       } else {
