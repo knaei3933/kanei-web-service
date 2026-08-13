@@ -240,6 +240,63 @@ const ALLOW_EDIT_OPTIONS = [
   { value: "no", label: "原則としてそのまま使ってほしい" },
 ];
 
+/**
+ * タスク3: 業種別プリセット定義
+ * CheckboxTagの値と完全一致させること
+ */
+const INDUSTRY_PRESETS: Record<
+  string,
+  {
+    targetCustomer?: string[];
+    sellingPoints?: string[];
+    mustIncludeInfo?: string[];
+  }
+> = {
+  製造業: {
+    targetCustomer: ["40代", "50代", "男性"],
+    sellingPoints: ["確かな実績・ノウハウ", "業界最高水準の品質"],
+    mustIncludeInfo: ["会社概要・沿革", "施工事例・実績紹介", "設備紹介"],
+  },
+  建設業: {
+    targetCustomer: ["30代", "40代", "男性", "地元・近隣"],
+    sellingPoints: ["確かな実績・ノウハウ", "スピード・短納期"],
+    mustIncludeInfo: ["会社概要・沿革", "施工事例・実績紹介", "設備紹介"],
+  },
+  飲食業: {
+    targetCustomer: ["20代", "30代", "女性", "地元・近隣"],
+    sellingPoints: ["好立地・アクセス便利", "コストパフォーマンス重視", "アフターサービス充実"],
+    mustIncludeInfo: ["サービス・メニュー一覧", "アクセス・地図", "スタッフ紹介"],
+  },
+  美容室: {
+    targetCustomer: ["20代", "30代", "女性"],
+    sellingPoints: ["資格保有スタッフ", "好立地・アクセス便利", "アフターサービス充実"],
+    mustIncludeInfo: ["スタッフ紹介", "サービス・メニュー一覧", "設備紹介"],
+  },
+  "整骨院・クリニック": {
+    targetCustomer: ["30代", "50代", "どちらでも"],
+    sellingPoints: ["資格保有スタッフ", "アフターサービス充実"],
+    mustIncludeInfo: ["サービス・メニュー一覧", "設備紹介", "アクセス・地図"],
+  },
+  "IT・コンサルティング": {
+    targetCustomer: ["30代", "50代", "企業（B2B）"],
+    sellingPoints: ["確かな実績・ノウハウ", "特許・独自技術", "スピード・短納期"],
+    mustIncludeInfo: ["サービス・メニュー一覧", "施工事例・実績紹介", "会社概要・沿革"],
+  },
+};
+
+/**
+ * タスク2: 競合と比べて劣る点の選択肢
+ */
+const COMPETITOR_WEAKNESS_OPTIONS = [
+  "デザインや見た目が劣る",
+  "情報量が少ない・内容が薄い",
+  "スマホ対応が不十分",
+  "問い合わせフォームがない・使いにくい",
+  "SEO対策ができていない（検索に出ない）",
+  "更新頻度が低く古く見える",
+  "写真や実績の提示が不足",
+];
+
 /* ------------------------------------------------------------------ */
 /*  フォームStateの型                                                    */
 /* ------------------------------------------------------------------ */
@@ -286,6 +343,8 @@ interface FormData {
   mustIncludeInfo: string;
   avoidItems: string;
   currentSiteIssues: string;
+  /** 競合と比べて劣る点（タスク2で追加） */
+  competitorWeakness: string;
   // Step 3
   desiredImage: string;
   colorScheme: string;
@@ -404,6 +463,7 @@ const INITIAL_DATA: FormData = {
   mustIncludeInfo: "",
   avoidItems: "",
   currentSiteIssues: "",
+  competitorWeakness: "",
   desiredImage: "",
   colorScheme: "",
   referenceSites: INITIAL_REFERENCE_SITES,
@@ -802,9 +862,12 @@ function ReferenceSiteCard({
   onRemove: () => void;
   canRemove: boolean;
 }) {
+  // タスク1: 折りたたみ状態（各カードごとに管理）
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <div className="rounded-2xl border-2 border-border bg-accent/30 p-5 sm:p-6">
-      {/* ヘッダー：番号 + 削除 */}
+      {/* ヘッダー：番号 + 削除 + 展開ボタン */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
@@ -814,38 +877,41 @@ function ReferenceSiteCard({
             参考サイト {index}
           </span>
         </div>
-        {canRemove && (
+        <div className="flex items-center gap-2">
+          {/* 詳細展開トグル */}
           <button
             type="button"
-            onClick={onRemove}
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            削除
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">詳細を折りたたむ</span>
+                <span className="sm:hidden">折りたたむ</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">詳細を入力</span>
+                <span className="sm:hidden">詳細</span>
+              </>
+            )}
           </button>
-        )}
+          {canRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              削除
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* 種類 */}
-      <div className="mb-3">
-        <span className="mb-1 block text-xs font-medium text-muted-foreground">
-          このサイトの役割（種類）
-        </span>
-        <select
-          value={site.type}
-          onChange={(e) => onChange("type", e.target.value)}
-          className={fieldClass}
-        >
-          <option value="">参考の種類を選択してください</option>
-          {REF_SITE_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* URL */}
+      {/* URLのみ常に表示 */}
       <div className="mb-3">
         <span className="mb-1 block text-xs font-medium text-muted-foreground">
           参考サイトのURL
@@ -857,70 +923,97 @@ function ReferenceSiteCard({
           placeholder="https://..."
           className={fieldClass}
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          URLのみでも十分です。詳細を入力したい場合は「詳細を入力」をクリックしてください。
+        </p>
       </div>
 
-      {/* 参考にしたい部分 */}
-      <div className="mb-3">
-        <span className="mb-1 block text-xs font-medium text-muted-foreground">
-          このサイトのどこを参考にしたいか
-        </span>
-        <textarea
-          value={site.whatToReference}
-          onChange={(e) => onChange("whatToReference", e.target.value)}
-          placeholder="例：トップページの導線、料金表の見せ方、写真の使い方、スマホの使い勝手 ..."
-          rows={2}
-          className={`${fieldClass} resize-y`}
-        />
-      </div>
+      {/* 詳細フィールド：展開時のみ表示 */}
+      {isExpanded && (
+        <>
+          {/* 種類 */}
+          <div className="mb-3">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">
+              このサイトの役割（種類）
+            </span>
+            <select
+              value={site.type}
+              onChange={(e) => onChange("type", e.target.value)}
+              className={fieldClass}
+            >
+              <option value="">参考の種類を選択してください</option>
+              {REF_SITE_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {/* 好きな箇所・コンポーネント */}
-      <div className="mb-4">
-        <span className="mb-1 block text-xs font-medium text-muted-foreground">
-          とくに好きな箇所・コンポーネント（任意）
-        </span>
-        <input
-          type="text"
-          value={site.likedSections}
-          onChange={(e) => onChange("likedSections", e.target.value)}
-          placeholder="例：メインビジュアル、お問い合わせボタン、実績のスライダー、フッター ..."
-          className={fieldClass}
-        />
-      </div>
+          {/* 参考にしたい部分 */}
+          <div className="mb-3">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">
+              このサイトのどこを参考にしたいか
+            </span>
+            <textarea
+              value={site.whatToReference}
+              onChange={(e) => onChange("whatToReference", e.target.value)}
+              placeholder="例：トップページの導線、料金表の見せ方、写真の使い方、スマホの使い勝手 ..."
+              rows={2}
+              className={`${fieldClass} resize-y`}
+            />
+          </div>
 
-      {/* 再現度（3段階） */}
-      <div>
-        <span className="mb-2 block text-xs font-medium text-muted-foreground">
-          どの程度再現してほしいか
-        </span>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {FOLLOW_LEVELS.map((lvl) => {
-            const active = site.followLevel === lvl.value;
-            return (
-              <button
-                key={lvl.value}
-                type="button"
-                onClick={() => onChange("followLevel", lvl.value)}
-                className={`rounded-xl border-2 px-3 py-2 text-center transition-all ${
-                  active
-                    ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                    : "border-border bg-white hover:border-primary/40"
-                }`}
-              >
-                <span
-                  className={`block text-xs font-bold sm:text-sm ${
-                    active ? "text-primary" : "text-foreground"
-                  }`}
-                >
-                  {lvl.label}
-                </span>
-                <span className="mt-0.5 block text-[11px] leading-tight text-muted-foreground">
-                  {lvl.desc}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+          {/* 好きな箇所・コンポーネント */}
+          <div className="mb-4">
+            <span className="mb-1 block text-xs font-medium text-muted-foreground">
+              とくに好きな箇所・コンポーネント（任意）
+            </span>
+            <input
+              type="text"
+              value={site.likedSections}
+              onChange={(e) => onChange("likedSections", e.target.value)}
+              placeholder="例：メインビジュアル、お問い合わせボタン、実績のスライダー、フッター ..."
+              className={fieldClass}
+            />
+          </div>
+
+          {/* 再現度（3段階） */}
+          <div>
+            <span className="mb-2 block text-xs font-medium text-muted-foreground">
+              どの程度再現してほしいか
+            </span>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {FOLLOW_LEVELS.map((lvl) => {
+                const active = site.followLevel === lvl.value;
+                return (
+                  <button
+                    key={lvl.value}
+                    type="button"
+                    onClick={() => onChange("followLevel", lvl.value)}
+                    className={`rounded-xl border-2 px-3 py-2 text-center transition-all ${
+                      active
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-border bg-white hover:border-primary/40"
+                    }`}
+                  >
+                    <span
+                      className={`block text-xs font-bold sm:text-sm ${
+                        active ? "text-primary" : "text-foreground"
+                      }`}
+                    >
+                      {lvl.label}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] leading-tight text-muted-foreground">
+                      {lvl.desc}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1187,6 +1280,8 @@ export default function ConsultPage() {
   const [strengthCheckboxes, setStrengthCheckboxes] = useState<string[]>([]);
   const [infoCheckboxes, setInfoCheckboxes] = useState<string[]>([]);
   const [siteIssueCheckboxes, setSiteIssueCheckboxes] = useState<string[]>([]);
+  // タスク2: 競合と比べて劣る点のチェックボックス
+  const [competitorWeaknessCheckboxes, setCompetitorWeaknessCheckboxes] = useState<string[]>([]);
   // Step 2 カテゴリ選択（プログレッシブ開示用）
   const [selectedTargetCategory, setSelectedTargetCategory] = useState<string>("年齢");
   const [selectedStrengthCategory, setSelectedStrengthCategory] = useState<string>("技術・品質");
@@ -1198,7 +1293,12 @@ export default function ConsultPage() {
     info: false,
     issues: false,
     avoid: false,
+    competitorWeakness: false, // タスク2: 競合劣位点のアコーディオン
   });
+  // タスク3: プリセット適用済みフラグ（業種変更時に重複適用を防ぐ）
+  const [presetApplied, setPresetApplied] = useState<string | "">("");
+  // タスク3: プリセット適用時のトースト表示
+  const [showPresetToast, setShowPresetToast] = useState(false);
   // Step 4 カテゴリ選択（プログレッシブ開示用）
   const [selectedPurposeCategory, setSelectedPurposeCategory] = useState<string>("信頼・ブランド");
   const [selectedFeatureCategory, setSelectedFeatureCategory] = useState<string>("会社情報");
@@ -1212,6 +1312,33 @@ export default function ConsultPage() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
+
+  /**
+   * タスク3: 業種選択時のプリセット適用
+   * businessTypeが変更され、該当プリセットがある場合、Step 2のおすすめ項目を自動チェック
+   */
+  useEffect(() => {
+    // 既存の選択を上書きせず、プリセット値をマージ（追加のみ）
+    const preset = INDUSTRY_PRESETS[data.businessType];
+    if (preset && data.businessType !== presetApplied) {
+      // 既存値とプリセット値を結合（重複はSetで排除）
+      const mergedTarget = Array.from(new Set([...targetCheckboxes, ...(preset.targetCustomer ?? [])]));
+      const mergedStrength = Array.from(new Set([...strengthCheckboxes, ...(preset.sellingPoints ?? [])]));
+      const mergedInfo = Array.from(new Set([...infoCheckboxes, ...(preset.mustIncludeInfo ?? [])]));
+
+      setTargetCheckboxes(mergedTarget);
+      setStrengthCheckboxes(mergedStrength);
+      setInfoCheckboxes(mergedInfo);
+      setPresetApplied(data.businessType);
+
+      // トースト表示（3秒で自動消滅）
+      setShowPresetToast(true);
+      const toastTimer = setTimeout(() => {
+        setShowPresetToast(false);
+      }, 3000);
+      return () => clearTimeout(toastTimer);
+    }
+  }, [data.businessType]);
 
   const goToStep = (step: number) =>
     setCurrentStep((prev) => Math.min(totalSteps, Math.max(1, step)));
@@ -1488,6 +1615,8 @@ export default function ConsultPage() {
     const combinedStrength = [...strengthCheckboxes, data.sellingPoints].filter(Boolean).join(" / ");
     const combinedInfo = [...infoCheckboxes, data.mustIncludeInfo].filter(Boolean).join(" / ");
     const combinedSiteIssues = [...siteIssueCheckboxes, data.currentSiteIssues].filter(Boolean).join(" / ");
+    // タスク2: 競合と比べて劣る点を結合
+    const combinedCompetitorWeakness = [...competitorWeaknessCheckboxes, data.competitorWeakness].filter(Boolean).join(" / ");
 
     const payload = {
       ...data,
@@ -1495,6 +1624,7 @@ export default function ConsultPage() {
       sellingPoints: combinedStrength,
       mustIncludeInfo: combinedInfo,
       currentSiteIssues: combinedSiteIssues,
+      competitorWeakness: combinedCompetitorWeakness, // タスク2: 競合と比べて劣る点
       referenceSites: meaningfulReferenceSites,
       attachments: safeAttachments,
       submittedAt: new Date().toISOString(),
@@ -1850,6 +1980,19 @@ export default function ConsultPage() {
                 </div>
               </div>
             </div>
+
+            {/* タスク3: プリセット適用時のトースト表示 */}
+            {showPresetToast && (
+              <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-blue-900">業種に合わせておすすめ項目を設定しました</p>
+                  <p className="mt-1 text-xs leading-relaxed text-blue-700">
+                    お好みで変更・追加してください。
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* 1-2. 現在のホームページ */}
             <div className="mb-10">
@@ -2394,7 +2537,49 @@ export default function ConsultPage() {
               </div>
             </AccordionSection>
 
-            {/* 2-5. 避けたいトーン・デザイン */}
+            {/* 2-5. 競合と比べて劣る点（タスク2で追加） */}
+            <AccordionSection
+              isOpen={step2Accordion.competitorWeakness}
+              onToggle={() => setStep2Accordion((prev) => ({ ...prev, competitorWeakness: !prev.competitorWeakness }))}
+              title="競合他社と比べて自社のHPで見劣りする点"
+            >
+              <div className="mb-4 sm:mb-10">
+                <FieldLabel hint="（任意）">競合他社と比べて自社のHPで見劣りする点</FieldLabel>
+                <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+                  他社と比較して自社のサイトで気になる点があれば選択してください。
+                </p>
+
+                <div className="mb-5 rounded-2xl bg-accent/30 p-4 sm:p-5">
+                  <div className="flex flex-wrap gap-1.5">
+                    {COMPETITOR_WEAKNESS_OPTIONS.map((label) => (
+                      <CheckboxTag
+                        key={label}
+                        selected={competitorWeaknessCheckboxes.includes(label)}
+                        onClick={() =>
+                          setCompetitorWeaknessCheckboxes((prev) =>
+                            prev.includes(label)
+                              ? prev.filter((v) => v !== label)
+                              : [...prev, label]
+                          )
+                        }
+                      >
+                        {label}
+                      </CheckboxTag>
+                    ))}
+                  </div>
+                </div>
+
+                <textarea
+                  value={data.competitorWeakness}
+                  onChange={(e) => update("competitorWeakness", e.target.value)}
+                  placeholder="その他、気になる点があればご記入ください"
+                  rows={2}
+                  className={`${inputClass} resize-y`}
+                />
+              </div>
+            </AccordionSection>
+
+            {/* 2-6. 避けたいトーン・デザイン */}
             <AccordionSection
               isOpen={step2Accordion.avoid}
               onToggle={() => setStep2Accordion((prev) => ({ ...prev, avoid: !prev.avoid }))}
