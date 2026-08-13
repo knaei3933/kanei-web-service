@@ -336,11 +336,7 @@ export function getAdminPriorityTier(status: string): number {
 }
 
 /**
- * 相談一覧をデフォルトの優先度順に並べ替える。
- *
- * 並べ替えルール（決定的）:
- *  1. 優先度ティアの昇順（代表アクション待ち → 能動ループ作業中 → 完了・終了）
- *  2. 同一ティア内では受信日時の降順（新しい順）
+ * 相談一覧を受信日時の降順（新しい順）で固定ソートする。
  *
  * 元の配列は変更せず、シャローコピーを並べ替えて返す。
  * receivedAt は ISO 8601 文字列を前提とし、辞書順比較で時系列順序と一致する。
@@ -348,9 +344,5 @@ export function getAdminPriorityTier(status: string): number {
 export function sortSubmissionsByPriority<
   T extends { status: string; receivedAt: string }
 >(submissions: T[]): T[] {
-  return [...submissions].sort((a, b) => {
-    const tierDiff = getAdminPriorityTier(a.status) - getAdminPriorityTier(b.status);
-    if (tierDiff !== 0) return tierDiff;
-    return b.receivedAt.localeCompare(a.receivedAt);
-  });
+  return [...submissions].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
 }

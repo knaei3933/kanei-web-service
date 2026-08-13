@@ -472,9 +472,8 @@ export default function AdminListPage() {
     return new URLSearchParams(window.location.search).get("returnTo");
   }, []);
 
-  // デフォルトの表示順（優先度ティア → 新着順）を一度だけ適用する。
-  // フィルタ（タブ・KPI）はこの順序を保ったまま絞り込むため、
-  // 全タブで「今すぐ動くべき相談」が上に来る。
+  // 表示順：受信日時の降順（新しい順）で固定。
+  // フィルタ（タブ・KPI）はこの順序を保ったまま絞り込む。
   const sortedSubmissions = useMemo(
     () => sortSubmissionsByPriority(submissions),
     [submissions],
