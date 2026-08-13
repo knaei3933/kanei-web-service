@@ -118,6 +118,40 @@ function ActionCell({ submissionId, status, onActionSuccess }: ActionCellProps) 
     }
   };
 
+  const handleExecuteDemo = async () => {
+    if (!confirm("デモを生成しますか？")) return;
+    setLoading(true);
+    try {
+      const secret = getAdminSecret();
+      if (!secret) { alert("認証エラー"); setLoading(false); return; }
+      const res = await fetch(`/api/admin/submissions/${submissionId}/execute-demo`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${secret}` },
+      });
+      if (res.ok) {
+        onActionSuccess();
+      } else {
+        alert("デモ生成に失敗しました");
+      }
+    } catch (err) {
+      alert("エラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (status === "approved_for_execution") {
+    return (
+      <button
+        onClick={handleExecuteDemo}
+        disabled={loading}
+        className="inline-flex items-center rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 transition hover:bg-purple-100 disabled:opacity-50"
+      >
+        {loading ? "生成中..." : "🚀 デモ生成"}
+      </button>
+    );
+  }
+
   if (status === "demo_deployed" || status === "demo_revised") {
     return (
       <a
