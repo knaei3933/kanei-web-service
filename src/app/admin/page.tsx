@@ -484,6 +484,7 @@ export default function AdminListPage() {
   const filterCounts = useMemo<Record<AdminFilterKey, number>>(() => {
     const result: Record<AdminFilterKey, number> = {
       all: 0,
+      representative_action: 0,
       demo_generated: 0,
       hearing_in_progress: 0,
       production_ready: 0,
