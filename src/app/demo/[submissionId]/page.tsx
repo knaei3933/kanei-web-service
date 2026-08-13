@@ -47,6 +47,7 @@ export default async function DemoPage({ params }: DemoPageProps) {
   const DEMO_VISIBLE_STATUSES = new Set([
     "demo_deployed",
     "demo_revised",
+    "demo_revision_ready",
     "customer_approved",
     "pre_production_interview",
     "pre_production_review",
