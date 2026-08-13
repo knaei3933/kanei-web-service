@@ -375,6 +375,7 @@ function KpiSummary({
       key: "representative_action",
       label: "代表アクション待ち",
       value: representativeAction,
+      filterKey: "representative_action",
       accent: true,
     },
     {

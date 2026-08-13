@@ -223,6 +223,7 @@ export function getAdminQuickLinkStyle(key: AdminQuickLinkKey): string {
 
 export type AdminFilterKey =
   | "all"
+  | "representative_action"
   | "demo_generated"
   | "hearing_in_progress"
   | "production_ready";
@@ -237,8 +238,23 @@ export interface AdminFilterGroup {
 /**
  * 一覧のフィルタタブ定義。配列順がそのままタブの表示順になる。
  */
+
+/** ティア 0 = 代表アクション待ちステータス集合。 */
+const REPRESENTATIVE_ACTION_STATUSES = new Set<string>([
+  "awaiting_representative_approval",
+  "awaiting_plan_approval",
+  "customer_approved",
+  "pre_production_review",
+  "production_ready",
+]);
+
 export const ADMIN_FILTER_GROUPS: AdminFilterGroup[] = [
   { key: "all", label: "すべて" },
+  {
+    key: "representative_action",
+    label: "代表アクション待ち",
+    statuses: REPRESENTATIVE_ACTION_STATUSES,
+  },
   {
     key: "demo_generated",
     label: "デモ生成済み",
@@ -292,19 +308,6 @@ export function filterSubmissionsByStatus<T extends { status: string }>(
 /*  自動的にティア 1 になる。未知のステータスもティア 1 にフォールバックし、    */
 /*  一覧の最下部に埋もれないようにする（完了扱いにはしない）。                  */
 /* ------------------------------------------------------------------ */
-
-/**
- * 代表アクション待ち（ティア 0）。代表が直接動かないと相談が進まない状態。
- * ActionCell が何らかのアクション（承認・ヒアリング開始・第3ゲート・納品）を
- * 抱えるステータスと一致させる。
- */
-const REPRESENTATIVE_ACTION_STATUSES = new Set<string>([
-  "awaiting_representative_approval",
-  "awaiting_plan_approval",
-  "customer_approved",
-  "pre_production_review",
-  "production_ready",
-]);
 
 /**
  * 完了・終了（ティア 2）。もう代表が動く必要がない状態。
