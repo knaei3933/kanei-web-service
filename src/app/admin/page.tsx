@@ -10,7 +10,7 @@ import {
   type AdminFilterKey,
 } from "@/lib/admin-navigation";
 import { RouteAccessList } from "@/components/admin/RouteAccessList";
-import { isSafeInternalPath } from "@/lib/admin-return-to";
+import { isSafeInternalPath, setAdminSecret, getAdminSecret, removeAdminSecret } from "@/lib/admin-return-to";
 
 type Submission = {
   id: string;
@@ -415,7 +415,7 @@ export default function AdminListPage() {
   // セッションを破棄してログイン画面へ戻す（無効な認証・セッション切れの共通処理）。
   const backToLogin = useCallback((message: string) => {
     if (typeof window !== "undefined") {
-      sessionStorage.removeItem("admin_secret");
+      removeAdminSecret();
     }
     setSubmissions([]);
     setAuthError(message);
@@ -426,7 +426,7 @@ export default function AdminListPage() {
   // API で検証してからダッシュボードを表示する。無効ならログイン画面へ戻す。
   useEffect(() => {
     const secret =
-      typeof window !== "undefined" ? sessionStorage.getItem("admin_secret") : null;
+      typeof window !== "undefined" ? getAdminSecret() : null;
 
     if (!secret) {
       return; // 初期値 "unauthed" のまま
@@ -466,7 +466,7 @@ export default function AdminListPage() {
     setLoggingIn(true);
     const outcome = await loadSubmissions(trimmed);
     if (outcome === "ok") {
-      sessionStorage.setItem("admin_secret", trimmed);
+      setAdminSecret(trimmed);
       setPassword("");
       // 安全な returnTo があれば元のページへ戻す。なければ従来通り /admin 一覧を表示。
       if (returnTo && isSafeInternalPath(returnTo)) {
@@ -485,7 +485,7 @@ export default function AdminListPage() {
   // 認証後の再取得（アクション成功後のリフレッシュ）。セッション切れはログインへ戻す。
   const fetchSubmissions = useCallback(async () => {
     const token =
-      typeof window !== "undefined" ? sessionStorage.getItem("admin_secret") : null;
+      typeof window !== "undefined" ? getAdminSecret() : null;
     if (!token) {
       backToLogin("認証に失敗しました。管理者パスワードをご確認ください。");
       return;

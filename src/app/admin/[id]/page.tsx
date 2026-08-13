@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { RouteAccessList } from "@/components/admin/RouteAccessList";
 import { Gate3ChecklistCard } from "@/components/gate3/Gate3ChecklistCard";
-import { buildLoginUrlWithReturn } from "@/lib/admin-return-to";
+import { buildLoginUrlWithReturn, getAdminSecret } from "@/lib/admin-return-to";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -296,7 +296,7 @@ export default function AdminDetailPage() {
 
   /* auth + fetch */
   useEffect(() => {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) {
       // 未認証: 元のパス（クエリ文字列を含む）を保持してログイン画面へ送る。
       // window.location はクライアントでのみ参照できるため SSR を避ける。
@@ -392,7 +392,7 @@ export default function AdminDetailPage() {
 
   /* handlers */
   async function handleSendFollowup() {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) return;
     const items = Object.keys(checkedItems).filter((k) => checkedItems[k]);
     if (items.length === 0) {
@@ -428,7 +428,7 @@ export default function AdminDetailPage() {
   }
 
   async function handleApprove() {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) return;
     setApproving(true);
     setActionMsg(null);
@@ -458,7 +458,7 @@ export default function AdminDetailPage() {
   }
 
   async function handleApprovePlan() {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) return;
     setApproving(true);
     setActionMsg(null);
@@ -488,7 +488,7 @@ export default function AdminDetailPage() {
   }
 
   async function handleExecuteDemo(isRevision: boolean = false) {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) return;
     setExecuting(true);
     setActionMsg(null);
@@ -521,7 +521,7 @@ export default function AdminDetailPage() {
   // 従来の「本制作を開始（customer_approved → production_ready 直遷移）」は
   // 新しいステートマシンで無効化されたため、本制作へは必ずヒアリング → Gate3 を経由する。
   async function handleStartInterview() {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) return;
     setStartingInterview(true);
     setActionMsg(null);
@@ -555,7 +555,7 @@ export default function AdminDetailPage() {
   //   approve: pre_production_review → production_ready
   //   reject : pre_production_review → pre_production_interview（追加ヒアリングへ差し戻し）
   async function handleGate3(action: "approve" | "reject") {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) return;
     setGate3Acting(true);
     setActionMsg(null);
@@ -589,7 +589,7 @@ export default function AdminDetailPage() {
   }
 
   async function handleDeliver() {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) return;
     setDelivering(true);
     setActionMsg(null);
@@ -622,7 +622,7 @@ export default function AdminDetailPage() {
 
   // 復元（round N を新ラウンドとして復元）
   async function handleRestore(round: number) {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) return;
     if (!confirm(`ラウンド ${round} を復元します。よろしいですか？\n\n現在の内容は新しいラウンドとして保存され、ラウンド ${round} の内容がliveになります。`)) {
       return;
@@ -654,7 +654,7 @@ export default function AdminDetailPage() {
 
   // 再利用（round N を基点に新バリアント生成）
   async function handleReuse(round: number, variantTag: string) {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret) return;
     const revisionPrompt = prompt(`ラウンド ${round} を基点に新バリアントを作成します。\n\n修正指示を入力してください（空欄可）:`);
     if (revisionPrompt === null) return; // キャンセル
@@ -703,7 +703,7 @@ export default function AdminDetailPage() {
     setSourceLoading(true);
 
     try {
-      const secret = sessionStorage.getItem("admin_secret");
+      const secret = getAdminSecret();
       if (!secret) return;
 
       // スナップショット API から componentSource を取得
@@ -740,7 +740,7 @@ export default function AdminDetailPage() {
 
   /* demoStatus取得 */
   useEffect(() => {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret || !id) return;
 
     // demo_deployed, demo_revised ステータスの場合のみ demoStatus を取得
@@ -772,7 +772,7 @@ export default function AdminDetailPage() {
 
   /* Phase R4: リビジョン履歴取得 */
   useEffect(() => {
-    const secret = sessionStorage.getItem("admin_secret");
+    const secret = getAdminSecret();
     if (!secret || !id) return;
 
     let cancelled = false;

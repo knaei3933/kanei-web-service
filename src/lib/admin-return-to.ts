@@ -1,36 +1,47 @@
 /**
- * 管理者ログイン後の「元のページへ戻る」フロー（returnTo）のためのヘルパー。
+ * 管理者認証（admin_secret）の保存・読み取りヘルパー。
  *
- * /admin/[id] に未認証でアクセスしたとき、元のパス（クエリ文字列を含む）を
- * クエリとして /admin へ渡し、ログイン成功後に安全に元のパスへ復帰させる。
+ * sessionStorage はタブごとに独立するため、target="_blank" で開いた
+ * 新しいタブでは認証情報が引き継がれない。
+ * → document.cookie を使うことで同一オリジン内の全タブで共有する。
  *
- * セキュリティ: 外部 URL やプロトコル相対 URL によるオープンリダイレクトを防ぐため、
- * 受け取った returnTo が「同じオリジンの内部パス」かどうかを厳密に判定する。
+ * セキュリティ:
+ * - HttpOnly は不可（JS から読むため）だが、SameSite=Lax で CSRF 軽減。
+ * - Secure は https 環境でのみ有効。
+ * - max-age でブラウザを閉じても一定期間は維持（管理作業の利便性）。
  */
+
+const COOKIE_NAME = "admin_secret";
+const MAX_AGE = 8 * 60 * 60; // 8時間（秒）
+
+/** admin_secret をクッキーに保存（全タブで共有）。 */
+export function setAdminSecret(value: string): void {
+  const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(value)};path=/;max-age=${MAX_AGE};SameSite=Lax${isSecure ? ";Secure" : ""}`;
+}
+
+/** クッキーから admin_secret を読み取る（なければ null）。 */
+export function getAdminSecret(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/** admin_secret クッキーを削除（ログアウト時）。 */
+export function removeAdminSecret(): void {
+  document.cookie = `${COOKIE_NAME}=;path=/;max-age=0;SameSite=Lax`;
+}
 
 /** returnTo のクエリパラメータ名。 */
 export const RETURN_TO_PARAM = "returnTo";
 
 /**
  * 受け取った値が「安全な内部パス（同じオリジン）」かを判定する。
- *
- * 次の条件をすべて満たす場合のみ true を返す:
- * - 空でない文字列である
- * - `/` で始まる（相対パス・完全な外部 URL を拒否）
- * - `//` や `/\` で始まらない（プロトコル相対 URL の回避。
- *   ブラウザはバックスラッシュをスラッシュに正規化することがあるため両方を弾く）
- * - 先頭が `スキーム:` の形式ではない（http:, https:, javascript:, data: など）
- *
- * 不正な値のときは false を返し、呼び出し側で /admin へフォールバックする。
  */
 export function isSafeInternalPath(value: unknown): value is string {
   if (typeof value !== "string" || value.length === 0) return false;
-  // 必ず `/` で始まること。相対パスや完全な外部 URL は拒否する。
   if (!value.startsWith("/")) return false;
-  // `//` または `/\` で始まる値はプロトコル相対 URL に解釈される危険があるため拒否。
   if (value.startsWith("//") || value.startsWith("/\\")) return false;
-  // 先頭が「スキーム:」の形式なら拒否（javascript:, data:, http: など）。
-  // value は `/` 始まりなので通常はマッチしないが、念のための二重チェック。
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value)) return false;
   return true;
 }
@@ -44,7 +55,6 @@ export function safeReturnPath(value: unknown): string {
 
 /**
  * 指定パス（pathname + search）を returnTo クエリとして付与した /admin URL を作る。
- * 詳細ページの認可ガードで、未認証ユーザーをログイン画面へ送るときに使う。
  */
 export function buildLoginUrlWithReturn(currentPathWithSearch: string): string {
   return `/admin?${RETURN_TO_PARAM}=${encodeURIComponent(currentPathWithSearch)}`;
