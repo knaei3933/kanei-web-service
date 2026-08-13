@@ -142,6 +142,16 @@ export const SHOWCASE_MAP: Record<string, ShowcaseEntry> = {
     businessType: "製造業",
     componentPath: "src/components/sections/e2e-manufacturing-showcase.tsx",
   },
+  "20260811-165104-0134f1d5": {
+    // ファイル名は識別子ベースの安定名（reverification-manufacturing-showcase）にしておく。
+    // 数字始まりの submissionId をファイル名にすると、Turbopack の動的 import で
+    // モジュール解決が環境によって不安定になるため、意味的な名前に一本化。
+    loader: () =>
+      import("@/components/sections/reverification-manufacturing-showcase").then((m) => ({ default: m.default })),
+    enterpriseName: "再検証テスト会社",
+    businessType: "製造業",
+    componentPath: "src/components/sections/reverification-manufacturing-showcase.tsx",
+  },
 };
 
 /**
