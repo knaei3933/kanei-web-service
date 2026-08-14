@@ -11,6 +11,15 @@
 - 코드 리뷰는 `omc:code-reviewer` 에이전트 사용
 - 디버깅은 `omc:debugger` 에이전트 사용
 
+### 필수 스킬 (frontend-design)
+- 프론트엔드 디자인/레이아웃 작업 시 반드시 **Anthropic 公式 `frontend-design` 스킬**을 사용
+- 세션 시작 시 (스킬 미설치 상태라면) 먼저 실행:
+  ```
+  npx skills add https://github.com/anthropics/skills --skill frontend-design
+  ```
+- 이 스킬이 설치되어 있는지 먼저 확인 후 작업 시작
+- 적용 대상: 데모 showcase 컴포넌트 제작, 레이아웃 구성, 반응형 디자인, CSS/시각 요소 구현
+
 ### 필수 참조 파일
 - **OMC Monet 컴포넌트 카탈로그**: `src/generated/monet-catalog.ts` — 자동 생성. 홈페이지 제작 시 반드시 이 카탈로그를 먼저 참조하여 재사용 가능한 컴포넌트를 우선 사용.
 - **brief.json**: 고객 요구사항 정규화 브리핑
